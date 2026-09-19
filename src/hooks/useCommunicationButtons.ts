@@ -10,6 +10,12 @@ export function useVisibleButtons(categoryId?: number) {
   return useDbQuery(() => buttonsRepo.getVisible(categoryId), NONE, ['buttons', 'categories'], [categoryId]);
 }
 
+/** School Mode quick phrases, looked up by [category key, label]. */
+export function useQuickButtons(pairs: [string, string][]) {
+  const signature = pairs.map((p) => p.join(':')).join(',');
+  return useDbQuery(() => buttonsRepo.getByCategoryLabels(pairs), NONE, ['buttons', 'categories'], [signature]);
+}
+
 /** Every tile, hidden ones included — for parent management. */
 export function useAllButtons() {
   return useDbQuery(() => buttonsRepo.getAll(), NONE, ['buttons']);

@@ -1,4 +1,4 @@
-export { Icon, isValidIcon } from './Icon';
+export { Icon, isValidIcon, isEmoji } from './Icon';
 export { BigButton } from './BigButton';
 export { ScreenContainer } from './ScreenContainer';
 export { ScreenHeader } from './ScreenHeader';
@@ -11,3 +11,8 @@ export { ColorPicker } from './ColorPicker';
 export { ListRow } from './ListRow';
 export type { RowAction } from './ListRow';
 export { EmptyState } from './EmptyState';
+export { DateField } from './DateField';
+export { TimeField } from './TimeField';
+export { SectionTitle } from './SectionTitle';
+export { StatTile } from './StatTile';
+export { ChildScreen } from './ChildScreen';

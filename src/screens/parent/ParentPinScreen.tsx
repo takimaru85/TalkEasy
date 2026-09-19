@@ -17,7 +17,7 @@ export function ParentPinScreen({ navigation }: RootScreenProps<'ParentPin'>) {
   const onComplete = (pin: string) => {
     if (pin === settings.parentPin) {
       setError(false);
-      navigation.replace('Parent', { screen: 'ParentHome' });
+      navigation.replace('Parent', { screen: 'Dashboard' });
     } else {
       setError(true);
       setResetKey((k) => k + 1);

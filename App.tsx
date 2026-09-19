@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { SettingsProvider } from '@/context/SettingsContext';
+import { SettingsProvider, useSettings } from '@/context/SettingsContext';
 import { getDb } from '@/database';
 import { RootNavigator } from '@/navigation/RootNavigator';
 import { prepareAudioSession } from '@/services/speech';
@@ -33,7 +33,7 @@ export default function App() {
       <StatusBar style="dark" />
       {boot.status === 'ready' ? (
         <SettingsProvider>
-          <RootNavigator />
+          <NavigatorWhenSettingsLoaded />
         </SettingsProvider>
       ) : boot.status === 'error' ? (
         <View style={styles.center}>
@@ -56,3 +56,16 @@ const styles = StyleSheet.create({
   title: { fontSize: 28, fontWeight: '800', color: Colors.text },
   message: { fontSize: 18, color: Colors.textMuted, textAlign: 'center' },
 });
+
+/** Waits for settings so the navigator's initial route (Home vs School Mode) is correct. */
+function NavigatorWhenSettingsLoaded() {
+  const { loaded } = useSettings();
+  if (!loaded) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator size="large" color={Colors.primary} />
+      </View>
+    );
+  }
+  return <RootNavigator />;
+}

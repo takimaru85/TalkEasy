@@ -1,52 +1,73 @@
 import React, { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { BigButton, ScreenContainer, ScreenHeader, EmptyState, Icon } from '@/components/common';
+import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { BigButton, ChildScreen, EmptyState, Icon } from '@/components/common';
 import { Colors } from '@/constants/colors';
+import { FREQUENCY_META } from '@/constants/school';
 import { MAX_FONT_SCALE, RADIUS, SPACING } from '@/constants/sizes';
-import { exercisesRepo } from '@/database';
-import { useExercises, useSizes, useSpeak } from '@/hooks';
-import type { ChildTabScreenProps } from '@/navigation/types';
-import type { Exercise } from '@/types/models';
+import { useSettings } from '@/context/SettingsContext';
+import { therapyRepo } from '@/database';
+import { useSizes, useSpeak, useTherapyActivities } from '@/hooks';
+import type { RootScreenProps } from '@/navigation/types';
+import type { TherapyActivity } from '@/types/models';
+import { confirm } from '@/utils/confirm';
 
 /**
- * Therapy / exercise cards. Tapping a card opens it (large instructions + "Done" button);
- * everything is a plain tap. The parent creates and edits cards in Parent Mode.
+ * Therapy / activity cards. Tapping a card opens it (picture, instructions, duration,
+ * "Read it to me", "Done!"). The parent creates and edits cards in Parent Mode.
+ * This is an organiser for activities given by the child's caregivers/professionals — nothing here
+ * is medical advice.
  */
-export function ActivitiesScreen({ navigation }: ChildTabScreenProps<'Activities'>) {
+export function ActivitiesScreen(_props: RootScreenProps<'Activities'>) {
   const sizes = useSizes();
-  const { data: exercises, loading } = useExercises();
+  const { settings } = useSettings();
+  const { data: activities, loading } = useTherapyActivities();
   const { speakPhrase } = useSpeak();
   const [openId, setOpenId] = useState<number | null>(null);
 
-  const open = exercises.find((e) => e.id === openId) ?? null;
+  const open = activities.find((e) => e.id === openId) ?? null;
 
-  const openCard = (ex: Exercise) => {
+  const openCard = (ex: TherapyActivity) => {
     setOpenId(ex.id);
     speakPhrase(ex.name);
   };
 
-  const markDone = async (ex: Exercise) => {
-    await exercisesRepo.setCompleted(ex.id, !ex.isCompleted);
+  const toggleDone = async (ex: TherapyActivity) => {
+    if (!ex.isCompleted && settings.confirmComplete) {
+      const ok = await confirm('Finished?', `Mark "${ex.name}" as done?`, 'Yes, done');
+      if (!ok) return;
+    }
+    await therapyRepo.setCompleted(ex.id, !ex.isCompleted);
     speakPhrase(ex.isCompleted ? ex.name : 'Well done!');
     setOpenId(null);
   };
 
   if (open) {
     return (
-      <ScreenContainer>
-        <ScreenHeader title={open.name} onBack={() => setOpenId(null)} />
+      <ChildScreen title={open.name} back>
         <ScrollView contentContainerStyle={[styles.detail, { paddingHorizontal: sizes.horizontalPadding }]}>
           <View style={styles.detailIcon}>
-            <Icon name={open.icon} size={sizes.iconSize + 40} color={Colors.text} />
+            {open.imageUri ? (
+              <Image source={{ uri: open.imageUri }} style={styles.image} accessibilityIgnoresInvertColors accessibilityLabel={open.name} />
+            ) : (
+              <Icon name={open.icon} size={sizes.iconSize + 40} color={Colors.text} />
+            )}
           </View>
-          {open.durationMinutes > 0 ? (
-            <View style={styles.durationRow}>
-              <Icon name="clock-outline" size={30} color={Colors.text} />
-              <Text style={[styles.duration, { fontSize: sizes.body + 2 }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
-                {open.durationMinutes} minutes
+          <View style={styles.metaRow}>
+            {open.durationMinutes > 0 ? (
+              <View style={styles.metaChip}>
+                <Icon name="clock-outline" size={28} color={Colors.text} />
+                <Text style={[styles.meta, { fontSize: sizes.body }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
+                  {open.durationMinutes} min
+                </Text>
+              </View>
+            ) : null}
+            <View style={styles.metaChip}>
+              <Icon name="calendar-refresh" size={28} color={Colors.text} />
+              <Text style={[styles.meta, { fontSize: sizes.body }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
+                {FREQUENCY_META[open.frequency].label}
               </Text>
             </View>
-          ) : null}
+          </View>
           <Text style={[styles.instructions, { fontSize: sizes.body + 4 }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
             {open.instructions || 'No instructions yet.'}
           </Text>
@@ -61,32 +82,26 @@ export function ActivitiesScreen({ navigation }: ChildTabScreenProps<'Activities
             label={open.isCompleted ? 'Not done yet' : 'Done!'}
             icon={open.isCompleted ? 'close' : 'check-bold'}
             variant={open.isCompleted ? 'secondary' : 'success'}
-            onPress={() => markDone(open)}
+            onPress={() => toggleDone(open)}
             minHeight={96}
           />
         </ScrollView>
-      </ScreenContainer>
+      </ChildScreen>
     );
   }
 
   return (
-    <ScreenContainer>
-      <ScreenHeader
-        title="Activities"
-        rightIcon="lock"
-        rightLabel="Parent"
-        onRightPress={() => navigation.navigate('ParentPin')}
-      />
-      {!loading && exercises.length === 0 ? (
+    <ChildScreen title="Activities">
+      {!loading && activities.length === 0 ? (
         <EmptyState icon="dumbbell" title="No activities yet" message="A parent can add activities in Parent Mode." />
       ) : (
         <ScrollView contentContainerStyle={[styles.list, { paddingHorizontal: sizes.horizontalPadding }]}>
-          {exercises.map((ex) => (
+          {activities.map((ex) => (
             <Pressable
               key={ex.id}
               onPress={() => openCard(ex)}
               accessibilityRole="button"
-              accessibilityLabel={`${ex.name}${ex.isCompleted ? ', done' : ''}`}
+              accessibilityLabel={`${ex.name}${ex.isCompleted ? ', done' : ', not completed'}`}
               hitSlop={4}
               style={({ pressed }) => [
                 styles.card,
@@ -95,16 +110,19 @@ export function ActivitiesScreen({ navigation }: ChildTabScreenProps<'Activities
                 pressed && styles.pressed,
               ]}
             >
-              <Icon name={ex.icon} size={sizes.iconSize} color={Colors.text} />
+              {ex.imageUri ? (
+                <Image source={{ uri: ex.imageUri }} style={styles.thumb} accessibilityIgnoresInvertColors />
+              ) : (
+                <Icon name={ex.icon} size={sizes.iconSize} color={Colors.text} />
+              )}
               <View style={styles.cardText}>
                 <Text style={[styles.cardTitle, { fontSize: sizes.tileLabel + 2 }]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={2}>
                   {ex.name}
                 </Text>
-                {ex.durationMinutes > 0 ? (
-                  <Text style={[styles.cardMeta, { fontSize: sizes.body - 2 }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
-                    {ex.durationMinutes} min
-                  </Text>
-                ) : null}
+                <Text style={[styles.cardMeta, { fontSize: sizes.body - 2 }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
+                  {ex.durationMinutes > 0 ? `${ex.durationMinutes} min · ` : ''}
+                  {ex.isCompleted ? '✅ Completed' : '⬜ Not completed'}
+                </Text>
               </View>
               <View style={[styles.check, ex.isCompleted && styles.checkDone]}>
                 {ex.isCompleted ? <Icon name="check-bold" size={30} color={Colors.textOnDark} /> : null}
@@ -113,7 +131,7 @@ export function ActivitiesScreen({ navigation }: ChildTabScreenProps<'Activities
           ))}
         </ScrollView>
       )}
-    </ScreenContainer>
+    </ChildScreen>
   );
 }
 
@@ -131,6 +149,7 @@ const styles = StyleSheet.create({
   },
   cardDone: { backgroundColor: '#E8E8E8', borderColor: '#9E9E9E' },
   pressed: { opacity: 0.8 },
+  thumb: { width: 72, height: 72, borderRadius: 12, borderWidth: 2, borderColor: Colors.border },
   cardText: { flex: 1, gap: 2 },
   cardTitle: { fontWeight: '800', color: Colors.text },
   cardMeta: { color: Colors.textMuted, fontWeight: '600' },
@@ -146,8 +165,10 @@ const styles = StyleSheet.create({
   },
   checkDone: { backgroundColor: Colors.success, borderColor: '#0F5E28' },
   detail: { paddingVertical: SPACING.md, gap: SPACING.lg, paddingBottom: SPACING.xl },
-  detailIcon: { alignItems: 'center', paddingVertical: SPACING.md },
-  durationRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SPACING.sm },
-  duration: { fontWeight: '700', color: Colors.text },
+  detailIcon: { alignItems: 'center', paddingVertical: SPACING.sm },
+  image: { width: 240, height: 240, borderRadius: RADIUS.tile, borderWidth: 3, borderColor: Colors.border },
+  metaRow: { flexDirection: 'row', justifyContent: 'center', gap: SPACING.md, flexWrap: 'wrap' },
+  metaChip: { flexDirection: 'row', alignItems: 'center', gap: SPACING.xs, paddingHorizontal: SPACING.md, paddingVertical: SPACING.xs, borderRadius: 12, backgroundColor: Colors.surface, borderWidth: 2, borderColor: '#CFCFCF' },
+  meta: { fontWeight: '700', color: Colors.text },
   instructions: { color: Colors.text, lineHeight: 34, textAlign: 'center' },
 });
