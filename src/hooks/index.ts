@@ -8,6 +8,7 @@ export {
   useCategoryByKey,
   useMostUsedButtons,
   useFavoriteIds,
+  useQuickButtons,
 } from './useCommunicationButtons';
 export { useFavoriteButtons } from './useFavorites';
 export { useRoutines, useActiveRoutine, useActiveRoutineItems, useRoutineItems } from './useRoutine';

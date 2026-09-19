@@ -64,6 +64,24 @@ export const buttonsRepo = {
     return rows.map(toModel);
   },
 
+  /**
+   * Looks up visible buttons by [category key, label] pairs, preserving the order of `pairs`.
+   * Used by School Mode's pinned quick phrases. Missing (deleted/hidden) ones are skipped.
+   */
+  async getByCategoryLabels(pairs: [string, string][]): Promise<CommunicationButton[]> {
+    const db = await getDb();
+    const out: CommunicationButton[] = [];
+    for (const [key, label] of pairs) {
+      const row = await db.getFirstAsync<ButtonRow>(
+        `SELECT b.* FROM communication_buttons b JOIN categories c ON c.id = b.category_id
+         WHERE c.key = ? AND b.label = ? AND b.is_hidden = 0 LIMIT 1`,
+        key, label,
+      );
+      if (row) out.push(toModel(row));
+    }
+    return out;
+  },
+
   async getById(id: number): Promise<CommunicationButton | null> {
     const db = await getDb();
     const row = await db.getFirstAsync<ButtonRow>('SELECT * FROM communication_buttons WHERE id = ?', id);

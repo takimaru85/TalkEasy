@@ -1,17 +1,17 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { ScreenContainer, ScreenHeader, EmptyState } from '@/components/common';
+import { ChildScreen, EmptyState } from '@/components/common';
 import { CommunicationTile, PhraseBanner, TileGrid } from '@/components/communication';
 import { Colors } from '@/constants/colors';
 import { MAX_FONT_SCALE, SPACING } from '@/constants/sizes';
 import { useFavoriteButtons, useMostUsedButtons, useSizes, useSpeak } from '@/hooks';
-import type { ChildTabScreenProps } from '@/navigation/types';
+import type { RootScreenProps } from '@/navigation/types';
 
 /**
  * Favorites — tiles the parent starred, followed by the most-used tiles
  * (so frequently needed phrases surface automatically).
  */
-export function FavoritesScreen({ navigation }: ChildTabScreenProps<'Favorites'>) {
+export function FavoritesScreen(_props: RootScreenProps<'Favorites'>) {
   const sizes = useSizes();
   const { data: favorites, loading } = useFavoriteButtons();
   const { data: mostUsed } = useMostUsedButtons(6);
@@ -35,20 +35,14 @@ export function FavoritesScreen({ navigation }: ChildTabScreenProps<'Favorites'>
     ) : null;
 
   return (
-    <ScreenContainer>
-      <ScreenHeader
-        title="Favorites"
-        rightIcon="lock"
-        rightLabel="Parent"
-        onRightPress={() => navigation.navigate('ParentPin')}
-      />
+    <ChildScreen title="Favorites">
       <PhraseBanner phrase={lastPhrase} onRepeat={repeat} />
       {!loading && favorites.length === 0 && extraMostUsed.length === 0 ? (
         <EmptyState icon="star" title="No favorites yet" message="A parent can star buttons in Parent Mode." />
       ) : (
         <TileGrid buttons={favorites} selectedId={lastButtonId} onPress={speakButton} footer={footer} />
       )}
-    </ScreenContainer>
+    </ChildScreen>
   );
 }
 

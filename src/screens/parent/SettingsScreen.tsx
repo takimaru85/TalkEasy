@@ -123,6 +123,31 @@ export function SettingsScreen({ navigation }: ParentScreenProps<'Settings'>) {
             />
           </Section>
 
+          <Section title="Child interface">
+            <ChoiceRow
+              label="Open the app in School Mode"
+              value={settings.schoolModeAtStart ? 'on' : 'off'}
+              onChange={(v) => updateSetting('schoolModeAtStart', v === 'on')}
+              choices={[
+                { value: 'on', label: 'Yes' },
+                { value: 'off', label: 'No, show Home' },
+              ]}
+            />
+            <ChoiceRow
+              label="Ask before marking things done"
+              value={settings.confirmComplete ? 'on' : 'off'}
+              onChange={(v) => updateSetting('confirmComplete', v === 'on')}
+              choices={[
+                { value: 'on', label: 'Ask first' },
+                { value: 'off', label: 'One tap' },
+              ]}
+            />
+            <Text style={styles.hint} maxFontSizeMultiplier={MAX_FONT_SCALE}>
+              "Ask first" shows a confirmation when the child ticks an assignment, routine step or activity —
+              useful if accidental taps are common.
+            </Text>
+          </Section>
+
           <Section title="Parent PIN">
             <Text style={styles.hint} maxFontSizeMultiplier={MAX_FONT_SCALE}>
               The PIN protects Parent Mode. The default is 1234 — please change it.

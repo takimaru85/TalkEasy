@@ -6,4 +6,6 @@
 - Child-facing controls: tap only, >= 64pt, sized via `useSizes()`. Parent controls >= 56pt.
 - Screens never write SQL: screen -> hook -> repository -> SQLite. Emit `notify(topic)` after writes.
 - Schema changes are a NEW entry in `src/database/schema.ts` MIGRATIONS; never edit old ones.
-- Verify with `npm run typecheck` and `npm run check:db`.
+- Verify with `npm run typecheck`, `npm run check:db` and `npm run check:learning`.
+- Learning content lives in `src/learning/content`; it is code, not DB data. Emoji are the pictures (offline-safe).
+- Child screens use `ChildScreen` (Home button on the left). Parent screens use `ScreenContainer` + `ScreenHeader`.

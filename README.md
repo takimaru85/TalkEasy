@@ -1,19 +1,28 @@
 # TalkEasy
 
-A private, offline AAC (Augmentative and Alternative Communication) app for a child with
-cerebral palsy. One React Native + Expo + TypeScript codebase for Android and iPhone.
+A **private, offline-first companion app** for a Grade 2 child with cerebral palsy. One React
+Native + Expo + TypeScript codebase for Android and iPhone.
 
-* **Works with Wi-Fi off, mobile data off and airplane mode on.** There is no server, no
-  account, no login, no analytics, no crash reporting and no network code in the app.
-* **All data stays on the device** in a local SQLite database (`talkeasy.db`).
-* **Text-to-speech** uses the phone's built-in voice engine, which works offline.
-* **Designed for motor difficulties**: huge tap targets, large text, high contrast, tap-only
-  (no swipes, long-presses or drag-and-drop for the child), fixed button positions.
-* **Parent Mode** (behind a PIN, default `1234`) manages buttons, favorites, routine,
-  activities, care notes, speech and sizes. The child only ever sees the communication tabs.
+It combines:
 
-See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the architecture, database schema,
-navigation, component plan, accessibility strategy and offline strategy.
+| section | what it does |
+|---|---|
+| 🗣️ **Talk** (AAC) | Huge speaking buttons: basic needs, people, school phrases, feelings, custom phrases |
+| 🎒 **School** | Today's classes, every subject (teacher, schedule, things to bring, reminders, assignments), calendar |
+| 📝 **Assignments** | Child view: *📝 Math · 📅 Due Monday · ⬜ Not finished* → *✅ Completed* |
+| 📚 **Learn** | Grade 2 practice: English, Filipino, Math, Science, Araling Panlipunan, ESP — 32 activities, 3 difficulty levels |
+| 📅 **My Day** | Visual routine with NOW / NEXT, times, tick-off |
+| 🧩 **Activities** | Therapy/activity cards with instructions, duration, frequency, picture, done log |
+| ⭐ **Favorites** | Starred phrases + most-used |
+| 🏫 **School Mode** | One simplified classroom screen: 8 quick phrases, today's subjects, today's assignments |
+| 👨‍👩‍👧 **Parent** | PIN-protected dashboard + managers for everything above, care notes, progress, settings |
+
+**Privacy:** no server, no account, no analytics, no ads, no location, no network code. Everything
+is in one SQLite file (`talkeasy.db`) plus a private folder for photos, inside the app sandbox.
+Uninstalling removes all of it.
+
+Design docs: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) (architecture, folders, navigation,
+schema, offline strategy, accessibility, state management).
 
 ---
 
@@ -23,9 +32,9 @@ navigation, component plan, accessibility strategy and offline strategy.
 |------|---------|
 | Node.js | 20 or newer (tested on 24) |
 | npm | 10+ |
-| Expo Go app (for quick testing) | latest, from Play Store / App Store |
-| Android Studio (optional) | for an emulator / native build |
-| Xcode on a Mac (optional) | for the iOS simulator / native build |
+| Expo Go (quick testing) | latest from Play Store / App Store |
+| Android Studio (optional) | emulator / local native build |
+| Xcode on a Mac (optional) | iOS simulator / local native build |
 
 ## 2. Installation
 
@@ -37,10 +46,7 @@ cd TalkEasy
 npm install
 ```
 
-That is all. The native modules (`expo-sqlite`, `expo-speech`, `expo-haptics`, navigation)
-are already listed in `package.json` at versions matching Expo SDK 57.
-
-Useful checks (no device needed):
+Checks that need no device:
 
 ```bash
 npm run typecheck
@@ -50,105 +56,84 @@ npm run typecheck
 npm run check:db
 ```
 
-`check:db` runs the real migrations, seed data and reorder logic against an in-memory SQLite
-database and prints the tiles the child will see.
+```bash
+npm run check:learning
+```
+
+`check:db` runs the real migrations + seed against an in-memory SQLite for both a fresh install
+and a v1 → v2 upgrade. `check:learning` generates every learning activity at every difficulty
+(14,400 questions) and validates them.
 
 ## 3. Running the app
-
-Start the development server:
 
 ```bash
 npx expo start
 ```
 
-A QR code appears in the terminal. Then:
+* **Android phone** – Expo Go → *Scan QR code*.
+* **iPhone** – Camera app → point at the QR → tap the banner (opens Expo Go).
+* **Android emulator** – press `a` in the terminal (needs Android Studio + a running AVD).
+* **iOS simulator** (Mac) – press `i`.
 
-* **Android phone** – install **Expo Go** from the Play Store, open it, tap *Scan QR code*.
-* **iPhone** – install **Expo Go** from the App Store, open the **Camera** app and point it at
-  the QR code, tap the banner.
-* **Android emulator** – with Android Studio installed and an emulator running, press `a` in
-  the terminal.
-* **iOS simulator** (Mac only) – with Xcode installed, press `i` in the terminal.
+Same Wi-Fi is needed **only** for Expo Go to fetch the JavaScript from your computer. A built
+app (section 7) contains everything and never needs a network.
 
-The phone and computer must be on the same Wi-Fi for Expo Go **during development only** —
-the QR code is how the dev server sends the JavaScript bundle to the phone. Once the app is
-built and installed (section 6), it needs no network at all.
-
-If the QR code does not connect (corporate Wi-Fi etc.), use a USB cable and:
-
-```bash
-npx expo start --tunnel
-```
+> Expo Go note: Expo Go supports every module TalkEasy uses (SQLite, speech, audio, image
+> picker, document picker, file system, haptics). After changing plugins in `app.json`, restart
+> with `npx expo start -c`.
 
 ## 4. Testing on Android
 
-### Quick test with Expo Go
+| method | command / steps |
+|---|---|
+| Expo Go | `npx expo start`, scan QR |
+| Development build (own device or emulator) | `npx expo run:android` (needs Android Studio, JDK 17, USB debugging or a running AVD) |
+| Development build via EAS | `eas build --profile development --platform android`, install the APK, then `npx expo start --dev-client` |
+| Emulator | Android Studio → Device Manager → start an AVD → `npx expo start` → press `a` |
 
-1. `npx expo start`
-2. Scan the QR code in Expo Go.
-3. Turn on **airplane mode** on the phone *after* the app has loaded, then use every tab —
-   everything keeps working because nothing goes over the network.
-
-> Note: Expo Go itself needs the dev server once to load the code. The offline guarantee applies
-> to the built app (section 6), which contains the code.
-
-### Speech on Android
-
-Text-to-speech uses the phone's Google/Samsung TTS engine. Most phones ship with an offline
-English voice. If the voice is silent:
-
-1. Settings → Accessibility → Text-to-speech output.
-2. Pick an engine, tap the gear, *Install voice data*, download the language for offline use.
-3. In TalkEasy → Parent Mode → Settings → *Test the voice*.
-
-### Full native build on your own machine (optional)
-
-Requires Android Studio with an SDK and either an emulator or a USB-debugging phone:
-
-```bash
-npx expo run:android
-```
+Speech on Android uses the phone's TTS engine (Google "Speech Services" or Samsung TTS).
+If silent: Settings → Accessibility → Text-to-speech output → choose an engine → gear →
+*Install voice data* → English, then *Listen to an example*. If that example is silent,
+TalkEasy will be too. Media volume (not ringtone) must be up.
 
 ## 5. Testing on iPhone
 
-### Quick test with Expo Go
+| method | command / steps |
+|---|---|
+| Expo Go | `npx expo start`, scan QR with Camera |
+| iOS simulator (Mac only) | Xcode installed → `npx expo start` → press `i` |
+| Development build on a real iPhone | `npx expo run:ios --device` (Mac + Apple developer account) or `eas build --profile development --platform ios` |
 
-1. `npx expo start`
-2. Scan the QR code with the Camera app; it opens in Expo Go.
-3. Enable airplane mode after loading and confirm every feature still works.
+Apple voices work offline. For a nicer voice: Settings → Accessibility → Spoken Content →
+Voices → download an *Enhanced* English voice → choose it in TalkEasy → Parent → Settings.
+TalkEasy asks iOS to play through the ring/silent switch; if still silent, raise the volume with the
+side buttons *while the app is open* and disconnect Bluetooth audio.
 
-### Speech on iPhone
+## 6. Test checklist (what to verify on a real device)
 
-Apple's built-in voices work offline. For a nicer voice: Settings → Accessibility →
-Spoken Content → Voices → download an *Enhanced* English voice, then choose it in
-TalkEasy → Parent Mode → Settings → *Choose a voice*.
+Do these on the **built app** (or the development build), not only in Expo Go:
 
-### Full native build (Mac only)
+| test | how | expected |
+|---|---|---|
+| Airplane mode | Turn airplane mode on, open the app | Everything works: speaking, school, learn, assignments |
+| Wi-Fi off / mobile data off | Disable both, use every section | No errors, no "no connection" messages anywhere |
+| App restart | Add a custom phrase + an assignment, force-close, reopen | Both are still there |
+| Device restart | Restart the phone, reopen | Data still there, PIN still the one you set |
+| Database persistence | Parent → add subject schedule + tick a routine step; reopen | Schedule shows, tick preserved (until "Start a new day") |
+| Text-to-speech | Tap any tile; Parent → Settings → *Test the voice* | Phrase is spoken; *Speech check* shows "Spoken N of N" |
+| Large buttons | Parent → Settings → Button size *Extra large*, Text size *Extra large* | Tiles/labels scale on every child screen |
+| Assignment creation | Parent → Assignments → Add: Mathematics, "Answer pages 25-26", due Monday | Appears in child Assignments as *📝 … 📅 Due Mon … ⬜ Not finished*, on Calendar, in School Mode when due |
+| Assignment completion | Child taps the tick (or parent marks completed) | Card becomes *✅ Completed*; dashboard counts update |
+| School schedule | Parent → Subjects → Mathematics → add Mon 10:00–11:00 | Shows under School → Today on Mondays and in School Mode |
+| Parent PIN | Tap 👨‍👩‍👧 → wrong PIN → correct PIN (default 1234) → Settings → change PIN | Wrong PIN rejected; new PIN required next time |
+| Photo attachment | Parent → Edit assignment → *Take photo* / *Choose photo* | Photo shown in child detail; survives restart |
+| Learning | Learn → Mathematics → Counting → answer 6 questions | Stars appear; Parent → Progress shows the session |
+| School Mode at start | Parent → Settings → *Open the app in School Mode: Yes*; force-close, reopen | App opens on School Mode |
 
-```bash
-npx expo run:ios
-```
+## 7. Building an installable app
 
-## 5b. No sound? Checklist
-
-Open **Parent Mode → Settings → Speech** and tap *Test the voice*. The **Speech check** box
-shows how many phrases were requested vs. actually finished, and a checklist for your platform.
-
-* **iPhone**: raise the volume with the side buttons *while the app is open*; TalkEasy asks iOS to
-  play through the ring/silent switch, but check that Bluetooth audio is not capturing the sound.
-* **Android**: the *Media* volume (not ringtone) must be up, and a text-to-speech engine with
-  English voice data must be installed (Settings → Accessibility → Text-to-speech output →
-  *Listen to an example*). If that example is silent, TalkEasy will be too.
-* **Expo Go**: works, but after adding the `expo-audio` plugin restart the dev server with
-  `npx expo start -c`.
-
-## 6. Building an installable app
-
-Builds are done with **EAS Build** (Expo's build service) or locally. EAS needs a free Expo
-account **for the build step only** — the app itself never contacts Expo: `updates.enabled`
-is `false` in `app.json`, so it never checks for updates.
-
-One-time setup:
+EAS Build needs a free Expo account **for the build step only** — the app never contacts Expo
+(`updates.enabled: false`).
 
 ```bash
 npm install -g eas-cli
@@ -162,150 +147,80 @@ eas login
 eas build:configure
 ```
 
-### Android build (APK you can install directly)
+### Android APK (install directly)
 
 ```bash
 eas build --platform android --profile preview
 ```
 
-When it finishes, EAS prints a download link for an `.apk`. Copy it to the phone (or open the
-link on the phone), allow *Install unknown apps* for your browser/file manager, and install.
+Open the link EAS prints on the phone, allow *Install unknown apps*, install. For Google Play:
+`eas build --platform android --profile production` (AAB).
 
-For Google Play (AAB):
+Local build (Android Studio + JDK 17): `npx expo prebuild --platform android` then
+`cd android && ./gradlew assembleRelease` → `android/app/build/outputs/apk/release/app-release.apk`.
 
-```bash
-eas build --platform android --profile production
-```
+### iOS
 
-Local build without EAS (needs Android Studio + JDK 17):
-
-```bash
-npx expo prebuild --platform android
-```
-
-```bash
-cd android && ./gradlew assembleRelease
-```
-
-The APK is at `android/app/build/outputs/apk/release/app-release.apk`.
-
-### iOS build
-
-iOS requires an Apple Developer account ($99/yr) to install on a real iPhone.
-
-For your own iPhone (ad-hoc / internal distribution):
-
-```bash
-eas device:create
-```
-
-(registers your iPhone's UDID — follow the link on the phone), then:
+Needs an Apple Developer account. Register the iPhone once with `eas device:create`, then:
 
 ```bash
 eas build --platform ios --profile preview
 ```
 
-Install from the link EAS prints. For TestFlight / App Store:
+For TestFlight / App Store: `eas build --platform ios --profile production` then
+`eas submit --platform ios`. Local (Mac): `npx expo run:ios --configuration Release --device`.
 
-```bash
-eas build --platform ios --profile production
-```
-
-```bash
-eas submit --platform ios
-```
-
-Local build (Mac with Xcode):
-
-```bash
-npx expo run:ios --configuration Release --device
-```
-
-## 7. Project structure
+## 8. Project structure
 
 ```
 TalkEasy/
-├─ App.tsx                 Entry point: opens the database, then shows the navigator.
-├─ app.json                Expo config. Offline: updates disabled, no permissions requested.
-├─ eas.json                Build profiles (preview = APK / ad-hoc; production = store).
-├─ assets/                 App icon, splash and adaptive icon images (bundled).
-├─ docs/ARCHITECTURE.md    Design document.
-├─ scripts/check-db.ts     Data-layer sanity check runnable in Node.
+├─ App.tsx                    entry: opens DB, prepares audio, waits for settings, shows navigator
+├─ app.json                   Expo config: updates off, plugin permissions limited to photos/camera
+├─ eas.json                   build profiles (development / preview APK / production)
+├─ docs/ARCHITECTURE.md       design document
+├─ scripts/check-db.ts        migrations + seed + upgrade test (Node)
+├─ scripts/check-learning.ts  learning content validator (Node)
 └─ src/
-   ├─ types/               models.ts — the TypeScript shapes for every table + settings.
-   ├─ constants/           colors.ts (palette), sizes.ts (touch targets, font presets),
-   │                       icons.ts (icon catalogue for the picker), defaults.ts (seed data).
-   ├─ database/            SQLite layer.
-   │   ├─ db.ts            Opens talkeasy.db, runs migrations, seeds on first launch.
-   │   ├─ schema.ts        Versioned CREATE TABLE migrations.
-   │   ├─ seed.ts          Default categories, buttons, favorites, routine, exercises, settings.
-   │   ├─ reorder.ts       Shared Up/Down reorder helper.
-   │   ├─ events.ts        Tiny pub/sub so screens refresh after writes.
-   │   └─ repositories/    One file per table; the only place SQL is written.
-   ├─ services/speech.ts   Wrapper over expo-speech with graceful failure handling.
-   ├─ context/             SettingsContext — settings loaded once, available everywhere.
-   ├─ hooks/               useDbQuery + one hook per data type; useSizes; useSpeak.
+   ├─ types/models.ts         every domain type (buttons, subjects, assignments, events, …)
+   ├─ constants/              colors, sizes (touch targets, fonts), icons, defaults (seed), school (labels)
+   ├─ database/               db.ts (open/migrate/seed), schema.ts (migrations 1 & 2), seed.ts,
+   │                          reorder.ts, events.ts, repositories/ (one per table — the only SQL)
+   ├─ learning/               types, engine (question builders, RNG), content/{english,filipino,math,
+   │                          science,ap,esp}.ts, index.ts (registry)
+   ├─ services/               speech.ts (TTS + audio session), files.ts (photo/attachment import)
+   ├─ context/                SettingsContext
+   ├─ hooks/                  useDbQuery + one hook per data type, useSizes, useSpeak, useToday
    ├─ components/
-   │   ├─ common/          BigButton, ScreenHeader, PinPad, IconPicker, ColorPicker, ListRow…
-   │   └─ communication/   CommunicationTile, TileGrid, PhraseBanner, CategoryBar.
-   ├─ navigation/          RootNavigator (child tabs + PIN + parent stack), typed routes.
-   ├─ screens/
-   │   ├─ child/           Home (Talk), Feelings, Favorites, Routine, Activities.
-   │   └─ parent/          PIN, menu, manage buttons/favorites/routine/exercises/notes, settings.
-   └─ utils/               date formatting, confirm dialogs.
+   │  ├─ common/              BigButton, Icon (glyph or emoji), ChildScreen, ScreenHeader, PinPad,
+   │  │                       FormField, ChoiceRow, DateField, TimeField, IconPicker, ColorPicker,
+   │  │                       ListRow, EmptyState, SectionTitle, StatTile
+   │  ├─ communication/       CommunicationTile, TileGrid, PhraseBanner, CategoryBar
+   │  └─ school/              AssignmentCard, SubjectCard, EventRow, MonthGrid
+   ├─ navigation/             RootNavigator (child stack + PIN + parent), ParentStack, types
+   ├─ screens/child/          ChildHome, Communicate, SchoolMode, School, SubjectDetail, Assignments,
+   │                          AssignmentDetail, Calendar, Learn, LearnSubject, LearnActivity, MyDay,
+   │                          Activities, Favorites
+   ├─ screens/parent/         ParentPin, Dashboard, Manage*/Edit* for buttons, favorites, subjects,
+   │                          assignments, events, learning, routine, therapy, notes; Progress; Settings
+   └─ utils/                  date helpers, confirm dialogs
 ```
 
-### How data flows
+## 9. How to extend
 
-```
-Screen  ->  hook (useVisibleButtons)  ->  repository (buttonsRepo)  ->  SQLite
-   ^                                              |
-   └────── events.notify('buttons') triggers a refetch ──┘
-```
-
-Screens never contain SQL. To add a feature: add a table (new migration in `schema.ts`),
-a repository, a hook, then a screen.
-
-## 8. Adding new communication buttons
-
-### As a parent, in the app (recommended)
-
-1. Tap the **Parent** lock button (top right) → enter PIN (default **1234**).
-2. **Communication buttons → Add a new button**.
-3. Type the name shown on the tile and the sentence to speak, choose a category, color and
-   icon, optionally add it to Favorites, then **Save**.
-4. Use the ▲ ▼ arrows to change the order the child sees; the eye icon hides a default tile
-   without deleting it.
-
-### As a developer, as a default for new installs
-
-Edit `src/constants/defaults.ts` and append to `DEFAULT_BUTTONS`:
-
-```ts
-{ category: 'needs', label: 'Blanket', phrase: 'I want my blanket, please.', icon: 'bed', color: c('purple') },
-```
-
-* `category` is one of the keys in `DEFAULT_CATEGORIES` (`needs`, `people`, `choices`,
-  `body`, `feelings`, `custom`).
-* `icon` is any MaterialCommunityIcons name (browse at https://icons.expo.fyi, family
-  *MaterialCommunityIcons*). Add it to `src/constants/icons.ts` too so it appears in the picker.
-* `color` uses a key from `TileColors` in `src/constants/colors.ts`.
-
-Seeding only runs on a fresh install. To re-seed a development phone, uninstall and reinstall
-the app (or bump `SEED_FLAG` in `seed.ts`).
-
-To add a **new category**, append to `DEFAULT_CATEGORIES`; set `showOnHome: false` if it should
-have its own tab like Feelings (then add a screen + tab for it in `navigation/ChildTabs.tsx`).
-
-## 9. Changing the schema later
-
-Add a new object to `MIGRATIONS` in `src/database/schema.ts` with the next `version` number
-and the `ALTER TABLE` / `CREATE TABLE` SQL. Existing installs apply it on next launch; never
-edit an existing migration.
+* **New default phrase**: add a row to `DEFAULT_BUTTONS` in `src/constants/defaults.ts` and bump
+  `SEED_VERSION`; existing installs get it on next launch, parent deletions are respected.
+* **New learning activity**: add it to the subject's file in `src/learning/content/` (a bank + a
+  `LearningActivity`), append to that subject's `activities`. Run `npm run check:learning`.
+  Grade 3 later = new content files + a new subject entry; nothing else changes.
+* **New table**: append a migration to `MIGRATIONS` in `src/database/schema.ts`, add a repository,
+  a hook, a screen. Never edit an old migration.
+* **Backup/restore (future)**: copy `talkeasy.db` and the `talkeasy/` files folder — nothing else
+  holds data.
 
 ## 10. Privacy statement
 
-TalkEasy stores everything in the app's private storage on the device. It requests no
-permissions, makes no network requests, embeds no analytics or crash-reporting SDK, and has no
-account system. Uninstalling the app deletes all of its data. Care notes are a private record
-for caregivers and the app never interprets them; the app makes no medical judgements.
+TalkEasy stores everything in the app's private storage. It makes no network requests, embeds no
+analytics or crash-reporting SDK, shows no ads, has no account system and does not use location.
+The only permissions it can ask for are camera / photo library, and only when the parent taps
+*Take photo* / *Choose photo*. Care notes, progress and activity logs are private records for
+caregivers; the app never interprets them and gives no medical advice.

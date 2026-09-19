@@ -8,6 +8,9 @@ import { Icon } from './Icon';
 interface Props {
   title: string;
   onBack?: () => void;
+  /** Icon/label for the left button (defaults to a back arrow). Child screens pass 'home'. */
+  backIcon?: string;
+  backLabel?: string;
   /** Right-hand action (e.g. the parent lock button on child screens). */
   rightIcon?: string;
   rightLabel?: string;
@@ -18,7 +21,7 @@ interface Props {
  * Header with optional back button (left) and one optional action (right).
  * Both controls are square, at least 64pt, and always in the same position.
  */
-export function ScreenHeader({ title, onBack, rightIcon, rightLabel, onRightPress }: Props) {
+export function ScreenHeader({ title, onBack, backIcon = 'arrow-left', backLabel, rightIcon, rightLabel, onRightPress }: Props) {
   const sizes = useSizes();
   return (
     <View style={styles.row}>
@@ -27,11 +30,16 @@ export function ScreenHeader({ title, onBack, rightIcon, rightLabel, onRightPres
           <Pressable
             onPress={onBack}
             accessibilityRole="button"
-            accessibilityLabel="Back"
+            accessibilityLabel={backLabel ?? 'Back'}
             hitSlop={8}
             style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}
           >
-            <Icon name="arrow-left" size={34} color={Colors.text} />
+            <Icon name={backIcon} size={backLabel ? 30 : 34} color={Colors.text} />
+            {backLabel ? (
+              <Text style={styles.iconLabel} maxFontSizeMultiplier={MAX_FONT_SCALE}>
+                {backLabel}
+              </Text>
+            ) : null}
           </Pressable>
         ) : null}
       </View>

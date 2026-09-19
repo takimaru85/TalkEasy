@@ -43,7 +43,7 @@ export function ManageButtonsScreen({ navigation }: ParentScreenProps<'ManageBut
           <View key={category.id} style={styles.group}>
             <Text style={[styles.groupTitle, { fontSize: sizes.body + 2 }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
               {category.name}
-              {!category.showOnHome ? '  (own tab)' : ''}
+
             </Text>
             {list.length === 0 ? (
               <Text style={styles.empty} maxFontSizeMultiplier={MAX_FONT_SCALE}>No buttons in this category.</Text>

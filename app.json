@@ -46,7 +46,16 @@
           "recordAudioAndroid": false,
           "enableBackgroundPlayback": false
         }
-      ]
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "TalkEasy uses your photos only to attach a picture to an assignment or activity. Pictures stay on this device.",
+          "cameraPermission": "TalkEasy uses the camera only to photograph an assignment or activity. Photos stay on this device.",
+          "microphonePermission": false
+        }
+      ],
+      "expo-document-picker"
     ]
   }
 }
