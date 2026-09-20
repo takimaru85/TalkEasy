@@ -84,6 +84,7 @@ export function ChildHomeScreen({ navigation }: RootScreenProps<'ChildHome'>) {
   const nextReward = stars.nextReward;
   const rewardProgress = nextReward ? Math.min(1, stars.total / nextReward.starsRequired) : 1;
   const tileHeight = Math.max(sizes.tileHeight * 0.85, 118);
+  const tileWidth = `${Math.floor(100 / sizes.gridColumns) - 2}%` as const;
 
   return (
     <ScreenContainer>
@@ -159,7 +160,7 @@ export function ChildHomeScreen({ navigation }: RootScreenProps<'ChildHome'>) {
               accessibilityRole="button"
               accessibilityLabel={s.label}
               hitSlop={4}
-              style={{ width: '48%' }}
+              style={{ width: tileWidth }}
             >
               <View style={[styles.tile, theme.shadow, { height: tileHeight, backgroundColor: theme.tint(s.color), borderColor: theme.highContrast ? theme.colors.border : 'transparent', borderWidth: theme.highContrast ? theme.borderWidth : 0 }]}>
                 <Text style={[styles.tileEmoji, { fontSize: sizes.iconSize - 4 }]} allowFontScaling={false}>{s.emoji}</Text>
@@ -252,7 +253,7 @@ const styles = StyleSheet.create({
   planLabel: { flex: 1, fontFamily: Fonts.extrabold },
   planTime: { fontFamily: Fonts.bold, fontSize: 15 },
   question: { fontFamily: Fonts.bold, textAlign: 'center', marginTop: SPACING.xs },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-start' },
   tile: { borderRadius: Radius.lg, alignItems: 'center', justifyContent: 'center', gap: SPACING.xs, padding: SPACING.sm },
   tileEmoji: { lineHeight: 70 },
   tileLabel: { fontFamily: Fonts.extrabold, textAlign: 'center' },

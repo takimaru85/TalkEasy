@@ -8,6 +8,7 @@ import { ThemeProvider, useAppFonts } from '@/theme';
 import { getDb } from '@/database';
 import { RootNavigator } from '@/navigation/RootNavigator';
 import { prepareAudioSession } from '@/services/speech';
+import { useOrientationLock } from '@/hooks/useOrientationLock';
 import { Colors } from '@/constants/colors';
 
 type BootState = { status: 'loading' } | { status: 'ready' } | { status: 'error'; message: string };
@@ -61,6 +62,7 @@ export default function App() {
 /** Waits for settings + profile so the initial route, name and theme are right on first paint. */
 function NavigatorWhenLoaded() {
   const { loaded: settingsLoaded } = useSettings();
+  useOrientationLock();
   const { loaded: profileLoaded } = useProfile();
   if (!settingsLoaded || !profileLoaded) {
     return (

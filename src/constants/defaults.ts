@@ -296,4 +296,5 @@ export const DEFAULT_SETTINGS: AppSettings = {
   highContrast: false,
   reducedMotion: false,
   soundEnabled: true,
+  rotation: 'auto',
 };

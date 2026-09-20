@@ -411,4 +411,8 @@ export interface AppSettings {
   reducedMotion: boolean;
   /** Master switch for spoken feedback (TTS). Communication tiles still speak. */
   soundEnabled: boolean;
+  /** Screen rotation: 'auto' = landscape allowed on tablets only. */
+  rotation: RotationMode;
 }
+
+export type RotationMode = 'auto' | 'always' | 'portrait';
