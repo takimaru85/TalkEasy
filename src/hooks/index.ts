@@ -32,3 +32,4 @@ export type { Sizes } from './useSizes';
 export { useSpeak } from './useSpeak';
 export { useRewardList, useStarSummary, useStarHistory, useAwardStars } from './useRewards';
 export type { StarEventKind } from './useRewards';
+export { useOrientationLock } from './useOrientationLock';

@@ -1,10 +1,11 @@
 import { getDb } from '../db';
 import { notify } from '../events';
 import { DEFAULT_SETTINGS } from '@/constants/defaults';
-import type { AppSettings, Difficulty, SizeOption } from '@/types/models';
+import type { AppSettings, Difficulty, RotationMode, SizeOption } from '@/types/models';
 
 const SIZE_OPTIONS: SizeOption[] = ['medium', 'large', 'xlarge'];
 const DIFFICULTIES: Difficulty[] = ['easy', 'medium', 'hard'];
+const ROTATIONS: RotationMode[] = ['auto', 'always', 'portrait'];
 
 function parseBool(value: string | undefined, fallback: boolean): boolean {
   if (value === undefined) return fallback;
@@ -48,6 +49,7 @@ export const settingsRepo = {
       highContrast: parseBool(map.get('highContrast'), DEFAULT_SETTINGS.highContrast),
       reducedMotion: parseBool(map.get('reducedMotion'), DEFAULT_SETTINGS.reducedMotion),
       soundEnabled: parseBool(map.get('soundEnabled'), DEFAULT_SETTINGS.soundEnabled),
+      rotation: ROTATIONS.includes(map.get('rotation') as RotationMode) ? (map.get('rotation') as RotationMode) : DEFAULT_SETTINGS.rotation,
     };
   },
 

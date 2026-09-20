@@ -43,7 +43,7 @@ export function LearnScreen({ navigation }: RootScreenProps<'Learn'>) {
                 accessibilityRole="button"
                 accessibilityLabel={`${s.name}${isFav(s.name) ? ', favourite' : ''}${sessions ? `, ${sessions} sessions played` : ''}`}
                 hitSlop={4}
-                style={{ width: '48%' }}
+                style={{ width: `${Math.floor(100 / sizes.gridColumns) - 2}%` }}
               >
                 <View style={[styles.tile, theme.shadow, { height: Math.max(sizes.tileHeight, 130), backgroundColor: theme.tint(s.color), borderColor: theme.highContrast ? theme.colors.border : 'transparent', borderWidth: theme.highContrast ? theme.borderWidth : 0 }]}>
                   {isFav(s.name) ? <Text style={styles.fav} allowFontScaling={false}>⭐</Text> : null}
@@ -69,7 +69,7 @@ export function LearnScreen({ navigation }: RootScreenProps<'Learn'>) {
 const styles = StyleSheet.create({
   content: { paddingVertical: SPACING.sm, gap: SPACING.md, paddingBottom: SPACING.xl },
   intro: { fontFamily: Fonts.bold, textAlign: 'center' },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-start' },
   tile: { borderRadius: Radius.lg, alignItems: 'center', justifyContent: 'center', gap: SPACING.xs, padding: SPACING.sm },
   fav: { position: 'absolute', top: 10, right: 12, fontSize: 20 },
   emoji: { lineHeight: 80 },

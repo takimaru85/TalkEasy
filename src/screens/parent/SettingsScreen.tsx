@@ -7,7 +7,7 @@ import { useSettings } from '@/context/SettingsContext';
 import { useSizes } from '@/hooks';
 import type { ParentScreenProps } from '@/navigation/types';
 import { listVoices, onSpeechStatus, speakWithSettings, speechStatus, type SpeechStatus, type VoiceOption } from '@/services/speech';
-import type { SizeOption } from '@/types/models';
+import type { RotationMode, SizeOption } from '@/types/models';
 import { alertMessage } from '@/utils/confirm';
 import { Fonts } from '@/theme';
 
@@ -154,6 +154,22 @@ export function SettingsScreen({ navigation }: ParentScreenProps<'Settings'>) {
             />
             <Text style={styles.hint} maxFontSizeMultiplier={MAX_FONT_SCALE}>
               Communication cards always speak. This switch only affects extra feedback such as "Great job".
+            </Text>
+          </Section>
+
+          <Section title="Screen rotation">
+            <ChoiceRow<RotationMode>
+              label="Landscape"
+              value={settings.rotation}
+              onChange={(v) => updateSetting('rotation', v)}
+              choices={[
+                { value: 'auto', label: 'Tablets only' },
+                { value: 'always', label: 'Always allow' },
+                { value: 'portrait', label: 'Portrait only' },
+              ]}
+            />
+            <Text style={styles.hint} maxFontSizeMultiplier={MAX_FONT_SCALE}>
+              On a tablet the app can be used sideways; grids show more cards per row. Takes effect immediately.
             </Text>
           </Section>
 
