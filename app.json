@@ -32,7 +32,9 @@
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "permissions": []
+      "permissions": [
+        "android.permission.MODIFY_AUDIO_SETTINGS"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -55,7 +57,13 @@
           "microphonePermission": false
         }
       ],
-      "expo-document-picker"
-    ]
+      "expo-document-picker",
+      "expo-font"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "0f780985-f427-47a4-acd7-9cbf6b36eebb"
+      }
+    }
   }
 }

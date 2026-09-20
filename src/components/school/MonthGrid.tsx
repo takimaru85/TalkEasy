@@ -5,6 +5,7 @@ import { MAX_FONT_SCALE, MIN_PARENT_TARGET, SPACING } from '@/constants/sizes';
 import type { CalendarEntry } from '@/types/models';
 import { addDays, monthRange, parseIsoDate, toIsoDate } from '@/utils/date';
 import { Icon } from '@/components/common/Icon';
+import { Fonts } from '@/theme';
 
 interface Props {
   /** Any ISO date inside the month to show. */
@@ -120,9 +121,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  title: { fontSize: 22, fontWeight: '800', color: Colors.text },
+  title: { fontSize: 22, fontFamily: Fonts.extrabold, color: Colors.text },
   weekRow: { flexDirection: 'row' },
-  weekday: { flex: 1, textAlign: 'center', fontWeight: '800', color: Colors.textMuted, fontSize: 15 },
+  weekday: { flex: 1, textAlign: 'center', fontFamily: Fonts.extrabold, color: Colors.textMuted, fontSize: 15 },
   grid: { flexDirection: 'row', flexWrap: 'wrap' },
   cell: { width: `${100 / 7}%`, aspectRatio: 0.9, padding: 2 },
   dayCell: {
@@ -136,7 +137,7 @@ const styles = StyleSheet.create({
   },
   today: { borderColor: Colors.primaryDark, borderWidth: 3, backgroundColor: '#E3ECFF' },
   selected: { backgroundColor: Colors.selected, borderColor: Colors.border, borderWidth: 3 },
-  dayText: { fontSize: 18, fontWeight: '800', color: Colors.text },
+  dayText: { fontSize: 18, fontFamily: Fonts.extrabold, color: Colors.text },
   todayText: { color: Colors.primaryDark },
   dots: { flexDirection: 'row', gap: 3, minHeight: 8 },
   dot: { width: 8, height: 8, borderRadius: 4, borderWidth: 1, borderColor: Colors.border },

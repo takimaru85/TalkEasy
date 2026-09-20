@@ -11,6 +11,7 @@ import { deleteImported, pickAttachment, pickPhoto } from '@/services/files';
 import type { AssignmentKind, AssignmentPriority, AssignmentStatus } from '@/types/models';
 import { alertMessage, confirm } from '@/utils/confirm';
 import { toIsoDate } from '@/utils/date';
+import { Fonts } from '@/theme';
 
 /** Create / edit an assignment, project or exam — with optional photo and attachment. */
 export function EditAssignmentScreen({ navigation, route }: ParentScreenProps<'EditAssignment'>) {
@@ -163,9 +164,9 @@ export function EditAssignmentScreen({ navigation, route }: ParentScreenProps<'E
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   form: { padding: SPACING.lg, gap: SPACING.md, paddingBottom: SPACING.xl * 2 },
-  label: { fontWeight: '700', color: Colors.text },
+  label: { fontFamily: Fonts.bold, color: Colors.text },
   row: { flexDirection: 'row', gap: SPACING.sm },
   half: { flex: 1 },
   photo: { width: '100%', aspectRatio: 4 / 3, borderRadius: RADIUS.tile, borderWidth: 2, borderColor: Colors.border },
-  attachment: { color: Colors.text, fontSize: 16, fontWeight: '600' },
+  attachment: { color: Colors.text, fontSize: 16, fontFamily: Fonts.semibold },
 });

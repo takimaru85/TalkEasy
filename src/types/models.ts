@@ -30,6 +30,8 @@ export interface CommunicationButton {
   /** Full sentence spoken aloud and shown in the phrase banner. */
   phrase: string;
   icon: IconName;
+  /** Optional photo (e.g. a real picture of Mom) shown instead of the icon. */
+  imageUri: string | null;
   color: string;
   sortOrder: number;
   isSystem: boolean;
@@ -45,6 +47,7 @@ export interface CommunicationButtonInput {
   label: string;
   phrase: string;
   icon: IconName;
+  imageUri: string | null;
   color: string;
 }
 
@@ -75,13 +78,21 @@ export interface RoutineItem {
   isDone: boolean;
   /** Optional 'HH:MM' (24h). */
   startTime: string | null;
+  /** Which part of the day this step belongs to. */
+  segment: RoutineSegment;
+  /** Optional short note shown on the card, e.g. "Blue bag today". */
+  notes: string;
 }
+
+export type RoutineSegment = 'morning' | 'school' | 'afternoon' | 'evening';
 
 // ---------------------------------------------------------------------------
 // Therapy / activities
 // ---------------------------------------------------------------------------
 
 export type ActivityFrequency = 'daily' | 'weekdays' | 'weekly' | 'as_needed';
+
+export type ActivityCategory = 'games' | 'art' | 'music' | 'exercise' | 'reading' | 'outdoor' | 'sensory' | 'chores' | 'therapy';
 
 export interface TherapyActivity {
   id: number;
@@ -90,6 +101,7 @@ export interface TherapyActivity {
   instructions: string;
   durationMinutes: number;
   frequency: ActivityFrequency;
+  category: ActivityCategory;
   imageUri: string | null;
   isCompleted: boolean;
   completedAt: string | null;
@@ -103,6 +115,7 @@ export interface TherapyActivityInput {
   instructions: string;
   durationMinutes: number;
   frequency: ActivityFrequency;
+  category: ActivityCategory;
   imageUri: string | null;
 }
 
@@ -273,6 +286,89 @@ export interface LearningSubjectStats {
 }
 
 // ---------------------------------------------------------------------------
+// Child profile & rewards
+// ---------------------------------------------------------------------------
+
+/** Theme accent chosen for the child ("favourite colour"). */
+export type ThemeColorKey = 'blue' | 'green' | 'yellow' | 'purple' | 'coral' | 'teal' | 'orange';
+
+export interface ProfileFavorites {
+  subjects: string[];
+  activities: string[];
+  foods: string[];
+  people: string[];
+}
+
+export interface CommunicationPreferences {
+  /** Show the "Recent" strip on the Talk screen. */
+  showRecent: boolean;
+  /** "I want..." style starters compose with the next tile ("I want water"). */
+  sentenceBuilder: boolean;
+  /** Speak the whole sentence ("I want water, please.") or just the label ("Water"). */
+  speakFullPhrase: boolean;
+}
+
+export interface RewardPreferences {
+  /** Stars granted per event type. */
+  starsPerLearningSession: number;
+  starsPerPerfectSession: number;
+  starsPerRoutineStep: number;
+  starsPerActivity: number;
+  starsPerAssignment: number;
+  /** Spoken/shown when a star is earned. The text {name} is replaced with the child's name. */
+  celebrationMessage: string;
+}
+
+export interface ChildProfile {
+  id: number;
+  name: string;
+  nickname: string;
+  age: number | null;
+  grade: string;
+  school: string;
+  /** Emoji avatar, used when there is no photo. */
+  avatar: string;
+  photoUri: string | null;
+  favoriteColor: ThemeColorKey;
+  favorites: ProfileFavorites;
+  communication: CommunicationPreferences;
+  rewards: RewardPreferences;
+  learningGoals: string;
+  difficulty: Difficulty;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export type ChildProfileInput = Omit<ChildProfile, 'id' | 'isActive' | 'createdAt'>;
+
+export interface Reward {
+  id: number;
+  title: string;
+  icon: IconName;
+  starsRequired: number;
+  sortOrder: number;
+  createdAt: string;
+}
+
+export type StarSource = 'learning' | 'routine' | 'activity' | 'assignment' | 'manual' | 'reward';
+
+export interface StarEvent {
+  id: number;
+  /** Positive = earned, negative = spent on a reward. */
+  amount: number;
+  reason: string;
+  source: StarSource;
+  createdAt: string;
+}
+
+export interface StarSummary {
+  total: number;
+  earnedToday: number;
+  /** Next reward not yet affordable, or null when every reward is reachable. */
+  nextReward: Reward | null;
+}
+
+// ---------------------------------------------------------------------------
 // Notes & settings
 // ---------------------------------------------------------------------------
 
@@ -309,4 +405,10 @@ export interface AppSettings {
   learningDifficulty: Difficulty;
   /** Ask "Are you sure?" before the child marks something done. */
   confirmComplete: boolean;
+  /** Stronger borders, black-on-white text, no tinted backgrounds. */
+  highContrast: boolean;
+  /** Disable tap/celebration animations and screen transitions. */
+  reducedMotion: boolean;
+  /** Master switch for spoken feedback (TTS). Communication tiles still speak. */
+  soundEnabled: boolean;
 }

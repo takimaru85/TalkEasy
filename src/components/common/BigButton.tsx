@@ -1,9 +1,10 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
-import { Colors } from '@/constants/colors';
-import { MAX_FONT_SCALE, MIN_CHILD_TARGET, RADIUS, SPACING } from '@/constants/sizes';
+import { StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import { MAX_FONT_SCALE, MIN_CHILD_TARGET, SPACING } from '@/constants/sizes';
 import { useSizes } from '@/hooks/useSizes';
+import { Fonts, Radius, useTheme } from '@/theme';
 import { Icon } from './Icon';
+import { PressableScale } from './PressableScale';
 
 type Variant = 'primary' | 'secondary' | 'danger' | 'success' | 'outline';
 
@@ -22,14 +23,6 @@ interface Props {
   compact?: boolean;
 }
 
-const VARIANTS: Record<Variant, { bg: string; fg: string; border: string }> = {
-  primary: { bg: Colors.primary, fg: Colors.textOnDark, border: Colors.primaryDark },
-  secondary: { bg: Colors.surface, fg: Colors.text, border: Colors.border },
-  danger: { bg: Colors.danger, fg: Colors.textOnDark, border: '#8E1B1B' },
-  success: { bg: Colors.success, fg: Colors.textOnDark, border: '#0F5E28' },
-  outline: { bg: Colors.background, fg: Colors.text, border: Colors.border },
-};
-
 /**
  * Generic large button. Used for all secondary actions in child mode and everything in
  * parent mode. Never smaller than MIN_CHILD_TARGET unless `minHeight` says otherwise.
@@ -47,58 +40,63 @@ export function BigButton({
   compact = false,
 }: Props) {
   const sizes = useSizes();
-  const v = VARIANTS[variant];
+  const theme = useTheme();
+  const c = theme.colors;
+
+  const palette: Record<Variant, { bg: string; fg: string; border: string }> = {
+    primary: { bg: c.primary, fg: '#FFFFFF', border: c.primaryDark },
+    secondary: { bg: theme.tint(c.primarySoft), fg: c.text, border: theme.highContrast ? c.border : c.primarySoft },
+    danger: { bg: c.danger, fg: '#FFFFFF', border: c.danger },
+    success: { bg: c.success, fg: '#FFFFFF', border: c.success },
+    outline: { bg: c.surface, fg: c.text, border: c.border },
+  };
+  const v = palette[variant];
 
   return (
-    <Pressable
+    <PressableScale
       onPress={onPress}
       disabled={disabled}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel ?? label}
       accessibilityState={{ disabled }}
       hitSlop={6}
-      style={({ pressed }) => [
-        styles.base,
-        {
-          minHeight,
-          backgroundColor: disabled ? Colors.disabled : v.bg,
-          borderColor: disabled ? '#9E9E9E' : v.border,
-          opacity: pressed ? 0.85 : 1,
-          alignSelf: fullWidth ? 'stretch' : 'flex-start',
-          paddingHorizontal: compact ? SPACING.md : SPACING.xl,
-        },
-        style,
-      ]}
+      style={[{ alignSelf: fullWidth ? 'stretch' : 'flex-start' }, style]}
     >
-      <View style={styles.content}>
-        {icon ? <Icon name={icon} size={compact ? 26 : 32} color={v.fg} /> : null}
-        <Text
-          style={[styles.label, { color: v.fg, fontSize: compact ? sizes.buttonLabel - 2 : sizes.buttonLabel }]}
-          maxFontSizeMultiplier={MAX_FONT_SCALE}
-          numberOfLines={2}
-        >
-          {label}
-        </Text>
+      <View
+        style={[
+          styles.base,
+          theme.highContrast ? {} : variant === 'primary' || variant === 'success' || variant === 'danger' ? theme.shadow : {},
+          {
+            minHeight,
+            backgroundColor: disabled ? '#C9CED9' : v.bg,
+            borderColor: disabled ? '#9AA1AE' : v.border,
+            borderWidth: theme.highContrast ? theme.borderWidth : variant === 'outline' ? 2 : 1.5,
+            paddingHorizontal: compact ? SPACING.md : SPACING.xl,
+          },
+        ]}
+      >
+        <View style={styles.content}>
+          {icon ? <Icon name={icon} size={compact ? 26 : 30} color={disabled ? '#5B6478' : v.fg} /> : null}
+          <Text
+            style={[styles.label, { color: disabled ? '#3A3F4A' : v.fg, fontSize: compact ? sizes.buttonLabel - 2 : sizes.buttonLabel }]}
+            maxFontSizeMultiplier={MAX_FONT_SCALE}
+            numberOfLines={2}
+          >
+            {label}
+          </Text>
+        </View>
       </View>
-    </Pressable>
+    </PressableScale>
   );
 }
 
 const styles = StyleSheet.create({
   base: {
-    borderRadius: RADIUS.button,
-    borderWidth: 3,
+    borderRadius: Radius.md,
     justifyContent: 'center',
     alignItems: 'center',
     paddingVertical: SPACING.md,
   },
-  content: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.md,
-  },
-  label: {
-    fontWeight: '700',
-    textAlign: 'center',
-  },
+  content: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md },
+  label: { fontFamily: Fonts.extrabold, textAlign: 'center' },
 });

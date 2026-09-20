@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { Colors } from '@/constants/colors';
-import { MAX_FONT_SCALE, MIN_CHILD_TARGET, RADIUS, SPACING } from '@/constants/sizes';
+import { MAX_FONT_SCALE, MIN_CHILD_TARGET, SPACING } from '@/constants/sizes';
+import { Fonts, Radius, useTheme } from '@/theme';
 import { Icon } from '@/components/common/Icon';
 import type { Category } from '@/types/models';
 
@@ -10,19 +10,37 @@ interface Props {
   /** null = "All" */
   selectedId: number | null;
   onSelect: (id: number | null) => void;
+  /** How many category pills to show before "More" (progressive disclosure). */
+  visibleCount?: number;
 }
 
-const ALL_ID = null;
-
 /**
- * Category buttons. "All" is always first and the order never changes.
- * The row WRAPS instead of scrolling sideways, so the child never needs a swipe gesture.
- * Categories without any visible buttons are not passed in (see categoriesRepo.getHomeCategories).
+ * Category pills. "All" is always first and the order never changes. Only the first few
+ * categories are shown; a "More" pill reveals the rest in place — no sideways scrolling,
+ * so the child never needs a swipe gesture. The selected pill is marked by a filled
+ * background AND a check icon, not by colour alone.
  */
-export function CategoryBar({ categories, selectedId, onSelect }: Props) {
+export function CategoryBar({ categories, selectedId, onSelect, visibleCount = 4 }: Props) {
+  const theme = useTheme();
+  const [expanded, setExpanded] = useState(false);
+
+  const selectedHidden = selectedId !== null && categories.findIndex((c) => c.id === selectedId) >= visibleCount;
+  const showAll = expanded || selectedHidden || categories.length <= visibleCount + 1;
+  const shown = showAll ? categories : categories.slice(0, visibleCount);
+
   const items: { id: number | null; name: string; icon: string; color: string }[] = [
-    { id: ALL_ID, name: 'All', icon: 'view-grid', color: Colors.surface },
-    ...categories.map((c) => ({ id: c.id, name: c.name, icon: c.icon, color: c.color })),
+    { id: null, name: 'All', icon: 'view-grid', color: theme.colors.primarySoft },
+    ...shown.map((c) => ({ id: c.id, name: c.name, icon: c.icon, color: c.color })),
+  ];
+
+  const pillBase = (selected: boolean, color: string) => [
+    styles.pill,
+    theme.shadow,
+    {
+      backgroundColor: selected ? theme.colors.primary : theme.tint(color),
+      borderColor: selected ? theme.colors.primaryDark : theme.highContrast ? theme.colors.border : 'transparent',
+      borderWidth: theme.highContrast ? theme.borderWidth : selected ? 1.5 : 0,
+    },
   ];
 
   return (
@@ -37,15 +55,32 @@ export function CategoryBar({ categories, selectedId, onSelect }: Props) {
             accessibilityLabel={`${item.name} category`}
             accessibilityState={{ selected }}
             hitSlop={4}
-            style={[styles.chip, { backgroundColor: item.color }, selected && styles.chipSelected]}
+            style={pillBase(selected, item.color)}
           >
-            <Icon name={item.icon} size={26} color={Colors.text} />
-            <Text style={styles.chipLabel} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={1}>
+            <Icon name={selected ? 'check-bold' : item.icon} size={24} color={selected ? '#FFFFFF' : theme.colors.text} />
+            <Text style={[styles.label, { color: selected ? '#FFFFFF' : theme.colors.text }]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={1}>
               {item.name}
             </Text>
           </Pressable>
         );
       })}
+      {!showAll ? (
+        <Pressable
+          onPress={() => setExpanded(true)}
+          accessibilityRole="button"
+          accessibilityLabel={`More categories, ${categories.length - visibleCount} more`}
+          hitSlop={4}
+          style={pillBase(false, theme.colors.surfaceAlt)}
+        >
+          <Icon name="dots-horizontal-circle" size={24} color={theme.colors.text} />
+          <Text style={[styles.label, { color: theme.colors.text }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>More</Text>
+        </Pressable>
+      ) : expanded ? (
+        <Pressable onPress={() => setExpanded(false)} accessibilityRole="button" accessibilityLabel="Fewer categories" hitSlop={4} style={pillBase(false, theme.colors.surfaceAlt)}>
+          <Icon name="chevron-up" size={24} color={theme.colors.text} />
+          <Text style={[styles.label, { color: theme.colors.text }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>Less</Text>
+        </Pressable>
+      ) : null}
     </View>
   );
 }
@@ -58,18 +93,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.lg,
     marginBottom: SPACING.sm,
   },
-  chip: {
+  pill: {
     flexGrow: 1,
     flexBasis: '30%',
-    height: MIN_CHILD_TARGET + 4,
+    minHeight: MIN_CHILD_TARGET,
     paddingHorizontal: SPACING.sm,
-    borderRadius: RADIUS.button,
-    borderWidth: 3,
-    borderColor: Colors.border,
+    borderRadius: Radius.md,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 1,
+    gap: 6,
   },
-  chipSelected: { borderColor: Colors.primaryDark, borderWidth: 5, backgroundColor: '#FFF7CC' },
-  chipLabel: { fontSize: 16, fontWeight: '800', color: Colors.text },
+  label: { fontFamily: Fonts.extrabold, fontSize: 16 },
 });

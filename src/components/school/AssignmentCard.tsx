@@ -7,6 +7,7 @@ import { useSizes } from '@/hooks/useSizes';
 import type { AssignmentWithSubject } from '@/types/models';
 import { describeDueDate, isPast } from '@/utils/date';
 import { Icon } from '@/components/common/Icon';
+import { Fonts } from '@/theme';
 
 interface Props {
   assignment: AssignmentWithSubject;
@@ -87,10 +88,10 @@ const styles = StyleSheet.create({
   pressed: { opacity: 0.8 },
   iconBox: { width: 56, alignItems: 'center' },
   text: { flex: 1, gap: 2 },
-  subject: { fontWeight: '700', color: Colors.textMuted },
-  title: { fontWeight: '800', color: Colors.text },
+  subject: { fontFamily: Fonts.bold, color: Colors.textMuted },
+  title: { fontFamily: Fonts.extrabold, color: Colors.text },
   titleDone: { textDecorationLine: 'line-through', color: Colors.textMuted },
-  meta: { fontWeight: '700', color: Colors.text },
+  meta: { fontFamily: Fonts.bold, color: Colors.text },
   metaOverdue: { color: Colors.danger },
   check: {
     width: 56,

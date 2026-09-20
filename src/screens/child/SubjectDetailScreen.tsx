@@ -8,6 +8,7 @@ import { MAX_FONT_SCALE, RADIUS, SPACING } from '@/constants/sizes';
 import { useSizes, useSpeak, useSubject, useSubjectAssignments, useSubjectMaterials, useSubjectSchedule, useToday } from '@/hooks';
 import type { RootScreenProps } from '@/navigation/types';
 import { formatTime } from '@/utils/date';
+import { Fonts } from '@/theme';
 
 /** One subject: teacher, weekly schedule, things to bring, notes, and its assignments. */
 export function SubjectDetailScreen({ navigation, route }: RootScreenProps<'SubjectDetail'>) {
@@ -104,8 +105,8 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
   },
   heroText: { flex: 1, gap: 4 },
-  heroName: { fontWeight: '900', color: Colors.text },
-  heroTeacher: { fontWeight: '700', color: Colors.text },
+  heroName: { fontFamily: Fonts.black, color: Colors.text },
+  heroTeacher: { fontFamily: Fonts.bold, color: Colors.text },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -117,8 +118,8 @@ const styles = StyleSheet.create({
     borderColor: '#CFCFCF',
     backgroundColor: Colors.surface,
   },
-  rowDay: { fontWeight: '800', color: Colors.text, flex: 1 },
-  rowTime: { fontWeight: '700', color: Colors.textMuted },
+  rowDay: { fontFamily: Fonts.extrabold, color: Colors.text, flex: 1 },
+  rowTime: { fontFamily: Fonts.bold, color: Colors.textMuted },
   notes: { color: Colors.text, lineHeight: 30 },
-  empty: { color: Colors.textMuted, fontWeight: '600' },
+  empty: { color: Colors.textMuted, fontFamily: Fonts.semibold },
 });

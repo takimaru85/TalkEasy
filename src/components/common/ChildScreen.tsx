@@ -13,6 +13,7 @@ interface Props {
   rightIcon?: string;
   rightLabel?: string;
   onRightPress?: () => void;
+  emoji?: string;
 }
 
 /**
@@ -20,11 +21,11 @@ interface Props {
  * (or a back arrow on nested screens). Same layout on every section so the child always
  * knows where the way back is.
  */
-export function ChildScreen({ title, children, back = false, rightIcon, rightLabel, onRightPress }: Props) {
+export function ChildScreen({ title, children, back = false, rightIcon, rightLabel, onRightPress, emoji }: Props) {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const goHome = () => navigation.navigate('ChildHome');
   return (
-    <ScreenContainer edges={['top', 'bottom', 'left', 'right']}>
+    <ScreenContainer>
       <ScreenHeader
         title={title}
         onBack={back ? () => navigation.goBack() : goHome}
@@ -33,6 +34,7 @@ export function ChildScreen({ title, children, back = false, rightIcon, rightLab
         rightIcon={rightIcon}
         rightLabel={rightLabel}
         onRightPress={onRightPress}
+        emoji={emoji}
       />
       {children}
     </ScreenContainer>

@@ -1,4 +1,4 @@
-# TalkEasy v2 — Architecture
+# TalkEasy — Architecture (v2 core, v3 personalisation below)
 
 TalkEasy is a **private, offline-first companion app** for a Grade 2 child with cerebral palsy.
 It combines AAC communication, school organisation, assignments, Grade 2 learning practice,
@@ -180,3 +180,50 @@ No Redux/MobX: the app is CRUD over a local DB, so the DB is the source of truth
   result is persisted.
 * Future backup/restore = copying `talkeasy.db` + the `talkeasy/` files folder, which is why
   nothing important lives outside them.
+
+---
+
+# v3 additions — personalisation & design system
+
+## Child profile (`child_profile`, migration 3)
+
+One active row (the table supports more, so a second child can be added later without a schema
+change). `ProfileContext` loads it once; nothing in the UI hard-codes a name. Fields:
+
+| field | used by |
+|---|---|
+| `name`, `nickname` | greeting ("Good morning, Brayden!"), praise, section titles ("Brayden's favorites") |
+| `age`, `grade`, `school` | parent reference |
+| `avatar` (emoji) / `photo_uri` | Home greeting card, profile |
+| `favorite_color` | the app accent (`ThemeProvider` → `ACCENTS[key]`) |
+| `favorites_json` `{subjects, activities, foods, people}` | Learn ordering, "Continue learning" suggestion |
+| `communication_json` `{showRecent, sentenceBuilder, speakFullPhrase}` | Talk screen behaviour |
+| `rewards_json` `{starsPer…, celebrationMessage}` | `useAwardStars()`; `{name}` is substituted |
+| `learning_goals`, `difficulty` | Learn (difficulty replaces the old global setting) |
+
+## Rewards (`rewards`, `star_events`)
+
+`star_events` is a ledger (+earned / −spent). Stars are granted by `useAwardStars(kind)` from the
+profile's per-event amounts: learning session, perfect session bonus, routine step, activity,
+assignment. Parents define rewards (title, icon, stars) and "give" one, which writes a negative
+event. `rewardsRepo.getSummary()` returns total, earned-today and the next reachable reward.
+
+## Design system (`src/theme`)
+
+* `tokens.ts` — `ACCENTS` (7 favourite-colour palettes: strong / dark / soft / page tint),
+  `Fonts` (Nunito 500–900, bundled per weight), `Radius`, `Shadow`, `Motion`.
+* `ThemeContext.tsx` — `useTheme()` derives colours from the accent + **high contrast** (black
+  borders, white surfaces, no tints) + **reduced motion** (`duration()` returns 0; page
+  transitions off; `Celebration` renders nothing).
+* Components: `Card`, `PressableScale` (the single tap-animation), `Avatar`, `ProgressBar`,
+  `Celebration`, restyled `BigButton` / `ScreenHeader` / `CommunicationTile` / `PhraseBanner` /
+  `CategoryBar`. Every state is shown with an icon or text as well as colour.
+* Communication tiles can carry a photo (`communication_buttons.image_uri`).
+* Sentence builder: a phrase ending in `...` is a starter; the next tile completes it
+  ("I want..." + "Water" → "I want water.").
+
+## Routine segments & activity categories
+
+`routine_items.segment` (morning / school / afternoon / evening) groups My Day and lets the parent
+maintain morning, school, after-school and bedtime routines in one list. `therapy_activities.category`
+(games, art, music, exercise, reading, outdoor, sensory, chores, therapy) groups Activities.

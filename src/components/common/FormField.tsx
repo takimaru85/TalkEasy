@@ -3,6 +3,7 @@ import { StyleSheet, Text, TextInput, View, type TextInputProps } from 'react-na
 import { Colors } from '@/constants/colors';
 import { MAX_FONT_SCALE, MIN_PARENT_TARGET, RADIUS, SPACING } from '@/constants/sizes';
 import { useSizes } from '@/hooks/useSizes';
+import { Fonts } from '@/theme';
 
 interface Props extends TextInputProps {
   label: string;
@@ -37,7 +38,7 @@ export function FormField({ label, hint, style, multiline, ...rest }: Props) {
 
 const styles = StyleSheet.create({
   wrap: { gap: SPACING.sm },
-  label: { fontWeight: '700', color: Colors.text },
+  label: { fontFamily: Fonts.bold, color: Colors.text },
   input: {
     borderWidth: 2,
     borderColor: Colors.border,

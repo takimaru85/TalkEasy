@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Colors } from '@/constants/colors';
 import { MAX_FONT_SCALE, SPACING } from '@/constants/sizes';
 import { Icon } from './Icon';
+import { Fonts } from '@/theme';
 
 interface Props {
   length?: number;
@@ -94,6 +95,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   keyPressed: { backgroundColor: Colors.selected },
-  keyText: { fontSize: 36, fontWeight: '800', color: Colors.text },
-  keyTextSmall: { fontSize: 20, fontWeight: '700', color: Colors.text },
+  keyText: { fontSize: 36, fontFamily: Fonts.extrabold, color: Colors.text },
+  keyTextSmall: { fontSize: 20, fontFamily: Fonts.bold, color: Colors.text },
 });

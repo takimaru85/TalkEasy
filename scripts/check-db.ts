@@ -56,9 +56,16 @@ async function freshInstall() {
   console.log('school:', labels(raw, `SELECT b.label FROM communication_buttons b JOIN categories c ON c.id=b.category_id WHERE c.key='school' ORDER BY b.sort_order`));
   console.log('favorites:', labels(raw, `SELECT b.label FROM favorites f JOIN communication_buttons b ON b.id=f.button_id ORDER BY f.sort_order`));
   console.log('subjects:', labels(raw, 'SELECT name FROM subjects ORDER BY sort_order'));
-  assert(count(raw, 'categories') === 5, 'five categories');
+  assert(count(raw, 'categories') === 11, 'eleven categories');
+  assert(count(raw, 'child_profile') === 1, 'demo profile seeded');
+  assert((raw.prepare('SELECT name FROM child_profile').get() as any).name === 'Brayden', 'profile name');
+  assert(count(raw, 'rewards') === 3, 'three rewards');
+  assert(count(raw, 'routine_items') === 12, 'twelve routine steps');
+  assert((raw.prepare("SELECT segment FROM routine_items WHERE label='Bedtime'").get() as any).segment === 'evening', 'segment seeded');
+  raw.prepare("INSERT INTO star_events (amount, reason, source, created_at) VALUES (3, 'test', 'manual', 'x')").run();
+  assert((raw.prepare('SELECT SUM(amount) AS t FROM star_events').get() as any).t === 3, 'star ledger');
   assert(count(raw, 'subjects') === 7, 'seven subjects');
-  assert(count(raw, 'favorites') === 7, 'seven favorites');
+  assert(count(raw, 'favorites') === 8, 'eight favorites');
 
   // Assignments + events + schedule smoke test
   const subj = (raw.prepare(`SELECT id FROM subjects WHERE name='Mathematics'`).get() as any).id;
@@ -101,12 +108,17 @@ async function upgradeFromV1() {
   raw.prepare(`INSERT INTO exercises (name,icon,instructions,duration_minutes,is_completed,sort_order,created_at) VALUES ('Arm stretch','arm-flex','',5,0,0,'x')`).run();
   raw.prepare(`INSERT INTO routines (name,is_active,created_at) VALUES ('My day',1,'x')`).run();
   raw.prepare(`INSERT INTO routine_items (routine_id,label,icon,sort_order,is_done) VALUES (1,'Wake up','x',0,0)`).run();
+  // (start_time column exists only after migration 2; set it after migrating)
 
+  migrate(raw, 2);
+  raw.prepare("UPDATE routine_items SET start_time='06:30' WHERE label='Wake up'").run();
   migrate(raw, 99);
   await seedIfNeeded(makeShim(raw));
 
   console.log('categories:', labels(raw, 'SELECT name FROM categories ORDER BY sort_order'));
-  assert(count(raw, 'categories') === 5, 'choices/body merged, school added');
+  assert(count(raw, 'categories') === 11, 'choices/body merged, new categories added');
+  assert(count(raw, 'child_profile') === 1, 'profile created on upgrade');
+  assert((raw.prepare("SELECT segment FROM routine_items WHERE label='Wake up'").get() as any).segment === 'morning', 'segment guessed on upgrade');
   const yes = raw.prepare(`SELECT c.key FROM communication_buttons b JOIN categories c ON c.id=b.category_id WHERE b.label='Yes'`).get() as any;
   assert(yes.key === 'needs', 'Yes moved into Basic');
   const water = raw.prepare(`SELECT tap_count FROM communication_buttons WHERE label='Water'`).get() as any;
@@ -116,7 +128,7 @@ async function upgradeFromV1() {
   assert(count(raw, 'therapy_activities') === 1, 'exercises renamed to therapy_activities with data');
   assert(count(raw, 'subjects') === 7, 'subjects seeded on upgrade');
   assert(count(raw, 'routines') === 1, 'routine not duplicated on upgrade');
-  assert((raw.prepare(`SELECT value FROM app_settings WHERE key='seed_version'`).get() as any).value === '2', 'seed_version recorded');
+  assert((raw.prepare(`SELECT value FROM app_settings WHERE key='seed_version'`).get() as any).value === '3', 'seed_version recorded');
   console.log('upgrade OK');
 }
 

@@ -6,10 +6,12 @@ import { KIND_META, STATUS_META } from '@/constants/school';
 import { MAX_FONT_SCALE, RADIUS, SPACING } from '@/constants/sizes';
 import { useSettings } from '@/context/SettingsContext';
 import { assignmentsRepo } from '@/database';
-import { useAssignment, useSizes, useSpeak, useToday } from '@/hooks';
+import { useProfile } from '@/context/ProfileContext';
+import { useAssignment, useAwardStars, useSizes, useSpeak, useToday } from '@/hooks';
 import type { RootScreenProps } from '@/navigation/types';
 import { confirm } from '@/utils/confirm';
 import { describeDueDate, formatShortDate } from '@/utils/date';
+import { Fonts } from '@/theme';
 
 /** Large, simple view of one assignment with "Read it to me" and a big Finished button. */
 export function AssignmentDetailScreen({ navigation, route }: RootScreenProps<'AssignmentDetail'>) {
@@ -17,7 +19,9 @@ export function AssignmentDetailScreen({ navigation, route }: RootScreenProps<'A
   const { settings } = useSettings();
   const { isoDate } = useToday();
   const { data: a } = useAssignment(route.params.assignmentId);
-  const { speakPhrase } = useSpeak();
+  const { speakPhrase, speakFeedback } = useSpeak();
+  const { displayName } = useProfile();
+  const award = useAwardStars();
 
   if (!a) return <ChildScreen title="Assignment" back />;
 
@@ -31,8 +35,11 @@ export function AssignmentDetailScreen({ navigation, route }: RootScreenProps<'A
       if (!ok) return;
     }
     await assignmentsRepo.setStatus(a.id, done ? 'todo' : 'done');
-    speakPhrase(done ? 'Not finished yet.' : 'Finished! Great job.');
-    if (!done) navigation.goBack();
+    if (!done) {
+      const stars = await award('assignment', a.title);
+      speakFeedback(`Finished! Great job, ${displayName}!${stars > 0 ? ` ${stars} stars.` : ''}`);
+      navigation.goBack();
+    } else speakPhrase('Not finished yet.');
   };
 
   return (
@@ -82,8 +89,8 @@ const styles = StyleSheet.create({
     borderWidth: 3,
     borderColor: Colors.border,
   },
-  title: { fontWeight: '900', color: Colors.text, textAlign: 'center' },
-  line: { fontWeight: '700', color: Colors.text, textAlign: 'center' },
+  title: { fontFamily: Fonts.black, color: Colors.text, textAlign: 'center' },
+  line: { fontFamily: Fonts.bold, color: Colors.text, textAlign: 'center' },
   status: { color: Colors.textMuted },
   description: { color: Colors.text, lineHeight: 34, textAlign: 'center' },
   photo: { width: '100%', aspectRatio: 4 / 3, borderRadius: RADIUS.tile, borderWidth: 3, borderColor: Colors.border },

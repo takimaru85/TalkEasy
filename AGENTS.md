@@ -9,3 +9,5 @@
 - Verify with `npm run typecheck`, `npm run check:db` and `npm run check:learning`.
 - Learning content lives in `src/learning/content`; it is code, not DB data. Emoji are the pictures (offline-safe).
 - Child screens use `ChildScreen` (Home button on the left). Parent screens use `ScreenContainer` + `ScreenHeader`.
+- Personalisation: never hard-code the child. Read `useProfile()` (name/displayName, avatar, favourites, preferences). Child UI colours come from `useTheme()`; text uses `Fonts` from `@/theme`.
+- Rewards: grant stars only through `useAwardStars(kind)`; the amounts live in the profile.

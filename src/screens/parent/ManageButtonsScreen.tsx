@@ -7,6 +7,7 @@ import { buttonsRepo, favoritesRepo } from '@/database';
 import { useAllButtons, useCategories, useFavoriteIds, useSizes } from '@/hooks';
 import type { ParentScreenProps } from '@/navigation/types';
 import { confirm } from '@/utils/confirm';
+import { Fonts } from '@/theme';
 
 /**
  * Lists every communication button grouped by category, with Up / Down / Star / Hide / Edit /
@@ -88,7 +89,7 @@ export function ManageButtonsScreen({ navigation }: ParentScreenProps<'ManageBut
 const styles = StyleSheet.create({
   list: { padding: SPACING.lg, gap: SPACING.lg, paddingBottom: SPACING.xl * 2 },
   group: { gap: SPACING.sm },
-  groupTitle: { fontWeight: '800', color: Colors.text },
+  groupTitle: { fontFamily: Fonts.extrabold, color: Colors.text },
   empty: { color: Colors.textMuted, fontStyle: 'italic' },
   hint: { color: Colors.textMuted, fontSize: 15, textAlign: 'center' },
 });

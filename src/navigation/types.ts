@@ -5,6 +5,8 @@ import type { LearningSubjectKey } from '@/learning/types';
 /** Screens inside Parent Mode (only reachable after the PIN). */
 export type ParentStackParamList = {
   Dashboard: undefined;
+  ChildProfile: undefined;
+  ManageRewards: undefined;
   ManageButtons: undefined;
   EditButton: { buttonId?: number; categoryId?: number };
   ManageFavorites: undefined;
@@ -28,6 +30,7 @@ export type ParentStackParamList = {
 export type RootStackParamList = {
   ChildHome: undefined;
   Communicate: undefined;
+  Feelings: undefined;
   SchoolMode: undefined;
   School: undefined;
   SubjectDetail: { subjectId: number };

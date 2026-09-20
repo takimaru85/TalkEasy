@@ -16,9 +16,12 @@ import {
 } from '@/hooks';
 import type { ParentScreenProps, ParentStackParamList } from '@/navigation/types';
 import { addDays, formatDate, formatTime } from '@/utils/date';
+import { Fonts } from '@/theme';
 
 type MenuScreen = Extract<
   keyof ParentStackParamList,
+  | 'ChildProfile'
+  | 'ManageRewards'
   | 'ManageButtons'
   | 'ManageFavorites'
   | 'ManageSubjects'
@@ -33,14 +36,16 @@ type MenuScreen = Extract<
 >;
 
 const MENU: { screen: MenuScreen; label: string; icon: string }[] = [
-  { screen: 'ManageButtons', label: 'Communication buttons', icon: 'message-text' },
+  { screen: 'ChildProfile', label: 'My child (name, photo, colour, favourites)', icon: 'account-heart' },
+  { screen: 'ManageRewards', label: 'Stars & rewards', icon: 'gift-outline' },
+  { screen: 'ManageButtons', label: 'Communication cards', icon: 'message-text' },
   { screen: 'ManageFavorites', label: 'Favorites', icon: 'star' },
   { screen: 'ManageSubjects', label: 'School subjects', icon: 'school' },
   { screen: 'ManageAssignments', label: 'Assignments, projects & exams', icon: 'pencil' },
   { screen: 'ManageEvents', label: 'School calendar events', icon: 'calendar-month' },
   { screen: 'ManageLearning', label: 'Learning activities', icon: 'book-open-variant' },
-  { screen: 'ManageRoutine', label: 'Daily routine (My Day)', icon: 'calendar-check' },
-  { screen: 'ManageTherapy', label: 'Therapy & activities', icon: 'puzzle' },
+  { screen: 'ManageRoutine', label: 'Daily schedule (My Day)', icon: 'calendar-check' },
+  { screen: 'ManageTherapy', label: 'Activities', icon: 'puzzle' },
   { screen: 'CareNotes', label: 'Care notes', icon: 'note-text-outline' },
   { screen: 'Progress', label: 'Progress', icon: 'chart-bar' },
   { screen: 'Settings', label: 'Settings, speech, sizes & PIN', icon: 'cog-outline' },
@@ -172,6 +177,6 @@ const styles = StyleSheet.create({
     borderBottomColor: '#DADADA',
   },
   timelineDone: { backgroundColor: '#F1F1F1' },
-  timelineTime: { width: 90, fontWeight: '800', color: Colors.primaryDark },
-  timelineLabel: { flex: 1, fontWeight: '700', color: Colors.text },
+  timelineTime: { width: 90, fontFamily: Fonts.extrabold, color: Colors.primaryDark },
+  timelineLabel: { flex: 1, fontFamily: Fonts.bold, color: Colors.text },
 });

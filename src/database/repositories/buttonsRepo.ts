@@ -9,6 +9,7 @@ interface ButtonRow {
   label: string;
   phrase: string;
   icon: string;
+  image_uri: string | null;
   color: string;
   sort_order: number;
   is_system: number;
@@ -26,6 +27,7 @@ function toModel(r: ButtonRow): CommunicationButton {
     label: r.label,
     phrase: r.phrase,
     icon: r.icon,
+    imageUri: r.image_uri ?? null,
     color: r.color,
     sortOrder: r.sort_order,
     isSystem: r.is_system === 1,
@@ -88,6 +90,18 @@ export const buttonsRepo = {
     return row ? toModel(row) : null;
   },
 
+  /** Most recently tapped visible buttons (the "Recent" strip). */
+  async getRecent(limit = 6): Promise<CommunicationButton[]> {
+    const db = await getDb();
+    const rows = await db.getAllAsync<ButtonRow>(
+      `SELECT * FROM communication_buttons
+       WHERE is_hidden = 0 AND last_used_at IS NOT NULL
+       ORDER BY last_used_at DESC LIMIT ?`,
+      limit,
+    );
+    return rows.map(toModel);
+  },
+
   async getMostUsed(limit = 6): Promise<CommunicationButton[]> {
     const db = await getDb();
     const rows = await db.getAllAsync<ButtonRow>(
@@ -108,9 +122,9 @@ export const buttonsRepo = {
     );
     const res = await db.runAsync(
       `INSERT INTO communication_buttons
-         (category_id, label, phrase, icon, color, sort_order, is_system, is_hidden, tap_count, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, 0, 0, 0, ?, ?)`,
-      input.categoryId, input.label.trim(), input.phrase.trim(), input.icon, input.color,
+         (category_id, label, phrase, icon, image_uri, color, sort_order, is_system, is_hidden, tap_count, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0, 0, ?, ?)`,
+      input.categoryId, input.label.trim(), input.phrase.trim(), input.icon, input.imageUri, input.color,
       (max?.m ?? -1) + 1, now, now,
     );
     notify('buttons');
@@ -121,9 +135,9 @@ export const buttonsRepo = {
     const db = await getDb();
     await db.runAsync(
       `UPDATE communication_buttons
-       SET category_id = ?, label = ?, phrase = ?, icon = ?, color = ?, updated_at = ?
+       SET category_id = ?, label = ?, phrase = ?, icon = ?, image_uri = ?, color = ?, updated_at = ?
        WHERE id = ?`,
-      input.categoryId, input.label.trim(), input.phrase.trim(), input.icon, input.color, nowIso(), id,
+      input.categoryId, input.label.trim(), input.phrase.trim(), input.icon, input.imageUri, input.color, nowIso(), id,
     );
     notify('buttons', 'favorites');
   },
@@ -161,5 +175,6 @@ export const buttonsRepo = {
       'UPDATE communication_buttons SET tap_count = tap_count + 1, last_used_at = ? WHERE id = ?',
       nowIso(), id,
     );
+    notify('recent');
   },
 };

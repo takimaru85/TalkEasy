@@ -3,8 +3,10 @@ import { DefaultTheme, NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Colors } from '@/constants/colors';
 import { useSettings } from '@/context/SettingsContext';
+import { useTheme } from '@/theme';
 import { ChildHomeScreen } from '@/screens/child/ChildHomeScreen';
 import { CommunicateScreen } from '@/screens/child/CommunicateScreen';
+import { FeelingsScreen } from '@/screens/child/FeelingsScreen';
 import { SchoolModeScreen } from '@/screens/child/SchoolModeScreen';
 import { SchoolScreen } from '@/screens/child/SchoolScreen';
 import { SubjectDetailScreen } from '@/screens/child/SubjectDetailScreen';
@@ -41,14 +43,17 @@ const theme = {
  */
 export function RootNavigator() {
   const { settings } = useSettings();
+  const t = useTheme();
+  const navTheme = { ...theme, colors: { ...theme.colors, background: t.colors.background, primary: t.colors.primary, text: t.colors.text } };
   return (
-    <NavigationContainer theme={theme}>
+    <NavigationContainer theme={navTheme}>
       <Stack.Navigator
-        screenOptions={{ headerShown: false, animation: 'fade' }}
+        screenOptions={{ headerShown: false, animation: t.reducedMotion ? 'none' : 'slide_from_right', animationDuration: 220 }}
         initialRouteName={settings.schoolModeAtStart ? 'SchoolMode' : 'ChildHome'}
       >
         <Stack.Screen name="ChildHome" component={ChildHomeScreen} />
         <Stack.Screen name="Communicate" component={CommunicateScreen} />
+        <Stack.Screen name="Feelings" component={FeelingsScreen} />
         <Stack.Screen name="SchoolMode" component={SchoolModeScreen} />
         <Stack.Screen name="School" component={SchoolScreen} />
         <Stack.Screen name="SubjectDetail" component={SubjectDetailScreen} />

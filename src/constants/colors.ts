@@ -1,33 +1,44 @@
 /**
- * High-contrast palette. Tile colors are light so near-black text stays readable;
- * every tile also gets a dark border so edges are obvious.
+ * Base palette (light theme). Soft pastel surfaces, near-black text, one friendly primary.
+ * Runtime theming (favourite colour, high contrast) lives in src/theme — components should
+ * prefer `useTheme()` for anything the child sees; these constants are the neutral defaults.
  */
 export const Colors = {
-  background: '#FFFFFF',
-  surface: '#F4F4F6',
-  text: '#111111',
-  textMuted: '#4A4A4A',
+  background: '#F7F8FB',
+  surface: '#FFFFFF',
+  surfaceAlt: '#EEF1F6',
+  text: '#16213A',
+  textMuted: '#5B6478',
   textOnDark: '#FFFFFF',
-  border: '#111111',
-  primary: '#1F4FD8',
-  primaryDark: '#163AA0',
-  success: '#1B8A3D',
-  danger: '#C62828',
-  warning: '#E08A00',
-  selected: '#FFD200',
-  disabled: '#BDBDBD',
+  border: '#16213A',
+  borderSoft: '#D9DEE8',
+  primary: '#3B7DED',
+  primaryDark: '#2559B8',
+  primarySoft: '#DCEBFF',
+  success: '#2E9E5B',
+  successSoft: '#DDF5E3',
+  danger: '#D64545',
+  dangerSoft: '#FFE0E0',
+  warning: '#E8A100',
+  selected: '#FFD84D',
+  disabled: '#C9CED9',
 } as const;
 
-/** Tile background colors offered in the parent color picker. */
+/** Soft tile tints offered in the parent colour picker, consistent per category. */
 export const TileColors: { key: string; value: string; name: string }[] = [
-  { key: 'blue', value: '#BFE0FF', name: 'Blue' },
-  { key: 'green', value: '#C4F2C8', name: 'Green' },
-  { key: 'yellow', value: '#FFF3A8', name: 'Yellow' },
-  { key: 'orange', value: '#FFD9B0', name: 'Orange' },
-  { key: 'pink', value: '#FFC9DC', name: 'Pink' },
-  { key: 'purple', value: '#DED0FF', name: 'Purple' },
-  { key: 'teal', value: '#BDF0EA', name: 'Teal' },
-  { key: 'grey', value: '#E4E4E4', name: 'Grey' },
+  { key: 'blue', value: '#DCEBFF', name: 'Blue' },
+  { key: 'green', value: '#DDF5E3', name: 'Green' },
+  { key: 'yellow', value: '#FFF1C2', name: 'Yellow' },
+  { key: 'orange', value: '#FFE3C7', name: 'Orange' },
+  { key: 'coral', value: '#FFD9D3', name: 'Coral' },
+  { key: 'pink', value: '#FFDBEA', name: 'Pink' },
+  { key: 'purple', value: '#E8DFFF', name: 'Purple' },
+  { key: 'teal', value: '#D3F3F0', name: 'Teal' },
+  { key: 'grey', value: '#ECEEF2', name: 'Grey' },
 ];
 
 export const DEFAULT_TILE_COLOR = TileColors[0].value;
+
+export function tileColor(key: string): string {
+  return TileColors.find((t) => t.key === key)?.value ?? DEFAULT_TILE_COLOR;
+}

@@ -13,7 +13,10 @@ export type DbTopic =
   | 'subjects'
   | 'assignments'
   | 'events'
-  | 'learning';
+  | 'learning'
+  | 'profile'
+  | 'rewards'
+  | 'recent';
 
 type Listener = () => void;
 

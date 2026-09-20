@@ -45,6 +45,9 @@ export const settingsRepo = {
         ? (map.get('learningDifficulty') as Difficulty)
         : DEFAULT_SETTINGS.learningDifficulty,
       confirmComplete: parseBool(map.get('confirmComplete'), DEFAULT_SETTINGS.confirmComplete),
+      highContrast: parseBool(map.get('highContrast'), DEFAULT_SETTINGS.highContrast),
+      reducedMotion: parseBool(map.get('reducedMotion'), DEFAULT_SETTINGS.reducedMotion),
+      soundEnabled: parseBool(map.get('soundEnabled'), DEFAULT_SETTINGS.soundEnabled),
     };
   },
 

@@ -8,6 +8,7 @@ import { MAX_FONT_SCALE, SPACING } from '@/constants/sizes';
 import { useOpenAssignments, useScheduleForDay, useSizes, useSubjects, useToday } from '@/hooks';
 import type { RootScreenProps } from '@/navigation/types';
 import { formatTime } from '@/utils/date';
+import { Fonts } from '@/theme';
 
 /**
  * School dashboard for the child: today's classes in order, then every subject as a big tile.
@@ -24,7 +25,7 @@ export function SchoolScreen({ navigation }: RootScreenProps<'School'>) {
   const current = schedule.find((s) => s.startTime <= time && (!s.endTime || s.endTime >= time));
 
   return (
-    <ChildScreen title="School">
+    <ChildScreen title="School" emoji={SECTION_EMOJI.school}>
       <ScrollView contentContainerStyle={[styles.content, { paddingHorizontal: sizes.horizontalPadding }]}>
         <SectionTitle title={`Today · ${DAY_NAMES[dayOfWeek].long}`} emoji="📆" />
         {schedule.length === 0 ? (
@@ -65,5 +66,5 @@ export function SchoolScreen({ navigation }: RootScreenProps<'School'>) {
 
 const styles = StyleSheet.create({
   content: { paddingVertical: SPACING.sm, gap: SPACING.md, paddingBottom: SPACING.xl },
-  empty: { color: Colors.textMuted, fontWeight: '600' },
+  empty: { color: Colors.textMuted, fontFamily: Fonts.semibold },
 });

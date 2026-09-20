@@ -9,6 +9,7 @@ import type { ParentScreenProps } from '@/navigation/types';
 import { listVoices, onSpeechStatus, speakWithSettings, speechStatus, type SpeechStatus, type VoiceOption } from '@/services/speech';
 import type { SizeOption } from '@/types/models';
 import { alertMessage } from '@/utils/confirm';
+import { Fonts } from '@/theme';
 
 const RATE_CHOICES = [
   { value: '0.7', label: 'Slow' },
@@ -121,6 +122,39 @@ export function SettingsScreen({ navigation }: ParentScreenProps<'Settings'>) {
                 { value: 'off', label: 'Off' },
               ]}
             />
+          </Section>
+
+          <Section title="Accessibility">
+            <ChoiceRow
+              label="High contrast"
+              value={settings.highContrast ? 'on' : 'off'}
+              onChange={(v) => updateSetting('highContrast', v === 'on')}
+              choices={[
+                { value: 'on', label: 'On' },
+                { value: 'off', label: 'Off' },
+              ]}
+            />
+            <ChoiceRow
+              label="Reduce animation"
+              value={settings.reducedMotion ? 'on' : 'off'}
+              onChange={(v) => updateSetting('reducedMotion', v === 'on')}
+              choices={[
+                { value: 'on', label: 'Reduce' },
+                { value: 'off', label: 'Normal' },
+              ]}
+            />
+            <ChoiceRow
+              label="Spoken feedback (greetings, praise)"
+              value={settings.soundEnabled ? 'on' : 'off'}
+              onChange={(v) => updateSetting('soundEnabled', v === 'on')}
+              choices={[
+                { value: 'on', label: 'On' },
+                { value: 'off', label: 'Off' },
+              ]}
+            />
+            <Text style={styles.hint} maxFontSizeMultiplier={MAX_FONT_SCALE}>
+              Communication cards always speak. This switch only affects extra feedback such as "Great job".
+            </Text>
           </Section>
 
           <Section title="Child interface">
@@ -254,8 +288,8 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   form: { padding: SPACING.lg, gap: SPACING.xl, paddingBottom: SPACING.xl * 2 },
   section: { gap: SPACING.md },
-  sectionTitle: { fontWeight: '800', color: Colors.text },
-  label: { fontWeight: '700', color: Colors.text },
+  sectionTitle: { fontFamily: Fonts.extrabold, color: Colors.text },
+  label: { fontFamily: Fonts.bold, color: Colors.text },
   hint: { color: Colors.textMuted, fontSize: 16, lineHeight: 22 },
   warning: {
     flexDirection: 'row',
@@ -269,7 +303,7 @@ const styles = StyleSheet.create({
   },
   warningText: { flex: 1, color: Colors.text },
   diag: { gap: SPACING.xs, padding: SPACING.md, borderWidth: 2, borderColor: '#CFCFCF', borderRadius: 12, backgroundColor: Colors.surface },
-  hintStrong: { color: Colors.text, fontWeight: '700' },
+  hintStrong: { color: Colors.text, fontFamily: Fonts.bold },
   voiceList: { gap: SPACING.xs },
   voiceRow: {
     flexDirection: 'row',
@@ -283,6 +317,6 @@ const styles = StyleSheet.create({
   },
   voiceRowSelected: { borderColor: Colors.primaryDark, backgroundColor: '#E3ECFF' },
   voiceName: { flex: 1, fontSize: 17, color: Colors.text },
-  voiceNameSelected: { fontWeight: '700' },
+  voiceNameSelected: { fontFamily: Fonts.bold },
   voiceLang: { color: Colors.textMuted, fontSize: 15 },
 });

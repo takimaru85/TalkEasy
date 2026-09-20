@@ -5,6 +5,7 @@ import { ICON_GROUPS } from '@/constants/icons';
 import { MAX_FONT_SCALE, MIN_PARENT_TARGET, SPACING } from '@/constants/sizes';
 import { useSizes } from '@/hooks/useSizes';
 import { Icon } from './Icon';
+import { Fonts } from '@/theme';
 
 interface Props {
   value: string;
@@ -59,7 +60,7 @@ export function IconPicker({ value, onChange, previewColor = Colors.surface }: P
 
 const styles = StyleSheet.create({
   wrap: { gap: SPACING.sm },
-  label: { fontWeight: '700', color: Colors.text },
+  label: { fontFamily: Fonts.bold, color: Colors.text },
   preview: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md },
   previewBox: {
     width: 72,
@@ -79,7 +80,7 @@ const styles = StyleSheet.create({
     padding: SPACING.sm,
   },
   group: { marginBottom: SPACING.md },
-  groupTitle: { fontWeight: '700', color: Colors.textMuted, marginBottom: SPACING.xs, fontSize: 15 },
+  groupTitle: { fontFamily: Fonts.bold, color: Colors.textMuted, marginBottom: SPACING.xs, fontSize: 15 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm },
   cell: {
     width: CELL,

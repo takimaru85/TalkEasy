@@ -1,7 +1,7 @@
 import { getDb, nowIso } from '../db';
 import { notify } from '../events';
 import { moveRow } from '../reorder';
-import type { ActivityFrequency, ActivityLog, TherapyActivity, TherapyActivityInput } from '@/types/models';
+import type { ActivityCategory, ActivityFrequency, ActivityLog, TherapyActivity, TherapyActivityInput } from '@/types/models';
 
 interface TherapyRow {
   id: number;
@@ -10,6 +10,7 @@ interface TherapyRow {
   instructions: string;
   duration_minutes: number;
   frequency: string;
+  category: string;
   image_uri: string | null;
   is_completed: number;
   completed_at: string | null;
@@ -31,6 +32,7 @@ const toModel = (r: TherapyRow): TherapyActivity => ({
   instructions: r.instructions,
   durationMinutes: r.duration_minutes,
   frequency: (r.frequency as ActivityFrequency) || 'daily',
+  category: (r.category as ActivityCategory) || 'therapy',
   imageUri: r.image_uri,
   isCompleted: r.is_completed === 1,
   completedAt: r.completed_at,
@@ -64,9 +66,9 @@ export const therapyRepo = {
     const max = await db.getFirstAsync<{ m: number | null }>('SELECT MAX(sort_order) AS m FROM therapy_activities');
     const res = await db.runAsync(
       `INSERT INTO therapy_activities
-         (name, icon, instructions, duration_minutes, frequency, image_uri, is_completed, sort_order, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?)`,
-      input.name.trim(), input.icon, input.instructions.trim(), input.durationMinutes, input.frequency,
+         (name, icon, instructions, duration_minutes, frequency, category, image_uri, is_completed, sort_order, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?)`,
+      input.name.trim(), input.icon, input.instructions.trim(), input.durationMinutes, input.frequency, input.category,
       input.imageUri, (max?.m ?? -1) + 1, nowIso(),
     );
     notify('exercises');
@@ -77,9 +79,9 @@ export const therapyRepo = {
     const db = await getDb();
     await db.runAsync(
       `UPDATE therapy_activities
-       SET name = ?, icon = ?, instructions = ?, duration_minutes = ?, frequency = ?, image_uri = ?
+       SET name = ?, icon = ?, instructions = ?, duration_minutes = ?, frequency = ?, category = ?, image_uri = ?
        WHERE id = ?`,
-      input.name.trim(), input.icon, input.instructions.trim(), input.durationMinutes, input.frequency,
+      input.name.trim(), input.icon, input.instructions.trim(), input.durationMinutes, input.frequency, input.category,
       input.imageUri, id,
     );
     notify('exercises');

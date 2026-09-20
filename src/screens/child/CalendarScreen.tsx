@@ -7,6 +7,7 @@ import { MAX_FONT_SCALE, SPACING } from '@/constants/sizes';
 import { useCalendarEntries, useSizes, useSpeak, useToday } from '@/hooks';
 import type { RootScreenProps } from '@/navigation/types';
 import { formatDate, monthRange } from '@/utils/date';
+import { Fonts } from '@/theme';
 
 /**
  * School calendar: month grid with dots, then the selected day's items, then "coming up".
@@ -71,5 +72,5 @@ export function CalendarScreen({ navigation }: RootScreenProps<'Calendar'>) {
 
 const styles = StyleSheet.create({
   content: { paddingVertical: SPACING.sm, gap: SPACING.md, paddingBottom: SPACING.xl },
-  empty: { color: Colors.textMuted, fontWeight: '600' },
+  empty: { color: Colors.textMuted, fontFamily: Fonts.semibold },
 });

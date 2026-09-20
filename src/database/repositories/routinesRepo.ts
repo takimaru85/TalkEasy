@@ -1,7 +1,7 @@
 import { getDb, nowIso } from '../db';
 import { notify } from '../events';
 import { moveRow } from '../reorder';
-import type { Routine, RoutineItem } from '@/types/models';
+import type { Routine, RoutineItem, RoutineSegment } from '@/types/models';
 
 interface RoutineRow {
   id: number;
@@ -18,6 +18,8 @@ interface RoutineItemRow {
   sort_order: number;
   is_done: number;
   start_time: string | null;
+  segment: string;
+  notes: string;
 }
 
 const toRoutine = (r: RoutineRow): Routine => ({
@@ -35,6 +37,8 @@ const toItem = (r: RoutineItemRow): RoutineItem => ({
   sortOrder: r.sort_order,
   isDone: r.is_done === 1,
   startTime: r.start_time,
+  segment: (r.segment as RoutineSegment) || 'morning',
+  notes: r.notes ?? '',
 });
 
 export const routinesRepo = {
@@ -101,22 +105,22 @@ export const routinesRepo = {
     return rows.map(toItem);
   },
 
-  async addItem(routineId: number, label: string, icon: string, startTime: string | null = null): Promise<number> {
+  async addItem(routineId: number, label: string, icon: string, startTime: string | null = null, segment: RoutineSegment = 'morning', notes = ''): Promise<number> {
     const db = await getDb();
     const max = await db.getFirstAsync<{ m: number | null }>(
       'SELECT MAX(sort_order) AS m FROM routine_items WHERE routine_id = ?', routineId,
     );
     const res = await db.runAsync(
-      'INSERT INTO routine_items (routine_id, label, icon, sort_order, is_done, start_time) VALUES (?, ?, ?, ?, 0, ?)',
-      routineId, label.trim(), icon, (max?.m ?? -1) + 1, startTime,
+      'INSERT INTO routine_items (routine_id, label, icon, sort_order, is_done, start_time, segment, notes) VALUES (?, ?, ?, ?, 0, ?, ?, ?)',
+      routineId, label.trim(), icon, (max?.m ?? -1) + 1, startTime, segment, notes.trim(),
     );
     notify('routines');
     return res.lastInsertRowId;
   },
 
-  async updateItem(id: number, label: string, icon: string, startTime: string | null = null): Promise<void> {
+  async updateItem(id: number, label: string, icon: string, startTime: string | null = null, segment: RoutineSegment = 'morning', notes = ''): Promise<void> {
     const db = await getDb();
-    await db.runAsync('UPDATE routine_items SET label = ?, icon = ?, start_time = ? WHERE id = ?', label.trim(), icon, startTime, id);
+    await db.runAsync('UPDATE routine_items SET label = ?, icon = ?, start_time = ?, segment = ?, notes = ? WHERE id = ?', label.trim(), icon, startTime, segment, notes.trim(), id);
     notify('routines');
   },
 

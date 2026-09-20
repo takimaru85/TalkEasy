@@ -16,3 +16,8 @@ export { TimeField } from './TimeField';
 export { SectionTitle } from './SectionTitle';
 export { StatTile } from './StatTile';
 export { ChildScreen } from './ChildScreen';
+export { PressableScale } from './PressableScale';
+export { Card } from './Card';
+export { Avatar } from './Avatar';
+export { ProgressBar } from './ProgressBar';
+export { Celebration } from './Celebration';

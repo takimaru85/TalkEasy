@@ -182,14 +182,15 @@ TalkEasy/
 ├─ scripts/check-learning.ts  learning content validator (Node)
 └─ src/
    ├─ types/models.ts         every domain type (buttons, subjects, assignments, events, …)
-   ├─ constants/              colors, sizes (touch targets, fonts), icons, defaults (seed), school (labels)
-   ├─ database/               db.ts (open/migrate/seed), schema.ts (migrations 1 & 2), seed.ts,
+   ├─ theme/                  tokens (7 accents, Nunito, radius, shadow, motion), ThemeContext, fonts
+   ├─ constants/              colors, sizes (touch targets, fonts), icons, defaults (seed + Brayden demo profile), school (labels)
+   ├─ database/               db.ts (open/migrate/seed), schema.ts (migrations 1–3), seed.ts,
    │                          reorder.ts, events.ts, repositories/ (one per table — the only SQL)
    ├─ learning/               types, engine (question builders, RNG), content/{english,filipino,math,
    │                          science,ap,esp}.ts, index.ts (registry)
    ├─ services/               speech.ts (TTS + audio session), files.ts (photo/attachment import)
-   ├─ context/                SettingsContext
-   ├─ hooks/                  useDbQuery + one hook per data type, useSizes, useSpeak, useToday
+   ├─ context/                SettingsContext, ProfileContext (the child profile + personalize())
+   ├─ hooks/                  useDbQuery + one hook per data type, useSizes, useSpeak, useToday, useRewards
    ├─ components/
    │  ├─ common/              BigButton, Icon (glyph or emoji), ChildScreen, ScreenHeader, PinPad,
    │  │                       FormField, ChoiceRow, DateField, TimeField, IconPicker, ColorPicker,
@@ -204,6 +205,27 @@ TalkEasy/
    │                          assignments, events, learning, routine, therapy, notes; Progress; Settings
    └─ utils/                  date helpers, confirm dialogs
 ```
+
+## 8b. Personalisation (v3)
+
+The app is built around a **child profile** (Parent → *My child*): name and nickname, avatar or
+photo, age / grade / school, favourite colour (becomes the app's accent), favourite subjects /
+activities / foods / people, communication preferences (Recent strip, sentence builder, full
+sentence vs. single word), learning difficulty and goals, and reward settings. The demo profile
+is **Brayden** so the personalisation is visible immediately; change it and every greeting, title
+and celebration follows.
+
+* **Home**: "Good morning, Brayden! ☀️ · Today is Monday · You're ready for school!", today's plan
+  with progress (✓ → ○), the 8 sections, Brayden's favourite phrases, Continue learning,
+  Brayden's stars.
+* **Talk**: 11 categories (Basic, People, School, Feelings, Food, Drinks, Bathroom, Activities,
+  Home, Emergency, My phrases) behind a "More" pill, a Recent strip, the "I want..." sentence
+  starter, and optional photos on cards (a real picture of Mom instead of an icon).
+* **Feelings**: big faces plus a calming follow-up phrase for hard feelings.
+* **Rewards**: stars for routine steps, activities, assignments and learning; parent-defined
+  rewards ("10 stars → Choose a game"); Parent → *Stars & rewards* to give a reward or add bonus stars.
+* **Accessibility**: Settings → High contrast, Reduce animation, Spoken feedback on/off, plus
+  button / text size and "ask before marking done". No state is shown by colour alone.
 
 ## 9. How to extend
 

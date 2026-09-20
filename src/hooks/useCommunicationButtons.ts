@@ -42,6 +42,11 @@ export function useCategoryByKey(key: string) {
   return useDbQuery(() => categoriesRepo.getByKey(key), null as Category | null, ['categories'], [key]);
 }
 
+/** Most recently used tiles (the "Recent" strip on Talk). */
+export function useRecentButtons(limit = 6) {
+  return useDbQuery(() => buttonsRepo.getRecent(limit), NONE, ['buttons', 'recent'], [limit]);
+}
+
 export function useMostUsedButtons(limit = 6) {
   return useDbQuery(() => buttonsRepo.getMostUsed(limit), NONE, ['buttons'], [limit]);
 }

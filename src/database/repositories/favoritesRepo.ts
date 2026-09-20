@@ -9,6 +9,7 @@ interface FavoriteButtonRow {
   label: string;
   phrase: string;
   icon: string;
+  image_uri: string | null;
   color: string;
   sort_order: number;
   is_system: number;
@@ -28,6 +29,7 @@ function toButton(r: FavoriteButtonRow): CommunicationButton {
     label: r.label,
     phrase: r.phrase,
     icon: r.icon,
+    imageUri: r.image_uri ?? null,
     color: r.color,
     sortOrder: r.favorite_order,
     isSystem: r.is_system === 1,
