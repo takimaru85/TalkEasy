@@ -6,6 +6,7 @@ import { MAX_FONT_SCALE, SPACING } from '@/constants/sizes';
 import { useSettings } from '@/context/SettingsContext';
 import { useSizes } from '@/hooks';
 import type { RootScreenProps } from '@/navigation/types';
+import { Fonts } from '@/theme';
 
 /** PIN gate in front of Parent Mode. Default PIN is 1234 — change it in Settings. */
 export function ParentPinScreen({ navigation }: RootScreenProps<'ParentPin'>) {
@@ -47,6 +48,6 @@ export function ParentPinScreen({ navigation }: RootScreenProps<'ParentPin'>) {
 
 const styles = StyleSheet.create({
   body: { flex: 1, alignItems: 'center', paddingHorizontal: SPACING.xl, gap: SPACING.lg, paddingTop: SPACING.md },
-  prompt: { fontWeight: '700', color: Colors.text },
-  error: { color: Colors.danger, fontWeight: '700' },
+  prompt: { fontFamily: Fonts.bold, color: Colors.text },
+  error: { color: Colors.danger, fontFamily: Fonts.bold },
 });

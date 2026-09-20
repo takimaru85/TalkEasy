@@ -4,6 +4,7 @@ import { Colors } from '@/constants/colors';
 import { MAX_FONT_SCALE, MIN_PARENT_TARGET, SPACING } from '@/constants/sizes';
 import { useSizes } from '@/hooks/useSizes';
 import { Icon } from './Icon';
+import { Fonts } from '@/theme';
 
 export interface RowAction {
   icon: string;
@@ -112,7 +113,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   text: { flex: 1, gap: 2 },
-  title: { fontWeight: '700', color: Colors.text },
+  title: { fontFamily: Fonts.bold, color: Colors.text },
   subtitle: { color: Colors.textMuted, fontSize: 15 },
   actions: { flexDirection: 'row', gap: SPACING.sm },
   action: {

@@ -1,28 +1,42 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { ChildScreen, EmptyState, Icon } from '@/components/common';
-import { Colors } from '@/constants/colors';
-import { MAX_FONT_SCALE, RADIUS, SPACING } from '@/constants/sizes';
+import { Card, Celebration, ChildScreen, EmptyState, Icon, ProgressBar } from '@/components/common';
+import { SECTION_EMOJI } from '@/constants/school';
+import { MAX_FONT_SCALE, SPACING } from '@/constants/sizes';
+import { useProfile, personalize } from '@/context/ProfileContext';
 import { useSettings } from '@/context/SettingsContext';
 import { routinesRepo } from '@/database';
-import { useActiveRoutine, useActiveRoutineItems, useSizes, useSpeak } from '@/hooks';
+import { useActiveRoutine, useActiveRoutineItems, useAwardStars, useSizes, useSpeak } from '@/hooks';
 import type { RootScreenProps } from '@/navigation/types';
-import type { RoutineItem } from '@/types/models';
+import { Fonts, Radius, useTheme } from '@/theme';
+import type { RoutineItem, RoutineSegment } from '@/types/models';
 import { confirm } from '@/utils/confirm';
 import { formatTime } from '@/utils/date';
 
+const SEGMENTS: { key: RoutineSegment; label: string; emoji: string }[] = [
+  { key: 'morning', label: 'Morning', emoji: '🌅' },
+  { key: 'school', label: 'School', emoji: '🏫' },
+  { key: 'afternoon', label: 'After school', emoji: '🌤️' },
+  { key: 'evening', label: 'Evening', emoji: '🌙' },
+];
+
 /**
- * Visual daily schedule. A fixed banner at the top shows CURRENT and NEXT; the list below shows
- * every step with an arrow between them. Tapping a step speaks it and ticks it (tapping a done
- * step un-ticks it). No gestures, no drag.
+ * Visual daily schedule. A fixed card at the top shows NOW / NEXT and progress; below, the
+ * steps are grouped by part of the day. Tap = speak + tick (tap again to un-tick). Ticking a
+ * step earns a star; finishing the whole plan celebrates.
  */
 export function MyDayScreen(_props: RootScreenProps<'MyDay'>) {
   const sizes = useSizes();
+  const theme = useTheme();
   const { settings } = useSettings();
+  const { profile, displayName } = useProfile();
   const { data: routine, loading } = useActiveRoutine();
   const { data: items } = useActiveRoutineItems();
-  const { speakPhrase } = useSpeak();
+  const { speakPhrase, speakFeedback } = useSpeak();
+  const award = useAwardStars();
+  const [burst, setBurst] = useState(0);
 
+  const done = items.filter((i) => i.isDone).length;
   const currentIndex = items.findIndex((i) => !i.isDone);
   const current = currentIndex >= 0 ? items[currentIndex] : null;
   const next = currentIndex >= 0 ? items.slice(currentIndex + 1).find((i) => !i.isDone) ?? null : null;
@@ -34,83 +48,106 @@ export function MyDayScreen(_props: RootScreenProps<'MyDay'>) {
       if (!ok) return;
     }
     await routinesRepo.setItemDone(item.id, !item.isDone);
+    if (!item.isDone) {
+      const stars = await award('routine', item.label);
+      const finishedAll = done + 1 === items.length;
+      if (finishedAll) {
+        setBurst((b) => b + 1);
+        setTimeout(() => speakFeedback(`${personalize(profile.rewards.celebrationMessage, displayName)} Your plan is all done!`), 600);
+      } else if (stars > 0) {
+        setTimeout(() => speakFeedback('Done! One star.'), 600);
+      }
+    }
   };
 
   return (
-    <ChildScreen title={routine?.name ?? 'My Day'}>
-      <View style={styles.banner}>
-        <View style={[styles.bannerCol, styles.bannerCurrent]}>
-          <Text style={styles.bannerCaption} maxFontSizeMultiplier={MAX_FONT_SCALE}>NOW</Text>
-          {current ? (
-            <Pressable onPress={() => speakPhrase(current.label)} accessibilityRole="button" accessibilityLabel={`Now: ${current.label}`} style={styles.bannerItem}>
-              <Icon name={current.icon} size={sizes.iconSize} />
-              <Text style={[styles.bannerText, { fontSize: sizes.tileLabel + 2 }]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={2} adjustsFontSizeToFit>
-                {current.label}
-              </Text>
-            </Pressable>
-          ) : (
-            <Text style={[styles.bannerText, { fontSize: sizes.tileLabel }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
-              {items.length ? 'All done! 🎉' : '—'}
-            </Text>
-          )}
-        </View>
-        <View style={[styles.bannerCol, styles.bannerNext]}>
-          <Text style={styles.bannerCaption} maxFontSizeMultiplier={MAX_FONT_SCALE}>NEXT</Text>
-          {next ? (
-            <Pressable onPress={() => speakPhrase(`Next, ${next.label}`)} accessibilityRole="button" accessibilityLabel={`Next: ${next.label}`} style={styles.bannerItem}>
-              <Icon name={next.icon} size={sizes.iconSize - 8} color={Colors.textMuted} />
-              <Text style={[styles.bannerText, styles.bannerNextText, { fontSize: sizes.tileLabel }]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={2} adjustsFontSizeToFit>
-                {next.label}
-              </Text>
-            </Pressable>
-          ) : (
-            <Text style={[styles.bannerText, styles.bannerNextText, { fontSize: sizes.tileLabel }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>—</Text>
-          )}
-        </View>
-      </View>
-
+    <ChildScreen title={routine?.name ?? 'My Day'} emoji={SECTION_EMOJI.myday}>
+      <Celebration trigger={burst} />
       {!loading && items.length === 0 ? (
-        <EmptyState icon="calendar-check" title="No routine yet" message="A parent can build the day in Parent Mode." />
+        <EmptyState icon="calendar-check" title="No plan yet" message="A parent can build the day in Parent Mode." />
       ) : (
         <ScrollView contentContainerStyle={[styles.list, { paddingHorizontal: sizes.horizontalPadding }]}>
-          {items.map((item, index) => {
-            const isNow = index === currentIndex;
-            return (
-              <View key={item.id}>
-                <Pressable
-                  onPress={() => onPressItem(item)}
-                  accessibilityRole="button"
-                  accessibilityLabel={`${item.label}${item.startTime ? `, ${formatTime(item.startTime)}` : ''}${item.isDone ? ', done' : isNow ? ', now' : ''}`}
-                  accessibilityState={{ checked: item.isDone }}
-                  hitSlop={4}
-                  style={({ pressed }) => [
-                    styles.step,
-                    { minHeight: Math.max(sizes.tileHeight * 0.65, 84) },
-                    item.isDone && styles.stepDone,
-                    isNow && styles.stepNow,
-                    pressed && styles.pressed,
-                  ]}
-                >
-                  <Icon name={item.icon} size={sizes.iconSize} color={Colors.text} />
-                  <View style={styles.stepText}>
-                    <Text style={[styles.label, { fontSize: sizes.tileLabel + 2 }, item.isDone && styles.labelDone]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={2}>
-                      {item.label}
+          <Card color={theme.colors.primarySoft}>
+            <ProgressBar value={items.length ? done / items.length : 0} label={`${done} / ${items.length}`} color={theme.colors.success} accessibilityLabel={`${done} of ${items.length} steps done`} />
+            <View style={styles.nowRow}>
+              <View style={styles.nowCol}>
+                <Text style={[styles.caption, { color: theme.colors.textMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>NOW</Text>
+                {current ? (
+                  <View style={styles.nowItem}>
+                    <Icon name={current.icon} size={sizes.iconSize - 8} color={theme.colors.text} />
+                    <Text style={[styles.nowText, { fontSize: sizes.tileLabel + 2, color: theme.colors.text }]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={2} adjustsFontSizeToFit>
+                      {current.label}
                     </Text>
-                    {item.startTime ? (
-                      <Text style={[styles.time, { fontSize: sizes.body - 2 }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
-                        {formatTime(item.startTime)}
-                      </Text>
-                    ) : null}
                   </View>
-                  <View style={[styles.check, item.isDone && styles.checkDone]}>
-                    {item.isDone ? <Icon name="check-bold" size={30} color={Colors.textOnDark} /> : null}
+                ) : (
+                  <Text style={[styles.nowText, { fontSize: sizes.tileLabel, color: theme.colors.text }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>All done! 🎉</Text>
+                )}
+              </View>
+              <View style={[styles.nowCol, styles.nextCol, { borderColor: theme.colors.borderSoft }]}>
+                <Text style={[styles.caption, { color: theme.colors.textMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>NEXT</Text>
+                {next ? (
+                  <View style={styles.nowItem}>
+                    <Icon name={next.icon} size={sizes.iconSize - 14} color={theme.colors.textMuted} />
+                    <Text style={[styles.nowText, { fontSize: sizes.tileLabel - 2, color: theme.colors.textMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={2} adjustsFontSizeToFit>
+                      {next.label}
+                    </Text>
                   </View>
-                </Pressable>
-                {index < items.length - 1 ? (
-                  <View style={styles.arrow} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-                    <Icon name="arrow-down-bold" size={28} color={Colors.textMuted} />
-                  </View>
-                ) : null}
+                ) : (
+                  <Text style={[styles.nowText, { fontSize: sizes.tileLabel - 2, color: theme.colors.textMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>—</Text>
+                )}
+              </View>
+            </View>
+          </Card>
+
+          {SEGMENTS.map((seg) => {
+            const segItems = items.filter((i) => i.segment === seg.key);
+            if (segItems.length === 0) return null;
+            return (
+              <View key={seg.key} style={styles.segment}>
+                <Text style={[styles.segmentTitle, { fontSize: sizes.body, color: theme.colors.textMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
+                  {seg.emoji} {seg.label.toUpperCase()}
+                </Text>
+                {segItems.map((item) => {
+                  const isNow = current?.id === item.id;
+                  return (
+                    <Pressable
+                      key={item.id}
+                      onPress={() => onPressItem(item)}
+                      accessibilityRole="button"
+                      accessibilityLabel={`${item.label}${item.startTime ? `, ${formatTime(item.startTime)}` : ''}${item.notes ? `, ${item.notes}` : ''}${item.isDone ? ', done' : isNow ? ', now' : ''}`}
+                      accessibilityState={{ checked: item.isDone }}
+                      hitSlop={4}
+                      style={({ pressed }) => [
+                        styles.step,
+                        theme.shadow,
+                        {
+                          minHeight: Math.max(sizes.tileHeight * 0.6, 84),
+                          backgroundColor: item.isDone ? theme.colors.surfaceAlt : theme.colors.surface,
+                          borderColor: isNow ? theme.colors.primary : theme.highContrast ? theme.colors.border : theme.colors.borderSoft,
+                          borderWidth: isNow ? 3 : theme.highContrast ? theme.borderWidth : 1,
+                        },
+                        pressed && { opacity: 0.85 },
+                      ]}
+                    >
+                      <View style={[styles.stepIcon, { backgroundColor: item.isDone ? theme.colors.surfaceAlt : theme.tint(theme.colors.primarySoft) }]}>
+                        <Icon name={item.icon} size={sizes.iconSize - 12} color={item.isDone ? theme.colors.textMuted : theme.colors.text} />
+                      </View>
+                      <View style={styles.stepText}>
+                        <Text style={[styles.label, { fontSize: sizes.tileLabel, color: item.isDone ? theme.colors.textMuted : theme.colors.text }, item.isDone && styles.labelDone]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={2}>
+                          {item.label}
+                        </Text>
+                        {item.startTime || item.notes ? (
+                          <Text style={[styles.meta, { fontSize: sizes.body - 3, color: theme.colors.textMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={1}>
+                            {[item.startTime ? formatTime(item.startTime) : null, item.notes || null].filter(Boolean).join(' · ')}
+                          </Text>
+                        ) : null}
+                      </View>
+                      <View style={[styles.check, { borderColor: item.isDone ? theme.colors.success : theme.colors.borderSoft, backgroundColor: item.isDone ? theme.colors.success : theme.colors.surface }]}>
+                        {item.isDone ? <Icon name="check-bold" size={28} color="#FFFFFF" /> : isNow ? <Text style={[styles.arrow, { color: theme.colors.primaryDark }]} allowFontScaling={false}>→</Text> : null}
+                      </View>
+                    </Pressable>
+                  );
+                })}
               </View>
             );
           })}
@@ -121,55 +158,21 @@ export function MyDayScreen(_props: RootScreenProps<'MyDay'>) {
 }
 
 const styles = StyleSheet.create({
-  banner: {
-    flexDirection: 'row',
-    gap: SPACING.sm,
-    marginHorizontal: SPACING.lg,
-    marginBottom: SPACING.sm,
-  },
-  bannerCol: {
-    flex: 1,
-    borderRadius: RADIUS.tile,
-    borderWidth: 3,
-    padding: SPACING.sm,
-    minHeight: 120,
-    alignItems: 'center',
-    gap: 4,
-  },
-  bannerCurrent: { flex: 1.3, backgroundColor: '#FFF3A8', borderColor: Colors.primaryDark, borderWidth: 4 },
-  bannerNext: { backgroundColor: Colors.surface, borderColor: '#BDBDBD' },
-  bannerCaption: { fontSize: 14, fontWeight: '900', color: Colors.textMuted, letterSpacing: 1 },
-  bannerItem: { alignItems: 'center', gap: 4, flex: 1, justifyContent: 'center' },
-  bannerText: { fontWeight: '900', color: Colors.text, textAlign: 'center' },
-  bannerNextText: { color: Colors.textMuted },
-  list: { paddingVertical: SPACING.sm, paddingBottom: SPACING.xl },
-  step: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.md,
-    padding: SPACING.md,
-    borderRadius: RADIUS.tile,
-    borderWidth: 3,
-    borderColor: Colors.border,
-    backgroundColor: '#E9F1FF',
-  },
-  stepDone: { backgroundColor: '#E8E8E8', borderColor: '#9E9E9E' },
-  stepNow: { backgroundColor: '#FFF3A8', borderColor: Colors.primaryDark, borderWidth: 5 },
-  pressed: { opacity: 0.8 },
+  list: { paddingVertical: SPACING.sm, gap: SPACING.md, paddingBottom: SPACING.xl },
+  nowRow: { flexDirection: 'row', marginTop: SPACING.md, gap: SPACING.md },
+  nowCol: { flex: 1.3, gap: 4 },
+  nextCol: { flex: 1, borderLeftWidth: 1.5, paddingLeft: SPACING.md },
+  caption: { fontFamily: Fonts.black, fontSize: 13, letterSpacing: 1 },
+  nowItem: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
+  nowText: { fontFamily: Fonts.black, flexShrink: 1 },
+  segment: { gap: SPACING.sm },
+  segmentTitle: { fontFamily: Fonts.black, letterSpacing: 1, marginTop: SPACING.xs },
+  step: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, padding: SPACING.md, borderRadius: Radius.lg },
+  stepIcon: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center' },
   stepText: { flex: 1, gap: 2 },
-  label: { fontWeight: '800', color: Colors.text },
-  labelDone: { textDecorationLine: 'line-through', color: Colors.textMuted },
-  time: { color: Colors.textMuted, fontWeight: '700' },
-  check: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    borderWidth: 3,
-    borderColor: Colors.border,
-    backgroundColor: Colors.background,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  checkDone: { backgroundColor: Colors.success, borderColor: '#0F5E28' },
-  arrow: { alignItems: 'center', paddingVertical: 2 },
+  label: { fontFamily: Fonts.extrabold },
+  labelDone: { textDecorationLine: 'line-through' },
+  meta: { fontFamily: Fonts.bold },
+  check: { width: 48, height: 48, borderRadius: 14, borderWidth: 2.5, alignItems: 'center', justifyContent: 'center' },
+  arrow: { fontSize: 26, fontFamily: Fonts.black },
 });

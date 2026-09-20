@@ -12,3 +12,5 @@ export { subjectsRepo } from './repositories/subjectsRepo';
 export { assignmentsRepo } from './repositories/assignmentsRepo';
 export { eventsRepo } from './repositories/eventsRepo';
 export { learningRepo } from './repositories/learningRepo';
+export { profileRepo } from './repositories/profileRepo';
+export { rewardsRepo } from './repositories/rewardsRepo';

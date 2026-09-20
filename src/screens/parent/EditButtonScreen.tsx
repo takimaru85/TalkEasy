@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import {
   BigButton,
   ChoiceRow,
@@ -18,8 +18,10 @@ import { buttonsRepo, favoritesRepo } from '@/database';
 import { useButton, useCategories, useFavoriteIds, useSizes } from '@/hooks';
 import type { ParentScreenProps } from '@/navigation/types';
 import { speakWithSettings } from '@/services/speech';
+import { deleteImported, pickPhoto } from '@/services/files';
 import type { CommunicationButton } from '@/types/models';
 import { alertMessage, confirm } from '@/utils/confirm';
+import { Fonts } from '@/theme';
 
 /**
  * Create or edit a communication button: label, spoken phrase, category, icon, color,
@@ -38,6 +40,7 @@ export function EditButtonScreen({ navigation, route }: ParentScreenProps<'EditB
   const [phrase, setPhrase] = useState('');
   const [icon, setIcon] = useState(DEFAULT_ICON);
   const [color, setColor] = useState(DEFAULT_TILE_COLOR);
+  const [imageUri, setImageUri] = useState<string | null>(null);
   const [categoryId, setCategoryId] = useState<number | null>(initialCategoryId ?? null);
   const [favorite, setFavorite] = useState(false);
   const [hydrated, setHydrated] = useState(isNew);
@@ -50,6 +53,7 @@ export function EditButtonScreen({ navigation, route }: ParentScreenProps<'EditB
       setPhrase(existing.phrase);
       setIcon(existing.icon);
       setColor(existing.color);
+      setImageUri(existing.imageUri);
       setCategoryId(existing.categoryId);
       setFavorite(favoriteIds.has(existing.id));
       setHydrated(true);
@@ -70,6 +74,7 @@ export function EditButtonScreen({ navigation, route }: ParentScreenProps<'EditB
     label: label || 'Label',
     phrase: phrase || label || 'Phrase',
     icon,
+    imageUri,
     color,
     sortOrder: 0,
     isSystem: false,
@@ -86,7 +91,7 @@ export function EditButtonScreen({ navigation, route }: ParentScreenProps<'EditB
     const spoken = phrase.trim() || label.trim();
     setSaving(true);
     try {
-      const input = { categoryId, label: label.trim(), phrase: spoken, icon, color };
+      const input = { categoryId, label: label.trim(), phrase: spoken, icon, imageUri, color };
       const id = isNew ? await buttonsRepo.create(input) : (await buttonsRepo.update(buttonId, input), buttonId);
       const currentlyFav = favoriteIds.has(id);
       if (favorite && !currentlyFav) await favoritesRepo.add(id);
@@ -154,6 +159,14 @@ export function EditButtonScreen({ navigation, route }: ParentScreenProps<'EditB
           ) : null}
 
           <ColorPicker value={color} onChange={setColor} />
+
+          <Text style={[styles.previewLabel, { fontSize: sizes.body }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>Photo (optional — e.g. a real picture of Mom)</Text>
+          {imageUri ? <Image source={{ uri: imageUri }} style={styles.photo} accessibilityIgnoresInvertColors accessibilityLabel={label} /> : null}
+          <View style={styles.photoRow}>
+            <BigButton label="Take photo" icon="camera-outline" variant="secondary" minHeight={60} compact onPress={async () => { const p = await pickPhoto('camera'); if (p) { deleteImported(imageUri); setImageUri(p.uri); } }} style={styles.half} />
+            <BigButton label="Choose photo" icon="image-outline" variant="secondary" minHeight={60} compact onPress={async () => { const p = await pickPhoto('library'); if (p) { deleteImported(imageUri); setImageUri(p.uri); } }} style={styles.half} />
+          </View>
+          {imageUri ? <BigButton label="Remove photo (use icon)" icon="close" variant="outline" minHeight={56} onPress={() => { deleteImported(imageUri); setImageUri(null); }} /> : null}
           <IconPicker value={icon} onChange={setIcon} previewColor={color} />
 
           <ChoiceRow
@@ -180,6 +193,9 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   form: { padding: SPACING.lg, gap: SPACING.lg, paddingBottom: SPACING.xl * 2 },
   previewRow: { alignItems: 'center', gap: SPACING.sm },
-  previewLabel: { fontWeight: '700', color: Colors.text, alignSelf: 'flex-start' },
+  previewLabel: { fontFamily: Fonts.bold, color: Colors.text, alignSelf: 'flex-start' },
   previewHint: { color: Colors.textMuted, fontSize: 15 },
+  photo: { width: 160, height: 160, borderRadius: 80, alignSelf: 'center', borderWidth: 2, borderColor: Colors.border },
+  photoRow: { flexDirection: 'row', gap: SPACING.sm },
+  half: { flex: 1 },
 });

@@ -16,9 +16,11 @@ import { MAX_FONT_SCALE, SPACING } from '@/constants/sizes';
 import { routinesRepo } from '@/database';
 import { useRoutineItems, useRoutines, useSizes } from '@/hooks';
 import type { ParentScreenProps } from '@/navigation/types';
-import type { RoutineItem } from '@/types/models';
+import type { RoutineItem, RoutineSegment } from '@/types/models';
+import { ROUTINE_SEGMENT_META } from '@/constants/school';
 import { alertMessage, confirm } from '@/utils/confirm';
 import { formatTime } from '@/utils/date';
+import { Fonts } from '@/theme';
 
 type Editing = { mode: 'new' } | { mode: 'edit'; item: RoutineItem } | null;
 
@@ -35,6 +37,8 @@ export function ManageRoutineScreen({ navigation }: ParentScreenProps<'ManageRou
   const [label, setLabel] = useState('');
   const [icon, setIcon] = useState('weather-sunny');
   const [startTime, setStartTime] = useState<string | null>(null);
+  const [segment, setSegment] = useState<RoutineSegment>('morning');
+  const [notes, setNotes] = useState('');
   const [newRoutineName, setNewRoutineName] = useState('');
 
   // Select the active routine by default.
@@ -53,6 +57,8 @@ export function ManageRoutineScreen({ navigation }: ParentScreenProps<'ManageRou
     setLabel('');
     setIcon('weather-sunny');
     setStartTime(null);
+    setSegment('morning');
+    setNotes('');
     setEditing({ mode: 'new' });
   };
 
@@ -60,14 +66,16 @@ export function ManageRoutineScreen({ navigation }: ParentScreenProps<'ManageRou
     setLabel(item.label);
     setIcon(item.icon);
     setStartTime(item.startTime);
+    setSegment(item.segment);
+    setNotes(item.notes);
     setEditing({ mode: 'edit', item });
   };
 
   const saveItem = async () => {
     if (!routineId) return;
     if (!label.trim()) return alertMessage('Please give the step a name.');
-    if (editing?.mode === 'edit') await routinesRepo.updateItem(editing.item.id, label, icon, startTime);
-    else await routinesRepo.addItem(routineId, label, icon, startTime);
+    if (editing?.mode === 'edit') await routinesRepo.updateItem(editing.item.id, label, icon, startTime, segment, notes);
+    else await routinesRepo.addItem(routineId, label, icon, startTime, segment, notes);
     setEditing(null);
   };
 
@@ -95,7 +103,7 @@ export function ManageRoutineScreen({ navigation }: ParentScreenProps<'ManageRou
 
   return (
     <ScreenContainer edges={['top', 'bottom', 'left', 'right']}>
-      <ScreenHeader title="Visual routine" onBack={() => navigation.goBack()} />
+      <ScreenHeader title="Daily schedule" onBack={() => navigation.goBack()} />
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.list} keyboardShouldPersistTaps="handled">
           {routines.length > 1 ? (
@@ -125,7 +133,14 @@ export function ManageRoutineScreen({ navigation }: ParentScreenProps<'ManageRou
                 {editing.mode === 'new' ? 'New step' : 'Edit step'}
               </Text>
               <FormField label="Step name" value={label} onChangeText={setLabel} placeholder="e.g. Snack" maxLength={30} />
+              <ChoiceRow<RoutineSegment>
+                label="Part of the day"
+                value={segment}
+                onChange={setSegment}
+                choices={(Object.keys(ROUTINE_SEGMENT_META) as RoutineSegment[]).map((k) => ({ value: k, label: `${ROUTINE_SEGMENT_META[k].emoji} ${ROUTINE_SEGMENT_META[k].label}` }))}
+              />
               <TimeField label="Time (optional)" value={startTime} onChange={setStartTime} />
+              <FormField label="Note (optional)" value={notes} onChangeText={setNotes} placeholder='e.g. "Blue bag today"' maxLength={60} />
               <IconPicker value={icon} onChange={setIcon} />
               <View style={styles.editorButtons}>
                 <BigButton label="Save step" icon="content-save" onPress={saveItem} minHeight={64} />
@@ -141,7 +156,7 @@ export function ManageRoutineScreen({ navigation }: ParentScreenProps<'ManageRou
             <ListRow
               key={item.id}
               title={`${index + 1}. ${item.label}`}
-              subtitle={[item.startTime ? formatTime(item.startTime) : null, item.isDone ? 'Done today' : null].filter(Boolean).join(' · ') || undefined}
+              subtitle={[`${ROUTINE_SEGMENT_META[item.segment].emoji} ${ROUTINE_SEGMENT_META[item.segment].label}`, item.startTime ? formatTime(item.startTime) : null, item.notes || null, item.isDone ? 'Done today' : null].filter(Boolean).join(' · ')}
               icon={item.icon}
               dimmed={item.isDone}
               onPress={() => startEdit(item)}
@@ -183,7 +198,7 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   list: { padding: SPACING.lg, gap: SPACING.md, paddingBottom: SPACING.xl * 2 },
   routineRow: { gap: SPACING.sm },
-  routineName: { fontWeight: '800', color: Colors.text },
+  routineName: { fontFamily: Fonts.extrabold, color: Colors.text },
   editor: {
     gap: SPACING.md,
     padding: SPACING.md,
@@ -192,8 +207,8 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     backgroundColor: '#F2F6FF',
   },
-  editorTitle: { fontWeight: '800', color: Colors.text },
+  editorTitle: { fontFamily: Fonts.extrabold, color: Colors.text },
   editorButtons: { gap: SPACING.sm },
   footer: { gap: SPACING.md, marginTop: SPACING.lg },
-  sectionTitle: { fontWeight: '800', color: Colors.text, marginTop: SPACING.md },
+  sectionTitle: { fontFamily: Fonts.extrabold, color: Colors.text, marginTop: SPACING.md },
 });

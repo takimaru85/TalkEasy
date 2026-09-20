@@ -5,6 +5,7 @@ import { MAX_FONT_SCALE, MIN_PARENT_TARGET, RADIUS, SPACING } from '@/constants/
 import { useSizes } from '@/hooks/useSizes';
 import { formatTime } from '@/utils/date';
 import { Icon } from './Icon';
+import { Fonts } from '@/theme';
 
 interface Props {
   label: string;
@@ -80,7 +81,7 @@ function Stepper({ icon, label, onPress, small }: { icon: string; label: string;
 
 const styles = StyleSheet.create({
   wrap: { gap: SPACING.xs },
-  label: { fontWeight: '700', color: Colors.text, marginBottom: SPACING.xs },
+  label: { fontFamily: Fonts.bold, color: Colors.text, marginBottom: SPACING.xs },
   row: { flexDirection: 'row', alignItems: 'center', gap: SPACING.xs },
   stepper: {
     width: MIN_PARENT_TARGET - 4,
@@ -102,9 +103,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  valueText: { fontWeight: '800', color: Colors.text },
+  valueText: { fontFamily: Fonts.extrabold, color: Colors.text },
   legend: { flexDirection: 'row', gap: SPACING.xs, paddingHorizontal: 2 },
   legendText: { width: MIN_PARENT_TARGET - 4, textAlign: 'center', fontSize: 12, color: Colors.textMuted },
   clear: { alignSelf: 'flex-start', minHeight: 44, justifyContent: 'center', paddingHorizontal: SPACING.sm },
-  clearText: { color: Colors.primaryDark, fontWeight: '700', fontSize: 16 },
+  clearText: { color: Colors.primaryDark, fontFamily: Fonts.bold, fontSize: 16 },
 });

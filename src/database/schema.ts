@@ -203,6 +203,59 @@ export const MIGRATIONS: Migration[] = [
       UPDATE categories SET show_on_home = 1 WHERE key = 'feelings';
     `,
   },
+  {
+    version: 3,
+    sql: `
+      -- One row per child. Only one is active; the structure allows another child later.
+      CREATE TABLE IF NOT EXISTS child_profile (
+        id                INTEGER PRIMARY KEY AUTOINCREMENT,
+        name              TEXT    NOT NULL,
+        nickname          TEXT    NOT NULL DEFAULT '',
+        age               INTEGER,
+        grade             TEXT    NOT NULL DEFAULT '',
+        school            TEXT    NOT NULL DEFAULT '',
+        avatar            TEXT    NOT NULL DEFAULT '🙂',
+        photo_uri         TEXT,
+        favorite_color    TEXT    NOT NULL DEFAULT 'blue',
+        favorites_json    TEXT    NOT NULL DEFAULT '{}',
+        communication_json TEXT   NOT NULL DEFAULT '{}',
+        rewards_json      TEXT    NOT NULL DEFAULT '{}',
+        learning_goals    TEXT    NOT NULL DEFAULT '',
+        difficulty        TEXT    NOT NULL DEFAULT 'easy',
+        is_active         INTEGER NOT NULL DEFAULT 1,
+        created_at        TEXT    NOT NULL
+      );
+
+      -- Positive reward system: rewards the parent defines + a ledger of stars.
+      CREATE TABLE IF NOT EXISTS rewards (
+        id              INTEGER PRIMARY KEY AUTOINCREMENT,
+        title           TEXT    NOT NULL,
+        icon            TEXT    NOT NULL DEFAULT '🎁',
+        stars_required  INTEGER NOT NULL DEFAULT 10,
+        sort_order      INTEGER NOT NULL DEFAULT 0,
+        created_at      TEXT    NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS star_events (
+        id          INTEGER PRIMARY KEY AUTOINCREMENT,
+        amount      INTEGER NOT NULL,
+        reason      TEXT    NOT NULL DEFAULT '',
+        source      TEXT    NOT NULL DEFAULT 'manual',
+        created_at  TEXT    NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_star_events_created ON star_events(created_at DESC);
+
+      -- Routine steps belong to a part of the day and may carry a note.
+      ALTER TABLE routine_items ADD COLUMN segment TEXT NOT NULL DEFAULT 'morning';
+      ALTER TABLE routine_items ADD COLUMN notes TEXT NOT NULL DEFAULT '';
+
+      -- Activities are grouped (games, art, music, exercise, reading, outdoor, sensory, chores, therapy).
+      ALTER TABLE therapy_activities ADD COLUMN category TEXT NOT NULL DEFAULT 'therapy';
+
+      -- Communication tiles can show a real photo (of Mom, Dad, the teacher...).
+      ALTER TABLE communication_buttons ADD COLUMN image_uri TEXT;
+    `,
+  },
 ];
 
 export const CURRENT_SCHEMA_VERSION = MIGRATIONS[MIGRATIONS.length - 1].version;

@@ -1,9 +1,11 @@
 import type {
+  ActivityCategory,
   ActivityFrequency,
   AssignmentKind,
   AssignmentPriority,
   AssignmentStatus,
   DayOfWeek,
+  RoutineSegment,
   Difficulty,
   SchoolEventType,
 } from '@/types/models';
@@ -82,3 +84,22 @@ export const SECTION_EMOJI = {
   schoolMode: '🏫',
   calendar: '🗓️',
 } as const;
+
+export const ACTIVITY_CATEGORY_META: Record<ActivityCategory, { label: string; emoji: string; color: string }> = {
+  games: { label: 'Games', emoji: '🎲', color: '#FFF1C2' },
+  art: { label: 'Art', emoji: '🎨', color: '#FFDBEA' },
+  music: { label: 'Music', emoji: '🎵', color: '#E8DFFF' },
+  exercise: { label: 'Exercise', emoji: '🏃', color: '#DDF5E3' },
+  reading: { label: 'Reading', emoji: '📖', color: '#DCEBFF' },
+  outdoor: { label: 'Outdoor', emoji: '🌳', color: '#D3F3F0' },
+  sensory: { label: 'Sensory', emoji: '🖐️', color: '#FFE3C7' },
+  chores: { label: 'Chores', emoji: '🧹', color: '#ECEEF2' },
+  therapy: { label: 'Therapy', emoji: '🧩', color: '#FFD9D3' },
+};
+
+export const ROUTINE_SEGMENT_META: Record<RoutineSegment, { label: string; emoji: string }> = {
+  morning: { label: 'Morning', emoji: '🌅' },
+  school: { label: 'School', emoji: '🏫' },
+  afternoon: { label: 'After school', emoji: '🌤️' },
+  evening: { label: 'Evening', emoji: '🌙' },
+};

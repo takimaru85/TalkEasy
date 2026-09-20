@@ -1,8 +1,8 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { Colors } from '@/constants/colors';
 import { MAX_FONT_SCALE, MIN_CHILD_TARGET, SPACING } from '@/constants/sizes';
 import { useSizes } from '@/hooks/useSizes';
+import { Fonts, Radius, useTheme } from '@/theme';
 import { Icon } from './Icon';
 
 interface Props {
@@ -15,14 +15,23 @@ interface Props {
   rightIcon?: string;
   rightLabel?: string;
   onRightPress?: () => void;
+  /** Optional emoji shown before the title. */
+  emoji?: string;
 }
 
 /**
  * Header with optional back button (left) and one optional action (right).
- * Both controls are square, at least 64pt, and always in the same position.
+ * Both controls are pill-shaped, at least 64pt, and always in the same position.
  */
-export function ScreenHeader({ title, onBack, backIcon = 'arrow-left', backLabel, rightIcon, rightLabel, onRightPress }: Props) {
+export function ScreenHeader({ title, onBack, backIcon = 'arrow-left', backLabel, rightIcon, rightLabel, onRightPress, emoji }: Props) {
   const sizes = useSizes();
+  const theme = useTheme();
+  const buttonStyle = [
+    styles.iconButton,
+    theme.shadow,
+    { backgroundColor: theme.colors.surface, borderColor: theme.highContrast ? theme.colors.border : theme.colors.borderSoft, borderWidth: theme.highContrast ? theme.borderWidth : 1 },
+  ];
+
   return (
     <View style={styles.row}>
       <View style={styles.side}>
@@ -32,11 +41,11 @@ export function ScreenHeader({ title, onBack, backIcon = 'arrow-left', backLabel
             accessibilityRole="button"
             accessibilityLabel={backLabel ?? 'Back'}
             hitSlop={8}
-            style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}
+            style={({ pressed }) => [buttonStyle, pressed && styles.pressed]}
           >
-            <Icon name={backIcon} size={backLabel ? 30 : 34} color={Colors.text} />
+            <Icon name={backIcon} size={backLabel ? 28 : 32} color={theme.colors.text} />
             {backLabel ? (
-              <Text style={styles.iconLabel} maxFontSizeMultiplier={MAX_FONT_SCALE}>
+              <Text style={[styles.iconLabel, { color: theme.colors.text }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
                 {backLabel}
               </Text>
             ) : null}
@@ -44,14 +53,17 @@ export function ScreenHeader({ title, onBack, backIcon = 'arrow-left', backLabel
         ) : null}
       </View>
 
-      <Text
-        style={[styles.title, { fontSize: sizes.heading }]}
-        maxFontSizeMultiplier={MAX_FONT_SCALE}
-        numberOfLines={1}
-        accessibilityRole="header"
-      >
-        {title}
-      </Text>
+      <View style={styles.titleWrap}>
+        {emoji ? <Text style={styles.emoji} allowFontScaling={false}>{emoji}</Text> : null}
+        <Text
+          style={[styles.title, { fontSize: sizes.heading, color: theme.colors.text }]}
+          maxFontSizeMultiplier={MAX_FONT_SCALE}
+          numberOfLines={1}
+          accessibilityRole="header"
+        >
+          {title}
+        </Text>
+      </View>
 
       <View style={[styles.side, styles.sideRight]}>
         {rightIcon && onRightPress ? (
@@ -60,11 +72,11 @@ export function ScreenHeader({ title, onBack, backIcon = 'arrow-left', backLabel
             accessibilityRole="button"
             accessibilityLabel={rightLabel ?? 'Menu'}
             hitSlop={8}
-            style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}
+            style={({ pressed }) => [buttonStyle, pressed && styles.pressed]}
           >
-            <Icon name={rightIcon} size={30} color={Colors.text} />
+            <Icon name={rightIcon} size={28} color={theme.colors.text} />
             {rightLabel ? (
-              <Text style={styles.iconLabel} maxFontSizeMultiplier={MAX_FONT_SCALE}>
+              <Text style={[styles.iconLabel, { color: theme.colors.text }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
                 {rightLabel}
               </Text>
             ) : null}
@@ -83,24 +95,18 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.sm,
     minHeight: MIN_CHILD_TARGET + SPACING.sm * 2,
   },
-  side: { width: MIN_CHILD_TARGET + 8, alignItems: 'flex-start' },
+  side: { width: MIN_CHILD_TARGET + 12, alignItems: 'flex-start' },
   sideRight: { alignItems: 'flex-end' },
-  title: {
-    flex: 1,
-    textAlign: 'center',
-    fontWeight: '800',
-    color: Colors.text,
-  },
+  titleWrap: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
+  emoji: { fontSize: 24, lineHeight: 30 },
+  title: { fontFamily: Fonts.black, textAlign: 'center', flexShrink: 1 },
   iconButton: {
-    width: MIN_CHILD_TARGET + 8,
+    width: MIN_CHILD_TARGET + 12,
     height: MIN_CHILD_TARGET,
-    borderRadius: 14,
-    borderWidth: 2,
-    borderColor: Colors.border,
-    backgroundColor: Colors.surface,
+    borderRadius: Radius.md,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  iconLabel: { fontSize: 12, fontWeight: '700', color: Colors.text, marginTop: -2 },
+  iconLabel: { fontFamily: Fonts.bold, fontSize: 12, marginTop: -2 },
   pressed: { opacity: 0.7 },
 });

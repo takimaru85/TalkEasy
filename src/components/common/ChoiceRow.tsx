@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Colors } from '@/constants/colors';
 import { MAX_FONT_SCALE, MIN_PARENT_TARGET, RADIUS, SPACING } from '@/constants/sizes';
 import { useSizes } from '@/hooks/useSizes';
+import { Fonts } from '@/theme';
 
 export interface Choice<T extends string> {
   value: T;
@@ -53,7 +54,7 @@ export function ChoiceRow<T extends string>({ label, choices, value, onChange }:
 
 const styles = StyleSheet.create({
   wrap: { gap: SPACING.sm },
-  label: { fontWeight: '700', color: Colors.text },
+  label: { fontFamily: Fonts.bold, color: Colors.text },
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm },
   segment: {
     flexGrow: 1,
@@ -68,6 +69,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.sm,
   },
   segmentSelected: { backgroundColor: Colors.primary, borderColor: Colors.primaryDark },
-  segmentText: { fontWeight: '700', color: Colors.text, textAlign: 'center' },
+  segmentText: { fontFamily: Fonts.bold, color: Colors.text, textAlign: 'center' },
   segmentTextSelected: { color: Colors.textOnDark },
 });

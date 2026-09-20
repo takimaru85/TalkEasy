@@ -2,7 +2,7 @@ import React from 'react';
 import { ScrollView, StyleSheet, Text } from 'react-native';
 import { BigButton, EmptyState, ListRow, ScreenContainer, ScreenHeader } from '@/components/common';
 import { Colors } from '@/constants/colors';
-import { FREQUENCY_META } from '@/constants/school';
+import { ACTIVITY_CATEGORY_META, FREQUENCY_META } from '@/constants/school';
 import { MAX_FONT_SCALE, SPACING } from '@/constants/sizes';
 import { therapyRepo } from '@/database';
 import { useTherapyActivities } from '@/hooks';
@@ -22,7 +22,7 @@ export function ManageTherapyScreen({ navigation }: ParentScreenProps<'ManageThe
 
   return (
     <ScreenContainer edges={['top', 'bottom', 'left', 'right']}>
-      <ScreenHeader title="Therapy & activities" onBack={() => navigation.goBack()} />
+      <ScreenHeader title="Activities" onBack={() => navigation.goBack()} />
       <ScrollView contentContainerStyle={styles.list}>
         <BigButton label="Add an activity" icon="plus-circle" minHeight={72} onPress={() => navigation.navigate('EditTherapy', {})} />
         {!loading && activities.length === 0 ? <EmptyState icon="dumbbell" title="No activities yet" /> : null}
@@ -30,7 +30,7 @@ export function ManageTherapyScreen({ navigation }: ParentScreenProps<'ManageThe
           <ListRow
             key={ex.id}
             title={ex.name}
-            subtitle={[ex.durationMinutes > 0 ? `${ex.durationMinutes} min` : null, FREQUENCY_META[ex.frequency].label, ex.isCompleted ? '✅ Completed' : '⬜ Not completed']
+            subtitle={[`${ACTIVITY_CATEGORY_META[ex.category].emoji} ${ACTIVITY_CATEGORY_META[ex.category].label}`, ex.durationMinutes > 0 ? `${ex.durationMinutes} min` : null, FREQUENCY_META[ex.frequency].label, ex.isCompleted ? '✅ Completed' : '⬜ Not completed']
               .filter(Boolean)
               .join(' · ')}
             icon={ex.icon}

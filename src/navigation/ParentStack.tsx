@@ -1,6 +1,8 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { DashboardScreen } from '@/screens/parent/DashboardScreen';
+import { ChildProfileScreen } from '@/screens/parent/ChildProfileScreen';
+import { ManageRewardsScreen } from '@/screens/parent/ManageRewardsScreen';
 import { ManageButtonsScreen } from '@/screens/parent/ManageButtonsScreen';
 import { EditButtonScreen } from '@/screens/parent/EditButtonScreen';
 import { ManageFavoritesScreen } from '@/screens/parent/ManageFavoritesScreen';
@@ -27,6 +29,8 @@ export function ParentStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Dashboard" component={DashboardScreen} />
+      <Stack.Screen name="ChildProfile" component={ChildProfileScreen} />
+      <Stack.Screen name="ManageRewards" component={ManageRewardsScreen} />
       <Stack.Screen name="ManageButtons" component={ManageButtonsScreen} />
       <Stack.Screen name="EditButton" component={EditButtonScreen} />
       <Stack.Screen name="ManageFavorites" component={ManageFavoritesScreen} />

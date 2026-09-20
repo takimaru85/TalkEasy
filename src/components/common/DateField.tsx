@@ -5,6 +5,7 @@ import { MAX_FONT_SCALE, MIN_PARENT_TARGET, RADIUS, SPACING } from '@/constants/
 import { useSizes } from '@/hooks/useSizes';
 import { addDays, formatShortDate, parseIsoDate, toIsoDate } from '@/utils/date';
 import { Icon } from './Icon';
+import { Fonts } from '@/theme';
 
 interface Props {
   label: string;
@@ -103,7 +104,7 @@ export function DateField({ label, value, onChange, optional = true }: Props) {
 
 const styles = StyleSheet.create({
   wrap: { gap: SPACING.sm },
-  label: { fontWeight: '700', color: Colors.text },
+  label: { fontFamily: Fonts.bold, color: Colors.text },
   valueRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.xs },
   stepper: {
     width: MIN_PARENT_TARGET - 6,
@@ -125,7 +126,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: SPACING.sm,
   },
-  valueText: { fontWeight: '700', color: Colors.text, textAlign: 'center' },
+  valueText: { fontFamily: Fonts.bold, color: Colors.text, textAlign: 'center' },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm },
   chip: {
     minHeight: MIN_PARENT_TARGET - 8,
@@ -139,6 +140,6 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
   chipSelected: { backgroundColor: Colors.primary, borderColor: Colors.primaryDark },
-  chipText: { fontWeight: '700', color: Colors.text, fontSize: 16 },
+  chipText: { fontFamily: Fonts.bold, color: Colors.text, fontSize: 16 },
   chipTextSelected: { color: Colors.textOnDark },
 });

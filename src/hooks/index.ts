@@ -7,6 +7,7 @@ export {
   useHomeCategories,
   useCategoryByKey,
   useMostUsedButtons,
+  useRecentButtons,
   useFavoriteIds,
   useQuickButtons,
 } from './useCommunicationButtons';
@@ -29,3 +30,5 @@ export { useToday } from './useToday';
 export { useSizes } from './useSizes';
 export type { Sizes } from './useSizes';
 export { useSpeak } from './useSpeak';
+export { useRewardList, useStarSummary, useStarHistory, useAwardStars } from './useRewards';
+export type { StarEventKind } from './useRewards';

@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Colors } from '@/constants/colors';
 import { MAX_FONT_SCALE, MIN_PARENT_TARGET, RADIUS, SPACING } from '@/constants/sizes';
 import { useSizes } from '@/hooks/useSizes';
+import { Fonts } from '@/theme';
 
 interface Props {
   label: string;
@@ -48,6 +49,6 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   emoji: { fontSize: 24, lineHeight: 30 },
-  value: { fontWeight: '900', color: Colors.text },
-  label: { color: Colors.textMuted, fontWeight: '700', textAlign: 'center' },
+  value: { fontFamily: Fonts.black, color: Colors.text },
+  label: { color: Colors.textMuted, fontFamily: Fonts.bold, textAlign: 'center' },
 });

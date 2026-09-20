@@ -3,6 +3,8 @@ import {
   DEFAULT_BUTTONS,
   DEFAULT_CATEGORIES,
   DEFAULT_FAVORITES,
+  DEFAULT_PROFILE,
+  DEFAULT_REWARDS,
   DEFAULT_ROUTINE_ITEMS,
   DEFAULT_ROUTINE_NAME,
   DEFAULT_SETTINGS,
@@ -17,9 +19,10 @@ const LEGACY_SEED_FLAG = 'seeded_v1';
 /**
  * Seeds default content.
  *
- * - Fresh install: everything below is inserted.
- * - Upgrade (seed_version behind SEED_VERSION): only missing default categories, buttons and
- *   subjects are added — once — so the parent's earlier deletions are respected.
+ * - Fresh install: everything below is inserted (Brayden's demo profile included).
+ * - Upgrade (seed_version behind SEED_VERSION): only missing default categories, buttons,
+ *   subjects, rewards and the profile are added — once — so the parent's earlier deletions
+ *   are respected.
  */
 export async function seedIfNeeded(db: SQLiteDatabase): Promise<void> {
   const current = await getSeedVersion(db);
@@ -28,7 +31,7 @@ export async function seedIfNeeded(db: SQLiteDatabase): Promise<void> {
   const now = new Date().toISOString();
 
   await db.withExclusiveTransactionAsync(async (txn) => {
-    // ---- Categories (insert missing) ------------------------------------
+    // ---- Categories (insert missing, keep order) --------------------------
     for (let i = 0; i < DEFAULT_CATEGORIES.length; i++) {
       const cat = DEFAULT_CATEGORIES[i];
       await txn.runAsync(
@@ -67,7 +70,75 @@ export async function seedIfNeeded(db: SQLiteDatabase): Promise<void> {
       );
     }
 
-    // ---- Fresh-install-only content --------------------------------------
+    // ---- Profile (only if none exists) -----------------------------------
+    const profileCount = await txn.getFirstAsync<{ n: number }>('SELECT COUNT(*) AS n FROM child_profile');
+    if ((profileCount?.n ?? 0) === 0) {
+      // Carry over the learning difficulty a v2 install may have chosen.
+      const diff = await txn.getFirstAsync<{ value: string }>("SELECT value FROM app_settings WHERE key = 'learningDifficulty'");
+      const p = DEFAULT_PROFILE;
+      await txn.runAsync(
+        `INSERT INTO child_profile
+           (name, nickname, age, grade, school, avatar, photo_uri, favorite_color, favorites_json,
+            communication_json, rewards_json, learning_goals, difficulty, is_active, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)`,
+        p.name, p.nickname, p.age, p.grade, p.school, p.avatar, p.photoUri, p.favoriteColor,
+        JSON.stringify(p.favorites), JSON.stringify(p.communication), JSON.stringify(p.rewards),
+        p.learningGoals, diff?.value || p.difficulty, now,
+      );
+    }
+
+    // ---- Rewards (only if none exist) ------------------------------------
+    const rewardCount = await txn.getFirstAsync<{ n: number }>('SELECT COUNT(*) AS n FROM rewards');
+    if ((rewardCount?.n ?? 0) === 0) {
+      for (let i = 0; i < DEFAULT_REWARDS.length; i++) {
+        const r = DEFAULT_REWARDS[i];
+        await txn.runAsync(
+          'INSERT INTO rewards (title, icon, stars_required, sort_order, created_at) VALUES (?, ?, ?, ?, ?)',
+          r.title, r.icon, r.stars, i, now,
+        );
+      }
+    }
+
+    // ---- Routine: fresh installs get the full day; v2 installs get segments guessed by time
+    const routineCount = await txn.getFirstAsync<{ n: number }>('SELECT COUNT(*) AS n FROM routines');
+    if ((routineCount?.n ?? 0) === 0) {
+      const routine = await txn.runAsync(
+        'INSERT INTO routines (name, is_active, created_at) VALUES (?, 1, ?)',
+        DEFAULT_ROUTINE_NAME, now,
+      );
+      for (let i = 0; i < DEFAULT_ROUTINE_ITEMS.length; i++) {
+        const item = DEFAULT_ROUTINE_ITEMS[i];
+        await txn.runAsync(
+          `INSERT INTO routine_items (routine_id, label, icon, sort_order, is_done, start_time, segment, notes)
+           VALUES (?, ?, ?, ?, 0, ?, ?, ?)`,
+          routine.lastInsertRowId, item.label, item.icon, i, item.time, item.segment, item.notes ?? '',
+        );
+      }
+    } else if (current < 3) {
+      await txn.execAsync(`
+        UPDATE routine_items SET segment = CASE
+          WHEN start_time IS NULL THEN segment
+          WHEN start_time < '08:00' THEN 'morning'
+          WHEN start_time < '14:00' THEN 'school'
+          WHEN start_time < '18:00' THEN 'afternoon'
+          ELSE 'evening' END;
+      `);
+    }
+
+    // ---- Activities (fresh only) -----------------------------------------
+    const therapyCount = await txn.getFirstAsync<{ n: number }>('SELECT COUNT(*) AS n FROM therapy_activities');
+    if ((therapyCount?.n ?? 0) === 0) {
+      for (let i = 0; i < DEFAULT_THERAPY.length; i++) {
+        const t = DEFAULT_THERAPY[i];
+        await txn.runAsync(
+          `INSERT INTO therapy_activities (name, icon, instructions, duration_minutes, frequency, category, is_completed, sort_order, created_at)
+           VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?)`,
+          t.name, t.icon, t.instructions, t.durationMinutes, t.frequency, t.category, i, now,
+        );
+      }
+    }
+
+    // ---- Fresh-install-only: favorites + settings -------------------------
     if (fresh) {
       let favOrder = 0;
       for (const [catKey, label] of DEFAULT_FAVORITES) {
@@ -80,27 +151,6 @@ export async function seedIfNeeded(db: SQLiteDatabase): Promise<void> {
         await txn.runAsync(
           'INSERT OR IGNORE INTO favorites (button_id, sort_order, created_at) VALUES (?, ?, ?)',
           row.id, favOrder++, now,
-        );
-      }
-
-      const routine = await txn.runAsync(
-        'INSERT INTO routines (name, is_active, created_at) VALUES (?, 1, ?)',
-        DEFAULT_ROUTINE_NAME, now,
-      );
-      for (let i = 0; i < DEFAULT_ROUTINE_ITEMS.length; i++) {
-        const item = DEFAULT_ROUTINE_ITEMS[i];
-        await txn.runAsync(
-          'INSERT INTO routine_items (routine_id, label, icon, sort_order, is_done, start_time) VALUES (?, ?, ?, ?, 0, ?)',
-          routine.lastInsertRowId, item.label, item.icon, i, item.time,
-        );
-      }
-
-      for (let i = 0; i < DEFAULT_THERAPY.length; i++) {
-        const t = DEFAULT_THERAPY[i];
-        await txn.runAsync(
-          `INSERT INTO therapy_activities (name, icon, instructions, duration_minutes, frequency, is_completed, sort_order, created_at)
-           VALUES (?, ?, ?, ?, ?, 0, ?, ?)`,
-          t.name, t.icon, t.instructions, t.durationMinutes, t.frequency, i, now,
         );
       }
 

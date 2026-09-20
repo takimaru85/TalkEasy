@@ -2,7 +2,9 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { ChildScreen, EmptyState } from '@/components/common';
 import { CommunicationTile, PhraseBanner, TileGrid } from '@/components/communication';
-import { Colors } from '@/constants/colors';
+import { useProfile } from '@/context/ProfileContext';
+import { Fonts, useTheme } from '@/theme';
+import { SECTION_EMOJI } from '@/constants/school';
 import { MAX_FONT_SCALE, SPACING } from '@/constants/sizes';
 import { useFavoriteButtons, useMostUsedButtons, useSizes, useSpeak } from '@/hooks';
 import type { RootScreenProps } from '@/navigation/types';
@@ -13,6 +15,8 @@ import type { RootScreenProps } from '@/navigation/types';
  */
 export function FavoritesScreen(_props: RootScreenProps<'Favorites'>) {
   const sizes = useSizes();
+  const theme = useTheme();
+  const { displayName } = useProfile();
   const { data: favorites, loading } = useFavoriteButtons();
   const { data: mostUsed } = useMostUsedButtons(6);
   const { lastPhrase, lastButtonId, speakButton, repeat } = useSpeak();
@@ -23,8 +27,8 @@ export function FavoritesScreen(_props: RootScreenProps<'Favorites'>) {
   const footer =
     extraMostUsed.length > 0 ? (
       <View style={styles.section}>
-        <Text style={[styles.sectionTitle, { fontSize: sizes.body }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
-          Used a lot
+        <Text style={[styles.sectionTitle, { fontSize: sizes.body, color: theme.colors.textMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
+          USED A LOT
         </Text>
         <View style={[styles.grid, { gap: sizes.gap }]}>
           {extraMostUsed.map((b) => (
@@ -35,7 +39,7 @@ export function FavoritesScreen(_props: RootScreenProps<'Favorites'>) {
     ) : null;
 
   return (
-    <ChildScreen title="Favorites">
+    <ChildScreen title={`${displayName}'s favorites`} emoji={SECTION_EMOJI.favorites}>
       <PhraseBanner phrase={lastPhrase} onRepeat={repeat} />
       {!loading && favorites.length === 0 && extraMostUsed.length === 0 ? (
         <EmptyState icon="star" title="No favorites yet" message="A parent can star buttons in Parent Mode." />
@@ -48,6 +52,6 @@ export function FavoritesScreen(_props: RootScreenProps<'Favorites'>) {
 
 const styles = StyleSheet.create({
   section: { marginTop: SPACING.lg, gap: SPACING.sm },
-  sectionTitle: { fontWeight: '800', color: Colors.textMuted },
+  sectionTitle: { fontFamily: Fonts.extrabold, letterSpacing: 1 },
   grid: { flexDirection: 'row', flexWrap: 'wrap' },
 });

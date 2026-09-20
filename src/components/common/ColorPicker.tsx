@@ -4,6 +4,7 @@ import { Colors, TileColors } from '@/constants/colors';
 import { MAX_FONT_SCALE, MIN_PARENT_TARGET, SPACING } from '@/constants/sizes';
 import { useSizes } from '@/hooks/useSizes';
 import { Icon } from './Icon';
+import { Fonts } from '@/theme';
 
 interface Props {
   value: string;
@@ -41,7 +42,7 @@ export function ColorPicker({ value, onChange }: Props) {
 
 const styles = StyleSheet.create({
   wrap: { gap: SPACING.sm },
-  label: { fontWeight: '700', color: Colors.text },
+  label: { fontFamily: Fonts.bold, color: Colors.text },
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm },
   swatch: {
     width: MIN_PARENT_TARGET + 4,

@@ -6,10 +6,12 @@ import { Colors } from '@/constants/colors';
 import { MAX_FONT_SCALE, SPACING } from '@/constants/sizes';
 import { useSettings } from '@/context/SettingsContext';
 import { assignmentsRepo } from '@/database';
-import { useAssignments, useSizes, useSpeak, useToday } from '@/hooks';
+import { useProfile } from '@/context/ProfileContext';
+import { useAssignments, useAwardStars, useSizes, useSpeak, useToday } from '@/hooks';
 import type { RootScreenProps } from '@/navigation/types';
 import type { AssignmentWithSubject } from '@/types/models';
 import { confirm } from '@/utils/confirm';
+import { Fonts } from '@/theme';
 
 /**
  * The child's assignment list: what is not finished (soonest first), then what is done.
@@ -20,7 +22,9 @@ export function AssignmentsScreen({ navigation }: RootScreenProps<'Assignments'>
   const { settings } = useSettings();
   const { isoDate } = useToday();
   const { data: assignments, loading } = useAssignments();
-  const { speakPhrase } = useSpeak();
+  const { speakPhrase, speakFeedback } = useSpeak();
+  const { displayName } = useProfile();
+  const award = useAwardStars();
 
   const open = assignments.filter((a) => a.status !== 'done');
   const done = assignments.filter((a) => a.status === 'done');
@@ -32,11 +36,14 @@ export function AssignmentsScreen({ navigation }: RootScreenProps<'Assignments'>
       if (!ok) return;
     }
     await assignmentsRepo.setStatus(a.id, finishing ? 'done' : 'todo');
-    speakPhrase(finishing ? 'Finished! Great job.' : a.title);
+    if (finishing) {
+      const stars = await award('assignment', a.title);
+      speakFeedback(`Finished! Great job, ${displayName}!${stars > 0 ? ` ${stars} stars.` : ''}`);
+    } else speakPhrase(a.title);
   };
 
   return (
-    <ChildScreen title="Assignments">
+    <ChildScreen title="Assignments" emoji="📝">
       {!loading && assignments.length === 0 ? (
         <EmptyState icon="pencil" title="No assignments" message="A parent can add assignments in Parent Mode." />
       ) : (
@@ -73,5 +80,5 @@ export function AssignmentsScreen({ navigation }: RootScreenProps<'Assignments'>
 
 const styles = StyleSheet.create({
   content: { paddingVertical: SPACING.sm, gap: SPACING.md, paddingBottom: SPACING.xl },
-  empty: { color: Colors.textMuted, fontWeight: '600' },
+  empty: { color: Colors.textMuted, fontFamily: Fonts.semibold },
 });

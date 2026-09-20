@@ -22,6 +22,7 @@ import type { ParentScreenProps } from '@/navigation/types';
 import type { DayOfWeek } from '@/types/models';
 import { alertMessage, confirm } from '@/utils/confirm';
 import { formatTime } from '@/utils/date';
+import { Fonts } from '@/theme';
 
 const SUBJECT_EMOJI = ['📖', '🇵🇭', '🔢', '🔬', '🏘️', '💗', '🎨', '🎵', '⚽', '💻', '🌍', '✏️', '📚', '🧪', '🎭', '🙏'];
 
@@ -173,7 +174,7 @@ export function EditSubjectScreen({ navigation, route }: ParentScreenProps<'Edit
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   form: { padding: SPACING.lg, gap: SPACING.md, paddingBottom: SPACING.xl * 2 },
-  label: { fontWeight: '700', color: Colors.text },
+  label: { fontFamily: Fonts.bold, color: Colors.text },
   emojiRow: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm },
   hint: { color: Colors.textMuted, fontSize: 16 },
   panel: {

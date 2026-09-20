@@ -10,6 +10,7 @@ import { MAX_FONT_SCALE, SPACING } from '@/constants/sizes';
 import { useAssignmentsDueBy, useQuickButtons, useScheduleForDay, useSizes, useSpeak, useToday } from '@/hooks';
 import type { RootScreenProps } from '@/navigation/types';
 import { formatTime } from '@/utils/date';
+import { Fonts } from '@/theme';
 
 /**
  * School Mode: the simplest possible screen for the classroom.
@@ -27,7 +28,7 @@ export function SchoolModeScreen({ navigation }: RootScreenProps<'SchoolMode'>) 
   const current = schedule.find((s) => s.startTime <= time && (!s.endTime || s.endTime >= time));
 
   return (
-    <ChildScreen title="School Mode">
+    <ChildScreen title="School Mode" emoji={SECTION_EMOJI.schoolMode}>
       <PhraseBanner phrase={lastPhrase} onRepeat={repeat} placeholder="Tap what you need" />
       <ScrollView contentContainerStyle={[styles.content, { paddingHorizontal: sizes.horizontalPadding }]}>
         <View style={[styles.grid, { gap: sizes.gap }]}>
@@ -72,5 +73,5 @@ export function SchoolModeScreen({ navigation }: RootScreenProps<'SchoolMode'>) 
 const styles = StyleSheet.create({
   content: { paddingVertical: SPACING.sm, gap: SPACING.md, paddingBottom: SPACING.xl },
   grid: { flexDirection: 'row', flexWrap: 'wrap' },
-  empty: { color: Colors.textMuted, fontWeight: '600' },
+  empty: { color: Colors.textMuted, fontFamily: Fonts.semibold },
 });

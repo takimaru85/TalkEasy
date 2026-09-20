@@ -7,6 +7,7 @@ import { useSizes } from '@/hooks/useSizes';
 import type { CalendarEntry } from '@/types/models';
 import { describeDueDate, formatTime } from '@/utils/date';
 import { Icon } from '@/components/common/Icon';
+import { Fonts } from '@/theme';
 
 interface Props {
   entry: CalendarEntry;
@@ -66,7 +67,7 @@ const styles = StyleSheet.create({
   done: { opacity: 0.6 },
   pressed: { opacity: 0.8 },
   text: { flex: 1, gap: 2 },
-  title: { fontWeight: '800', color: Colors.text },
+  title: { fontFamily: Fonts.extrabold, color: Colors.text },
   titleDone: { textDecorationLine: 'line-through' },
-  meta: { color: Colors.textMuted, fontWeight: '600' },
+  meta: { color: Colors.textMuted, fontFamily: Fonts.semibold },
 });

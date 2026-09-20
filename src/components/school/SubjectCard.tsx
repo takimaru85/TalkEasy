@@ -5,6 +5,7 @@ import { MAX_FONT_SCALE, RADIUS, SPACING } from '@/constants/sizes';
 import { useSizes } from '@/hooks/useSizes';
 import type { Subject } from '@/types/models';
 import { Icon } from '@/components/common/Icon';
+import { Fonts } from '@/theme';
 
 interface Props {
   subject: Subject;
@@ -60,6 +61,6 @@ const styles = StyleSheet.create({
   highlighted: { borderColor: Colors.primaryDark, borderWidth: 5 },
   pressed: { opacity: 0.8 },
   text: { flex: 1, gap: 2 },
-  name: { fontWeight: '800', color: Colors.text },
-  subtitle: { fontWeight: '700', color: Colors.textMuted },
+  name: { fontFamily: Fonts.extrabold, color: Colors.text },
+  subtitle: { fontFamily: Fonts.bold, color: Colors.textMuted },
 });
