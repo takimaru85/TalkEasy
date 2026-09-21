@@ -12,6 +12,7 @@ import { deleteImported, pickPhoto } from '@/services/files';
 import { ACCENTS, ACCENT_KEYS, Fonts, Radius, useTheme } from '@/theme';
 import type { ChildProfileInput, Difficulty, ThemeColorKey } from '@/types/models';
 import { alertMessage } from '@/utils/confirm';
+import { ANSWER_METHOD_META, ASSISTANCE_META, type AnswerMethod, type AssistanceLevel } from '@/adaptive/types';
 
 const DIFF_CHOICES = (Object.keys(DIFFICULTY_META) as Difficulty[]).map((d) => ({ value: d, label: DIFFICULTY_META[d].label }));
 
@@ -136,6 +137,21 @@ export function ChildProfileScreen({ navigation }: ParentScreenProps<'ChildProfi
           <SectionTitle title="Learning" emoji="📚" />
           <ChoiceRow<Difficulty> label="Difficulty" value={form.difficulty} onChange={(v) => set('difficulty', v)} choices={DIFF_CHOICES} />
           <FormField label="Learning goals" value={form.learningGoals} onChangeText={(v) => set('learningGoals', v)} placeholder="What are we working on?" multiline maxLength={600} />
+
+          <SectionTitle title="Adaptive Learning" emoji="🎓" />
+          <ChoiceRow<AssistanceLevel>
+            label="Assistance level"
+            value={form.assistanceLevel}
+            onChange={(v) => set('assistanceLevel', v)}
+            choices={(Object.keys(ASSISTANCE_META) as AssistanceLevel[]).map((k) => ({ value: k, label: `${ASSISTANCE_META[k].emoji} ${ASSISTANCE_META[k].label}` }))}
+          />
+          <Text style={[styles.hint, { color: theme.colors.textMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>{ASSISTANCE_META[form.assistanceLevel].description}</Text>
+          <ChoiceRow
+            label="Preferred answer method (offered first)"
+            value={form.preferredMethod ?? 'auto'}
+            onChange={(v) => set('preferredMethod', v === 'auto' ? null : (v as AnswerMethod))}
+            choices={[{ value: 'auto', label: 'Let the question decide' }, ...(Object.keys(ANSWER_METHOD_META) as AnswerMethod[]).map((m) => ({ value: m, label: `${ANSWER_METHOD_META[m].emoji} ${ANSWER_METHOD_META[m].short}` }))]}
+          />
 
           <SectionTitle title="Rewards" emoji="🏆" />
           <FormField label="Celebration message" value={form.rewards.celebrationMessage} onChangeText={(v) => set('rewards', { ...form.rewards, celebrationMessage: v })} hint="{name} is replaced with the child's name." maxLength={80} />

@@ -14,3 +14,5 @@ export { eventsRepo } from './repositories/eventsRepo';
 export { learningRepo } from './repositories/learningRepo';
 export { profileRepo } from './repositories/profileRepo';
 export { rewardsRepo } from './repositories/rewardsRepo';
+export { lessonsRepo } from './repositories/lessonsRepo';
+export { adaptiveProgressRepo, HANDWRITING_LEVEL_COUNT } from './repositories/adaptiveProgressRepo';

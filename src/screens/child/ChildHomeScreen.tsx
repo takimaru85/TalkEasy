@@ -10,6 +10,7 @@ import {
   useFavoriteButtons,
   useRecentLearning,
   useSizes,
+  useTodayLessons,
   useSpeak,
   useStarSummary,
   useToday,
@@ -19,10 +20,11 @@ import type { RootScreenProps } from '@/navigation/types';
 import { Fonts, Radius, useTheme } from '@/theme';
 import { formatTime } from '@/utils/date';
 
-type SectionScreen = 'Communicate' | 'School' | 'Learn' | 'MyDay' | 'Activities' | 'Favorites' | 'Feelings' | 'ParentPin';
+type SectionScreen = 'Communicate' | 'AdaptiveHome' | 'School' | 'Learn' | 'MyDay' | 'Activities' | 'Favorites' | 'Feelings' | 'ParentPin';
 
 const SECTIONS: { screen: SectionScreen; label: string; emoji: string; color: string }[] = [
   { screen: 'Communicate', label: 'Talk', emoji: SECTION_EMOJI.communicate, color: '#DCEBFF' },
+  { screen: 'AdaptiveHome', label: 'Lessons', emoji: '🎓', color: '#FFF1C2' },
   { screen: 'School', label: 'School', emoji: SECTION_EMOJI.school, color: '#DDF5E3' },
   { screen: 'Learn', label: 'Learn', emoji: SECTION_EMOJI.learn, color: '#E8DFFF' },
   { screen: 'MyDay', label: 'My Day', emoji: SECTION_EMOJI.myday, color: '#FFE3C7' },
@@ -56,7 +58,8 @@ export function ChildHomeScreen({ navigation }: RootScreenProps<'ChildHome'>) {
   const sizes = useSizes();
   const theme = useTheme();
   const { profile, displayName } = useProfile();
-  const { now, dayOfWeek } = useToday();
+  const { now, dayOfWeek, isoDate } = useToday();
+  const { data: todayLessons } = useTodayLessons(isoDate);
   const { data: routine } = useActiveRoutineItems();
   const { data: favorites } = useFavoriteButtons();
   const { data: recentLearning } = useRecentLearning(1);
@@ -143,6 +146,34 @@ export function ChildHomeScreen({ navigation }: RootScreenProps<'ChildHome'>) {
                     {next.startTime ? <Text style={[styles.planTime, { color: theme.colors.textMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>{formatTime(next.startTime)}</Text> : null}
                   </View>
                 ) : null}
+              </View>
+            </Card>
+          </PressableScale>
+        ) : null}
+
+        {/* Today's schoolwork (Adaptive Learning) */}
+        {todayLessons.length > 0 ? (
+          <PressableScale onPress={() => navigation.navigate('AdaptiveHome')} accessibilityRole="button" accessibilityLabel={`Today's schoolwork, ${todayLessons.filter((l) => l.activityCount > 0 && l.completedCount >= l.activityCount).length} of ${todayLessons.length} lessons done`}>
+            <Card color="#FFF1C2">
+              <View style={styles.planHeader}>
+                <Text style={[styles.planTitle, { fontSize: sizes.body + 2, color: theme.colors.text }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
+                  🎓 Today's schoolwork
+                </Text>
+                <Icon name="chevron-right" size={26} color={theme.colors.textMuted} />
+              </View>
+              <View style={styles.planRows}>
+                {todayLessons.slice(0, 3).map((l) => {
+                  const complete = l.activityCount > 0 && l.completedCount >= l.activityCount;
+                  return (
+                    <View key={l.id} style={[styles.planRow, { backgroundColor: theme.colors.surface, borderColor: complete ? theme.colors.success : theme.colors.borderSoft }]}>
+                      <Text style={[styles.planMark, { color: complete ? theme.colors.success : theme.colors.textMuted }]} allowFontScaling={false}>{complete ? '✓' : '○'}</Text>
+                      <Text style={styles.planEmoji} allowFontScaling={false}>{l.subjectIcon}</Text>
+                      <Text style={[styles.planLabel, { fontSize: sizes.body + 1, color: theme.colors.text }]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={1}>
+                        {l.subjectName} – {l.title}
+                      </Text>
+                    </View>
+                  );
+                })}
               </View>
             </Card>
           </PressableScale>
@@ -252,6 +283,7 @@ const styles = StyleSheet.create({
   planMark: { fontSize: 22, fontFamily: Fonts.black, width: 22, textAlign: 'center' },
   planLabel: { flex: 1, fontFamily: Fonts.extrabold },
   planTime: { fontFamily: Fonts.bold, fontSize: 15 },
+  planEmoji: { fontSize: 22, lineHeight: 28 },
   question: { fontFamily: Fonts.bold, textAlign: 'center', marginTop: SPACING.xs },
   grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-start' },
   tile: { borderRadius: Radius.lg, alignItems: 'center', justifyContent: 'center', gap: SPACING.xs, padding: SPACING.sm },

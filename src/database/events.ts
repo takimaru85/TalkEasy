@@ -16,7 +16,9 @@ export type DbTopic =
   | 'learning'
   | 'profile'
   | 'rewards'
-  | 'recent';
+  | 'recent'
+  | 'lessons'
+  | 'adaptive';
 
 type Listener = () => void;
 

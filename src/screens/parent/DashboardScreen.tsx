@@ -21,6 +21,8 @@ import { Fonts } from '@/theme';
 type MenuScreen = Extract<
   keyof ParentStackParamList,
   | 'ChildProfile'
+  | 'ManageLessons'
+  | 'AdaptiveProgress'
   | 'ManageRewards'
   | 'ManageButtons'
   | 'ManageFavorites'
@@ -37,6 +39,8 @@ type MenuScreen = Extract<
 
 const MENU: { screen: MenuScreen; label: string; icon: string }[] = [
   { screen: 'ChildProfile', label: 'My child (name, photo, colour, favourites)', icon: 'account-heart' },
+  { screen: 'ManageLessons', label: 'Lessons (Adaptive Learning)', icon: 'school-outline' },
+  { screen: 'AdaptiveProgress', label: 'Learning progress & handwriting', icon: 'chart-bar' },
   { screen: 'ManageRewards', label: 'Stars & rewards', icon: 'gift-outline' },
   { screen: 'ManageButtons', label: 'Communication cards', icon: 'message-text' },
   { screen: 'ManageFavorites', label: 'Favorites', icon: 'star' },
@@ -48,7 +52,7 @@ const MENU: { screen: MenuScreen; label: string; icon: string }[] = [
   { screen: 'ManageTherapy', label: 'Activities', icon: 'puzzle' },
   { screen: 'CareNotes', label: 'Care notes', icon: 'note-text-outline' },
   { screen: 'Progress', label: 'Progress', icon: 'chart-bar' },
-  { screen: 'Settings', label: 'Settings, speech, sizes & PIN', icon: 'cog-outline' },
+  { screen: 'Settings', label: 'Accessibility, speech, sizes & PIN', icon: 'cog-outline' },
 ];
 
 /**

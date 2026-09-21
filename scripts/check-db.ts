@@ -60,6 +60,11 @@ async function freshInstall() {
   assert(count(raw, 'child_profile') === 1, 'demo profile seeded');
   assert((raw.prepare('SELECT name FROM child_profile').get() as any).name === 'Brayden', 'profile name');
   assert(count(raw, 'rewards') === 3, 'three rewards');
+  assert(count(raw, 'lessons') === 4, 'four demo lessons');
+  assert(count(raw, 'lesson_activities') === 12, 'twelve demo activities');
+  raw.prepare("INSERT INTO adaptive_attempts (child_id, lesson_id, activity_id, answer_method, correct, attempts, answer_text, completed_at) VALUES (1, 1, 1, 'speak', 1, 1, 'sunlight', 'x')").run();
+  raw.prepare('DELETE FROM lessons WHERE id = 1').run();
+  assert(count(raw, 'adaptive_attempts') === 0, 'attempts cascade with lesson');
   assert(count(raw, 'routine_items') === 12, 'twelve routine steps');
   assert((raw.prepare("SELECT segment FROM routine_items WHERE label='Bedtime'").get() as any).segment === 'evening', 'segment seeded');
   raw.prepare("INSERT INTO star_events (amount, reason, source, created_at) VALUES (3, 'test', 'manual', 'x')").run();
@@ -128,7 +133,9 @@ async function upgradeFromV1() {
   assert(count(raw, 'therapy_activities') === 1, 'exercises renamed to therapy_activities with data');
   assert(count(raw, 'subjects') === 7, 'subjects seeded on upgrade');
   assert(count(raw, 'routines') === 1, 'routine not duplicated on upgrade');
-  assert((raw.prepare(`SELECT value FROM app_settings WHERE key='seed_version'`).get() as any).value === '3', 'seed_version recorded');
+  assert((raw.prepare(`SELECT value FROM app_settings WHERE key='seed_version'`).get() as any).value === '4', 'seed_version recorded');
+  assert(count(raw, 'lessons') === 4, 'demo lessons added on upgrade');
+  assert((raw.prepare('SELECT assistance_level FROM child_profile').get() as any).assistance_level === 'assisted', 'assistance level default');
   console.log('upgrade OK');
 }
 
