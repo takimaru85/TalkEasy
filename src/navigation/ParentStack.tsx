@@ -20,6 +20,9 @@ import { CareNotesScreen } from '@/screens/parent/CareNotesScreen';
 import { EditNoteScreen } from '@/screens/parent/EditNoteScreen';
 import { ProgressScreen } from '@/screens/parent/ProgressScreen';
 import { SettingsScreen } from '@/screens/parent/SettingsScreen';
+import { ManageLessonsScreen } from '@/screens/parent/ManageLessonsScreen';
+import { EditLessonScreen } from '@/screens/parent/EditLessonScreen';
+import { AdaptiveProgressScreen } from '@/screens/parent/AdaptiveProgressScreen';
 import type { ParentStackParamList } from './types';
 
 const Stack = createNativeStackNavigator<ParentStackParamList>();
@@ -48,6 +51,9 @@ export function ParentStack() {
       <Stack.Screen name="EditNote" component={EditNoteScreen} />
       <Stack.Screen name="Progress" component={ProgressScreen} />
       <Stack.Screen name="Settings" component={SettingsScreen} />
+      <Stack.Screen name="ManageLessons" component={ManageLessonsScreen} />
+      <Stack.Screen name="EditLesson" component={EditLessonScreen} />
+      <Stack.Screen name="AdaptiveProgress" component={AdaptiveProgressScreen} />
     </Stack.Navigator>
   );
 }

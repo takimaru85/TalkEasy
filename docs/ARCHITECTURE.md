@@ -227,3 +227,46 @@ event. `rewardsRepo.getSummary()` returns total, earned-today and the next reach
 `routine_items.segment` (morning / school / afternoon / evening) groups My Day and lets the parent
 maintain morning, school, after-school and bedtime routines in one list. `therapy_activities.category`
 (games, art, music, exercise, reading, outdoor, sensory, chores, therapy) groups Activities.
+
+---
+
+# v4 — Adaptive Learning & Accessible Schoolwork
+
+Goal: the child demonstrates what they know through whichever answer METHOD works for their
+body; the learning objective never changes.
+
+## Data (migration 4)
+
+| table | purpose |
+|---|---|
+| `lessons` | the objective: subject, title, grade, explanation (`content`), visual vocabulary, objectives, optional `assigned_date` (Today's schoolwork) |
+| `lesson_activities` | questions: `type` (mcq / picture / matching / typing / speaking / writing), choices, pairs, accepted answers, hint, **allowed answer methods** |
+| `adaptive_attempts` | one row per answer: child, activity, `answer_method` (tap / picture / match / type / speak / write / assisted), correct, attempts, text |
+| `handwriting_sessions` | motor practice log (level 1–7, item, strokes, duration) — **kept separate** from learning progress |
+| `child_profile.assistance_level` / `preferred_method` | guided / assisted / independent; the method offered first |
+
+`adaptiveProgressRepo.getProgress()` returns learning % (correct activities / attempted) and
+handwriting % (levels tried / 7) as two independent numbers.
+
+## Code
+
+* `src/adaptive/types.ts` — method/type/assistance metadata; `answers.ts` — normalisation
+  ("ten" = 10, Filipino number words), containment matching, choice trimming per assistance
+  level, method ordering; `handwriting.ts` — 7 tracing levels; `demoLessons.ts` — seed content.
+* `src/services/speechRecognition.ts` — optional on-device STT (`expo-speech-recognition`,
+  `requiresOnDeviceRecognition`); absent in Expo Go → parent-assisted oral answer instead.
+  No audio is ever stored.
+* `src/components/adaptive/` — `ChoiceCard` (big cards, state shown by icon + border, never
+  colour only), `AnswerMethodPicker`, `BigKeyboard` (alphabetical, huge keys, scales in
+  landscape), `SpeechAnswer` (🎤 → transcript → ✓ Use / 🔄 Try again + grown-up ✓), `TapMatch`
+  (tap-to-match, no dragging), `HandwritingCanvas` (SVG + PanResponder, undo/clear/pen size).
+* Child screens `screens/child/adaptive/`: `AdaptiveHome` (dashboard + today's schoolwork),
+  `AdaptiveSubjects`, `AdaptiveLesson` (runner), `WritingPractice` → `WritingCanvas`, `SpeakPractice`.
+* Parent screens: `ManageLessons` → `EditLesson` (lesson text, vocabulary, questions, allowed
+  methods), `AdaptiveProgress` (learning vs handwriting, strengths / areas to practise in
+  supportive language), assistance level + preferred method in *My child*.
+
+## Phase 2 hooks already in place
+Drag-and-drop (a `match` method exists; `TapMatch` is the fallback), offline lesson→activity
+generator (pre-fills `EditLesson`), teacher mode (lessons are child-independent rows; a
+`teacher` role only needs a second PIN), per-child accessibility (profile table is ready).

@@ -335,6 +335,10 @@ export interface ChildProfile {
   rewards: RewardPreferences;
   learningGoals: string;
   difficulty: Difficulty;
+  /** Adaptive Learning: how much help the child gets. */
+  assistanceLevel: 'guided' | 'assisted' | 'independent';
+  /** Adaptive Learning: the answer method offered first (null = let the activity decide). */
+  preferredMethod: 'tap' | 'picture' | 'match' | 'type' | 'speak' | 'write' | 'assisted' | null;
   isActive: boolean;
   createdAt: string;
 }

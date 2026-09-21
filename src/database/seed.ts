@@ -12,6 +12,7 @@ import {
   DEFAULT_THERAPY,
   SEED_VERSION,
 } from '@/constants/defaults';
+import { DEMO_LESSONS } from '@/adaptive/demoLessons';
 
 const SEED_VERSION_KEY = 'seed_version';
 const LEGACY_SEED_FLAG = 'seeded_v1';
@@ -68,6 +69,29 @@ export async function seedIfNeeded(db: SQLiteDatabase): Promise<void> {
          WHERE NOT EXISTS (SELECT 1 FROM subjects WHERE name = ?)`,
         s.name, s.icon, s.color, i, now, s.name,
       );
+    }
+
+    // ---- Demo lessons (insert missing by title; activities only with a new lesson) ------
+    for (const demo of DEMO_LESSONS) {
+      const exists = await txn.getFirstAsync<{ id: number }>('SELECT id FROM lessons WHERE title = ?', demo.lesson.title);
+      if (exists) continue;
+      const subject = await txn.getFirstAsync<{ id: number }>('SELECT id FROM subjects WHERE name = ?', demo.subjectName);
+      const maxOrder = await txn.getFirstAsync<{ m: number | null }>('SELECT MAX(sort_order) AS m FROM lessons');
+      const res = await txn.runAsync(
+        `INSERT INTO lessons (subject_id, title, grade_level, content, vocabulary_json, objectives, assigned_date, sort_order, is_active, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?)`,
+        subject?.id ?? null, demo.lesson.title, demo.lesson.gradeLevel, demo.lesson.content, JSON.stringify(demo.lesson.vocabulary),
+        demo.lesson.objectives, demo.lesson.assignedDate, (maxOrder?.m ?? -1) + 1, now,
+      );
+      for (let i = 0; i < demo.activities.length; i++) {
+        const a = demo.activities[i];
+        await txn.runAsync(
+          `INSERT INTO lesson_activities (lesson_id, type, question, image, choices_json, pairs_json, answers_json, hint, difficulty, allowed_methods_json, sort_order)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          res.lastInsertRowId, a.type, a.question, a.image, JSON.stringify(a.choices), JSON.stringify(a.pairs), JSON.stringify(a.answers),
+          a.hint, a.difficulty, JSON.stringify(a.allowedMethods), i,
+        );
+      }
     }
 
     // ---- Profile (only if none exists) -----------------------------------

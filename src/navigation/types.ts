@@ -24,6 +24,9 @@ export type ParentStackParamList = {
   EditNote: { noteId?: number };
   Progress: undefined;
   Settings: undefined;
+  ManageLessons: undefined;
+  EditLesson: { lessonId?: number };
+  AdaptiveProgress: undefined;
 };
 
 /** Child mode is one stack: a Home grid plus one screen per section. */
@@ -43,6 +46,12 @@ export type RootStackParamList = {
   MyDay: undefined;
   Activities: undefined;
   Favorites: undefined;
+  AdaptiveHome: undefined;
+  AdaptiveSubjects: undefined;
+  AdaptiveLesson: { lessonId: number };
+  WritingPractice: undefined;
+  WritingCanvas: { level: number };
+  SpeakPractice: undefined;
   ParentPin: undefined;
   Parent: NavigatorScreenParams<ParentStackParamList>;
 };

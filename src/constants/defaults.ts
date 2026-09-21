@@ -5,7 +5,7 @@ import { tileColor as c } from './colors';
  * Bump when defaults below gain new rows. On upgrade the seed inserts any missing default
  * category / button / subject once, without resurrecting rows the parent deleted earlier.
  */
-export const SEED_VERSION = 3;
+export const SEED_VERSION = 4;
 
 // ---------------------------------------------------------------------------
 // Child profile (demo data — everything here is editable in Parent Mode → My child)
@@ -41,6 +41,8 @@ export const DEFAULT_PROFILE: ChildProfileInput = {
   },
   learningGoals: 'Read short sentences. Count to 100. Say what I need at school.',
   difficulty: 'easy',
+  assistanceLevel: 'assisted',
+  preferredMethod: null,
 };
 
 export const AVATAR_CHOICES = ['🦖', '🐯', '🦁', '🐼', '🐨', '🦊', '🐸', '🐧', '🦄', '🐬', '🚀', '⚽', '🎨', '🎸', '🌟', '🙂'];

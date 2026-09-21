@@ -33,3 +33,14 @@ export { useSpeak } from './useSpeak';
 export { useRewardList, useStarSummary, useStarHistory, useAwardStars } from './useRewards';
 export type { StarEventKind } from './useRewards';
 export { useOrientationLock } from './useOrientationLock';
+export {
+  useLessons,
+  useTodayLessons,
+  useSubjectLessons,
+  useLesson,
+  useLessonActivities,
+  useCompletedActivityIds,
+  useAdaptiveProgress,
+  useRecentAttempts,
+  useHandwritingSessions,
+} from './useAdaptive';

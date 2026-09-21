@@ -27,6 +27,8 @@ interface ProfileRow {
   rewards_json: string;
   learning_goals: string;
   difficulty: string;
+  assistance_level: string;
+  preferred_method: string | null;
   is_active: number;
   created_at: string;
 }
@@ -58,6 +60,8 @@ function toModel(r: ProfileRow): ChildProfile {
     rewards: parseJson<RewardPreferences>(r.rewards_json, DEFAULT_PROFILE.rewards),
     learningGoals: r.learning_goals,
     difficulty: DIFFICULTIES.includes(r.difficulty as Difficulty) ? (r.difficulty as Difficulty) : 'easy',
+    assistanceLevel: (['guided', 'assisted', 'independent'] as const).includes(r.assistance_level as ChildProfile['assistanceLevel']) ? (r.assistance_level as ChildProfile['assistanceLevel']) : 'assisted',
+    preferredMethod: (r.preferred_method as ChildProfile['preferredMethod']) || null,
     isActive: r.is_active === 1,
     createdAt: r.created_at,
   };
@@ -90,12 +94,12 @@ export const profileRepo = {
       const res = await db.runAsync(
         `INSERT INTO child_profile
            (name, nickname, age, grade, school, avatar, photo_uri, favorite_color, favorites_json,
-            communication_json, rewards_json, learning_goals, difficulty, is_active, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            communication_json, rewards_json, learning_goals, difficulty, assistance_level, preferred_method, is_active, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         input.name.trim(), input.nickname.trim(), input.age, input.grade.trim(), input.school.trim(),
         input.avatar, input.photoUri, input.favoriteColor, JSON.stringify(input.favorites),
         JSON.stringify(input.communication), JSON.stringify(input.rewards), input.learningGoals.trim(),
-        input.difficulty, makeActive ? 1 : 0, nowIso(),
+        input.difficulty, input.assistanceLevel, input.preferredMethod, makeActive ? 1 : 0, nowIso(),
       );
       newId = res.lastInsertRowId;
     });
@@ -107,12 +111,13 @@ export const profileRepo = {
     const db = await getDb();
     await db.runAsync(
       `UPDATE child_profile SET name = ?, nickname = ?, age = ?, grade = ?, school = ?, avatar = ?, photo_uri = ?,
-         favorite_color = ?, favorites_json = ?, communication_json = ?, rewards_json = ?, learning_goals = ?, difficulty = ?
+         favorite_color = ?, favorites_json = ?, communication_json = ?, rewards_json = ?, learning_goals = ?, difficulty = ?,
+         assistance_level = ?, preferred_method = ?
        WHERE id = ?`,
       input.name.trim(), input.nickname.trim(), input.age, input.grade.trim(), input.school.trim(),
       input.avatar, input.photoUri, input.favoriteColor, JSON.stringify(input.favorites),
       JSON.stringify(input.communication), JSON.stringify(input.rewards), input.learningGoals.trim(),
-      input.difficulty, id,
+      input.difficulty, input.assistanceLevel, input.preferredMethod, id,
     );
     notify('profile');
   },

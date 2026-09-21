@@ -227,6 +227,30 @@ and celebration follows.
 * **Accessibility**: Settings → High contrast, Reduce animation, Spoken feedback on/off, plus
   button / text size and "ask before marking done". No state is shown by colour alone.
 
+## 8c. Adaptive Learning & Accessible Schoolwork (v4)
+
+Home → **🎓 Lessons**. The child sees *Hi, Brayden!*, **Today's schoolwork** (Start / Continue /
+Done per lesson), Writing practice, Speak your answer, and a learning progress bar.
+
+Every question lets the child choose **how** to answer from the methods the parent/teacher
+allowed: 👆 tap a big card · 🖼️ pick a picture · 🔗 tap-to-match · ⌨️ big on-screen keyboard ·
+🎤 say it (on-device speech-to-text in the installed app; a grown-up confirms in Expo Go) ·
+✍️ write with a finger (never mandatory) · 🙋 tell a grown-up. A wrong answer gets one gentle
+retry with the hint; the objective never changes.
+
+**Assistance level** (Parent → My child): 🟢 Guided (2 choices, hint shown) · 🟡 Assisted
+(3 choices, hint on request) · 🔵 Independent (all choices, typing/speaking first).
+
+**Writing practice**: 7 levels — lines, shapes, letters, numbers, words, copy words, short
+answers — on a large canvas with undo, clear and pen size. Not graded.
+
+**Parent → Lessons**: paste the school lesson, add visual vocabulary and questions, tick the
+allowed answer methods. **Parent → Learning progress**: learning % and handwriting % are shown
+separately, with strengths and "areas to practise" in supportive language.
+
+Check the engine with `npm run check:adaptive`. Speech-to-text needs a development/EAS build
+(`expo-speech-recognition` is a native module); everything else works in Expo Go.
+
 ## 9. How to extend
 
 * **New default phrase**: add a row to `DEFAULT_BUTTONS` in `src/constants/defaults.ts` and bump

@@ -11,3 +11,4 @@
 - Child screens use `ChildScreen` (Home button on the left). Parent screens use `ScreenContainer` + `ScreenHeader`.
 - Personalisation: never hard-code the child. Read `useProfile()` (name/displayName, avatar, favourites, preferences). Child UI colours come from `useTheme()`; text uses `Fonts` from `@/theme`.
 - Rewards: grant stars only through `useAwardStars(kind)`; the amounts live in the profile.
+- Adaptive Learning: answer methods are data (`allowed_methods_json`); never make handwriting the only method. Learning progress and handwriting practice are separate numbers - keep them separate. Speech-to-text is optional and on-device (`services/speechRecognition.ts`); never store audio.

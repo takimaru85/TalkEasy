@@ -19,6 +19,12 @@ import { LearnActivityScreen } from '@/screens/child/LearnActivityScreen';
 import { MyDayScreen } from '@/screens/child/MyDayScreen';
 import { ActivitiesScreen } from '@/screens/child/ActivitiesScreen';
 import { FavoritesScreen } from '@/screens/child/FavoritesScreen';
+import { AdaptiveHomeScreen } from '@/screens/child/adaptive/AdaptiveHomeScreen';
+import { AdaptiveSubjectsScreen } from '@/screens/child/adaptive/AdaptiveSubjectsScreen';
+import { AdaptiveLessonScreen } from '@/screens/child/adaptive/AdaptiveLessonScreen';
+import { WritingPracticeScreen } from '@/screens/child/adaptive/WritingPracticeScreen';
+import { WritingCanvasScreen } from '@/screens/child/adaptive/WritingCanvasScreen';
+import { SpeakPracticeScreen } from '@/screens/child/adaptive/SpeakPracticeScreen';
 import { ParentPinScreen } from '@/screens/parent/ParentPinScreen';
 import { ParentStack } from './ParentStack';
 import type { RootStackParamList } from './types';
@@ -66,6 +72,12 @@ export function RootNavigator() {
         <Stack.Screen name="MyDay" component={MyDayScreen} />
         <Stack.Screen name="Activities" component={ActivitiesScreen} />
         <Stack.Screen name="Favorites" component={FavoritesScreen} />
+        <Stack.Screen name="AdaptiveHome" component={AdaptiveHomeScreen} />
+        <Stack.Screen name="AdaptiveSubjects" component={AdaptiveSubjectsScreen} />
+        <Stack.Screen name="AdaptiveLesson" component={AdaptiveLessonScreen} />
+        <Stack.Screen name="WritingPractice" component={WritingPracticeScreen} />
+        <Stack.Screen name="WritingCanvas" component={WritingCanvasScreen} />
+        <Stack.Screen name="SpeakPractice" component={SpeakPracticeScreen} />
         <Stack.Screen
           name="ParentPin"
           component={ParentPinScreen}

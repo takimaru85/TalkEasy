@@ -256,6 +256,72 @@ export const MIGRATIONS: Migration[] = [
       ALTER TABLE communication_buttons ADD COLUMN image_uri TEXT;
     `,
   },
+  {
+    version: 4,
+    sql: `
+      -- Adaptive Learning & Accessible Schoolwork ------------------------------------------
+      -- A lesson is the learning objective (explanation + vocabulary); activities are the
+      -- questions; attempts record HOW the child answered. Handwriting practice is logged in
+      -- its own table so motor practice never mixes into learning progress.
+
+      ALTER TABLE child_profile ADD COLUMN assistance_level TEXT NOT NULL DEFAULT 'assisted';
+      ALTER TABLE child_profile ADD COLUMN preferred_method TEXT;
+
+      CREATE TABLE IF NOT EXISTS lessons (
+        id              INTEGER PRIMARY KEY AUTOINCREMENT,
+        subject_id      INTEGER REFERENCES subjects(id) ON DELETE SET NULL,
+        title           TEXT    NOT NULL,
+        grade_level     TEXT    NOT NULL DEFAULT '',
+        content         TEXT    NOT NULL DEFAULT '',
+        vocabulary_json TEXT    NOT NULL DEFAULT '[]',
+        objectives      TEXT    NOT NULL DEFAULT '',
+        assigned_date   TEXT,
+        sort_order      INTEGER NOT NULL DEFAULT 0,
+        is_active       INTEGER NOT NULL DEFAULT 1,
+        created_at      TEXT    NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS lesson_activities (
+        id                   INTEGER PRIMARY KEY AUTOINCREMENT,
+        lesson_id            INTEGER NOT NULL REFERENCES lessons(id) ON DELETE CASCADE,
+        type                 TEXT    NOT NULL DEFAULT 'mcq',
+        question             TEXT    NOT NULL,
+        image                TEXT,
+        choices_json         TEXT    NOT NULL DEFAULT '[]',
+        pairs_json           TEXT    NOT NULL DEFAULT '[]',
+        answers_json         TEXT    NOT NULL DEFAULT '[]',
+        hint                 TEXT    NOT NULL DEFAULT '',
+        difficulty           TEXT    NOT NULL DEFAULT 'easy',
+        allowed_methods_json TEXT    NOT NULL DEFAULT '[]',
+        sort_order           INTEGER NOT NULL DEFAULT 0
+      );
+      CREATE INDEX IF NOT EXISTS idx_lesson_activities ON lesson_activities(lesson_id, sort_order);
+
+      CREATE TABLE IF NOT EXISTS adaptive_attempts (
+        id             INTEGER PRIMARY KEY AUTOINCREMENT,
+        child_id       INTEGER NOT NULL,
+        lesson_id      INTEGER NOT NULL REFERENCES lessons(id) ON DELETE CASCADE,
+        activity_id    INTEGER NOT NULL REFERENCES lesson_activities(id) ON DELETE CASCADE,
+        answer_method  TEXT    NOT NULL,
+        correct        INTEGER NOT NULL DEFAULT 0,
+        attempts       INTEGER NOT NULL DEFAULT 1,
+        answer_text    TEXT    NOT NULL DEFAULT '',
+        completed_at   TEXT    NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_adaptive_attempts ON adaptive_attempts(child_id, lesson_id, activity_id);
+
+      CREATE TABLE IF NOT EXISTS handwriting_sessions (
+        id            INTEGER PRIMARY KEY AUTOINCREMENT,
+        child_id      INTEGER NOT NULL,
+        level         INTEGER NOT NULL,
+        item          TEXT    NOT NULL,
+        strokes       INTEGER NOT NULL DEFAULT 0,
+        duration_ms   INTEGER NOT NULL DEFAULT 0,
+        completed_at  TEXT    NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_handwriting ON handwriting_sessions(child_id, completed_at DESC);
+    `,
+  },
 ];
 
 export const CURRENT_SCHEMA_VERSION = MIGRATIONS[MIGRATIONS.length - 1].version;
