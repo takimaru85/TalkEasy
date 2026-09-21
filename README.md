@@ -1,5 +1,7 @@
 # TalkEasy
 
+_Created by **IB Golden** · ibgolden.com_
+
 A **private, offline-first companion app** for a Grade 2 child with cerebral palsy. One React
 Native + Expo + TypeScript codebase for Android and iPhone.
 

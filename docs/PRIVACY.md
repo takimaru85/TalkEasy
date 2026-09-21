@@ -33,5 +33,5 @@ delete on request — removing the app removes everything.
 
 ## Contact
 
-Questions about this policy can be sent to the developer through the project page:
-https://github.com/takimaru85/TalkEasy
+TalkEasy is created by **IB Golden** (ibgolden.com). Questions about this policy can be sent to
+IB Golden through the project page: https://github.com/takimaru85/TalkEasy
