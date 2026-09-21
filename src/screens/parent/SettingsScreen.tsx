@@ -9,6 +9,7 @@ import type { ParentScreenProps } from '@/navigation/types';
 import { listVoices, onSpeechStatus, speakWithSettings, speechStatus, type SpeechStatus, type VoiceOption } from '@/services/speech';
 import type { RotationMode, SizeOption } from '@/types/models';
 import { alertMessage } from '@/utils/confirm';
+import { BRAND } from '@/constants/brand';
 import { Fonts } from '@/theme';
 
 const RATE_CHOICES = [
@@ -211,6 +212,15 @@ export function SettingsScreen({ navigation }: ParentScreenProps<'Settings'>) {
             <Text style={styles.hint} maxFontSizeMultiplier={MAX_FONT_SCALE}>
               TalkEasy works fully offline. It has no account, no internet features, no analytics, and never
               sends any data off this device. Uninstalling the app deletes its data.
+            </Text>
+          </Section>
+
+          <Section title="About">
+            <Text style={[styles.label, { fontSize: sizes.body }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
+              {BRAND.appName} · Version {BRAND.version}
+            </Text>
+            <Text style={styles.hint} maxFontSizeMultiplier={MAX_FONT_SCALE}>
+              {BRAND.tagline} · {BRAND.website}{'\n'}{BRAND.copyright}. Built for children who communicate and learn in their own way.
             </Text>
           </Section>
         </ScrollView>

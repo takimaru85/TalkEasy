@@ -6,6 +6,7 @@ import { MAX_FONT_SCALE, SPACING } from '@/constants/sizes';
 import { useSettings } from '@/context/SettingsContext';
 import { useSizes } from '@/hooks';
 import type { RootScreenProps } from '@/navigation/types';
+import { BRAND } from '@/constants/brand';
 import { Fonts } from '@/theme';
 
 /** PIN gate in front of Parent Mode. Default PIN is 1234 — change it in Settings. */
@@ -41,6 +42,9 @@ export function ParentPinScreen({ navigation }: RootScreenProps<'ParentPin'>) {
           Wrong PIN. Try again.
         </Text>
         <BigButton label="Cancel" variant="secondary" onPress={() => navigation.goBack()} />
+        <Text style={[styles.credit, { fontSize: sizes.body - 4 }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
+          {BRAND.appName} {BRAND.version} · {BRAND.tagline}
+        </Text>
       </View>
     </ScreenContainer>
   );
@@ -49,5 +53,6 @@ export function ParentPinScreen({ navigation }: RootScreenProps<'ParentPin'>) {
 const styles = StyleSheet.create({
   body: { flex: 1, alignItems: 'center', paddingHorizontal: SPACING.xl, gap: SPACING.lg, paddingTop: SPACING.md },
   prompt: { fontFamily: Fonts.bold, color: Colors.text },
-  error: { color: Colors.danger, fontFamily: Fonts.bold },
+  error: { color: Colors.danger, fontWeight: '700' },
+  credit: { color: Colors.textMuted, marginTop: 'auto', paddingBottom: SPACING.md },
 });

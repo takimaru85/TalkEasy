@@ -10,6 +10,7 @@ import { RootNavigator } from '@/navigation/RootNavigator';
 import { prepareAudioSession } from '@/services/speech';
 import { useOrientationLock } from '@/hooks/useOrientationLock';
 import { Colors } from '@/constants/colors';
+import { BRAND } from '@/constants/brand';
 
 type BootState = { status: 'loading' } | { status: 'ready' } | { status: 'error'; message: string };
 
@@ -52,7 +53,8 @@ export default function App() {
       ) : (
         <View style={styles.center}>
           <ActivityIndicator size="large" color={Colors.primary} />
-          <Text style={styles.title}>TalkEasy</Text>
+          <Text style={styles.title}>{BRAND.appName}</Text>
+          <Text style={styles.message}>by {BRAND.publisher}</Text>
         </View>
       )}
     </SafeAreaProvider>

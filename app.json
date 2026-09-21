@@ -3,6 +3,7 @@
     "name": "TalkEasy",
     "slug": "talkeasy",
     "version": "1.0.0",
+    "description": "TalkEasy by IB Golden — an offline communication, school and learning companion for children.",
     "orientation": "default",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -18,13 +19,13 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.talkeasy.aac",
+      "bundleIdentifier": "com.ibgolden.talkeasy",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
-      "package": "com.talkeasy.aac",
+      "package": "com.ibgolden.talkeasy",
       "adaptiveIcon": {
         "backgroundColor": "#012CAA",
         "foregroundImage": "./assets/android-icon-foreground.png",
