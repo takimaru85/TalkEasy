@@ -6,17 +6,19 @@ import { MAX_FONT_SCALE, SPACING } from '@/constants/sizes';
 import { useAdaptiveProgress, useSizes, useSpeak } from '@/hooks';
 import type { RootScreenProps } from '@/navigation/types';
 import { Fonts, Radius, useTheme } from '@/theme';
+import { useI18n } from '@/i18n';
 
 /** Writing practice: seven levels as big cards. Levels already tried show a ⭐. */
 export function WritingPracticeScreen({ navigation }: RootScreenProps<'WritingPractice'>) {
   const sizes = useSizes();
+  const { t } = useI18n();
   const theme = useTheme();
   const { data: progress } = useAdaptiveProgress();
   const { speakFeedback } = useSpeak();
   const tried = new Set(progress.handwritingLevelsPractised);
 
   return (
-    <ChildScreen title="Writing practice" emoji="✏️" back>
+    <ChildScreen title={t('titleWritingPractice')} emoji="✏️" back>
       <ScrollView contentContainerStyle={[styles.content, { paddingHorizontal: sizes.horizontalPadding }]}>
         <Card>
           <Text style={[styles.intro, { fontSize: sizes.body + 1, color: theme.colors.text }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>

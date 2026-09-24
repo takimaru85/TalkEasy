@@ -44,3 +44,6 @@ export {
   useRecentAttempts,
   useHandwritingSessions,
 } from './useAdaptive';
+export { useTodaySoundPractice, useSoundAttemptsToday } from './useSoundPractice';
+export { useSoundRecorder } from './useSoundRecorder';
+export type { SoundRecorder, RecorderPhase } from './useSoundRecorder';

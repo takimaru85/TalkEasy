@@ -59,6 +59,8 @@ export function ScreenHeader({ title, onBack, backIcon = 'arrow-left', backLabel
           style={[styles.title, { fontSize: sizes.heading, color: theme.colors.text }]}
           maxFontSizeMultiplier={MAX_FONT_SCALE}
           numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.7}
           accessibilityRole="header"
         >
           {title}

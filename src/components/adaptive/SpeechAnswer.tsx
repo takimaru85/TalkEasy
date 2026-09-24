@@ -4,12 +4,14 @@ import { BigButton, Icon } from '@/components/common';
 import { MAX_FONT_SCALE, SPACING } from '@/constants/sizes';
 import { isSpeechRecognitionAvailable, requestSpeechPermission, startListening } from '@/services/speechRecognition';
 import { Fonts, Radius, useTheme } from '@/theme';
+import { useI18n } from '@/i18n';
 
 interface Props {
   /** Called with the transcript the child confirmed. */
   onUseAnswer: (text: string) => void;
   /** Parent-assisted fallback: a grown-up confirms the spoken answer was right / needs another try. */
   onAssistedResult: (correct: boolean) => void;
+  /** BCP-47 tag. Defaults to the language chosen in Settings. */
   lang?: string;
   /** What to ask the child to say (spoken aloud by the caller). */
   prompt?: string;
@@ -22,7 +24,9 @@ type Phase = 'idle' | 'listening' | 'review' | 'error';
  * Speaking is always optional. When speech-to-text is not available on this build/device the
  * panel becomes the "tell a grown-up" flow so the child can still answer orally.
  */
-export function SpeechAnswer({ onUseAnswer, onAssistedResult, lang = 'en-US', prompt }: Props) {
+export function SpeechAnswer({ onUseAnswer, onAssistedResult, lang, prompt }: Props) {
+  const { t, speechTag } = useI18n();
+  const listenLang = lang ?? speechTag;
   const theme = useTheme();
   const available = isSpeechRecognitionAvailable();
   const [phase, setPhase] = useState<Phase>('idle');
@@ -42,7 +46,7 @@ export function SpeechAnswer({ onUseAnswer, onAssistedResult, lang = 'en-US', pr
     setTranscript('');
     setPhase('listening');
     stopRef.current = startListening(
-      lang,
+      listenLang,
       ({ transcript: t, isFinal }) => {
         setTranscript(t);
         if (isFinal) setPhase('review');
@@ -73,7 +77,7 @@ export function SpeechAnswer({ onUseAnswer, onAssistedResult, lang = 'en-US', pr
           <Pressable
             onPress={phase === 'listening' ? stop : listen}
             accessibilityRole="button"
-            accessibilityLabel={phase === 'listening' ? 'Stop listening' : 'Tap to speak'}
+            accessibilityLabel={phase === 'listening' ? 'Stop listening' : t('tapToSpeak')}
             style={({ pressed }) => [
               styles.mic,
               theme.shadow,
@@ -83,7 +87,7 @@ export function SpeechAnswer({ onUseAnswer, onAssistedResult, lang = 'en-US', pr
           >
             <Icon name={phase === 'listening' ? 'stop' : 'microphone'} size={44} color="#FFFFFF" />
             <Text style={styles.micText} maxFontSizeMultiplier={MAX_FONT_SCALE}>
-              {phase === 'listening' ? 'Listening… tap to stop' : 'Tap to speak'}
+              {phase === 'listening' ? t('listening') : t('tapToSpeak')}
             </Text>
           </Pressable>
 
@@ -96,10 +100,10 @@ export function SpeechAnswer({ onUseAnswer, onAssistedResult, lang = 'en-US', pr
           {phase === 'review' && transcript ? (
             <View style={styles.actions}>
               <BigButton label="Use answer" icon="check-bold" variant="success" minHeight={72} onPress={() => onUseAnswer(transcript)} style={styles.half} />
-              <BigButton label="Try again" icon="replay" variant="outline" minHeight={72} onPress={listen} style={styles.half} />
+              <BigButton label={t('actionTryAgain')} icon="replay" variant="outline" minHeight={72} onPress={listen} style={styles.half} />
             </View>
           ) : null}
-          {phase === 'error' ? <BigButton label="Try again" icon="replay" variant="secondary" minHeight={64} onPress={listen} /> : null}
+          {phase === 'error' ? <BigButton label={t('actionTryAgain')} icon="replay" variant="secondary" minHeight={64} onPress={listen} /> : null}
         </>
       ) : (
         <View style={[styles.transcript, { backgroundColor: theme.colors.surface, borderColor: theme.colors.borderSoft }]}>

@@ -61,6 +61,8 @@ src/
 ├─ context/            SettingsContext
 ├─ database/           db, schema, seed, events, reorder, repositories/*
 ├─ hooks/              useDbQuery + hooks per data type, useSizes, useSpeak, useToday
+├─ i18n/               types, registry, I18nContext, locales/{en,fil}
+├─ soundpractice/      types, content (sounds, syllables, words, phrases)
 ├─ learning/           types, engine, content/{english,filipino,math,science,ap,esp}
 ├─ navigation/         RootNavigator (child stack), ParentStack, types
 ├─ screens/
@@ -71,10 +73,61 @@ src/
 │                      ManageSubjects/EditSubject, ManageAssignments/EditAssignment,
 │                      ManageEvents/EditEvent, ManageLearning, ManageRoutine,
 │                      ManageTherapy/EditTherapy, CareNotes/EditNote, Progress, Settings
-├─ services/           speech.ts, files.ts
+├─ services/           speech.ts, speechRecognition.ts, files.ts
 ├─ types/              models.ts
 └─ utils/              date.ts, confirm.ts
 ```
+
+## 2b. Localization (`src/i18n`)
+
+US English (`en-US`) is the default and the source of truth for the string keys; every other
+language is an addition. A locale is one object: `{ code, name, flag, speechTag, letterStyle,
+strings, content }`.
+
+* `strings` — child-facing UI text, typed by the `Strings` interface, so TypeScript flags any
+  key a new language forgets. Reached with `t('key', { name })` from `useI18n()`.
+* `content` — a map from the **English text seeded into SQLite** to this language. The database
+  itself is never translated or rewritten: `tContent(text)` translates at render time, so
+  switching language is lossless, and a parent's own tiles and notes pass through unchanged.
+* `speechTag` — the BCP-47 tag given to text-to-speech and on-device speech recognition.
+* `letterStyle` — `'standard'` (Nunito's ordinary double-storey "a") or `'single-storey'` (the
+  Filipino elementary-school "a"). This is the **only** glyph that differs between styles, and
+  English is never affected. See `assets/fonts/README.md`.
+
+The chosen language is one row in `app_settings` (`language`), so it needed no migration, and an
+unrecognised value falls back to US English. `registry.ts` holds the plain-data registry that
+non-React modules (the settings repository, the speech service) import, keeping the provider out
+of that import chain.
+
+Adding Spanish / Japanese / Korean: add the code to `LocaleCode`, copy `locales/en.ts`,
+translate it, add it to `LOCALES`. The Settings → Language selector is built from `LOCALES`, so
+it picks the new language up on its own. Verify with `npm run check:i18n`.
+
+Parent Mode is deliberately still English — it is the grown-up's screen, and translating it is a
+separate pass.
+
+## 2c. Sound Practice (`src/soundpractice`)
+
+Listen → Try → Repeat, for one speech sound at a time. It is a practice aid and is deliberately
+**not** an assessment: nothing is scored, nothing is transcribed, and no result is ever presented
+as clinical. Feedback is encouragement only.
+
+* **Content** is code, like `src/learning/content`: `SOUND_EXERCISES` carries each sound with its
+  syllables, words and phrases, so levels 2–4 need data only, not a redesign. The first version
+  practises the `'sound'` level.
+* **Model audio** goes through `services/soundPracticeAudio.ts`, which wraps the existing speech
+  service rather than starting a second audio system. Text-to-speech says the letter *name*
+  ("bee") rather than the sound, so an isolated sound is spoken from a phonetic `cue` ("buh")
+  anchored by an example word. Dropping a clip into that module's `MODEL_AUDIO` map makes the
+  sound play a real recording instead, with no screen changes — which is the right long-term
+  answer for phonemes and needs a speech-language pathologist, not a developer.
+* **Recording** lives in `hooks/useSoundRecorder.ts`. The child's voice is written to the OS
+  cache, played back, and deleted — on the next attempt, on leaving the screen and on unmount.
+  It is never copied into app storage, never transcribed, never written to SQLite and never
+  leaves the device. Missing microphone, refused permission and recording errors all degrade to
+  a working screen: listening and practising aloud is most of the exercise.
+* **Tracking** is `sound_practice_attempts` (migration 5): counts and minutes, never a score.
+  The table has no audio column and no correctness column, and `check:db` asserts both.
 
 ## 3. Navigation
 

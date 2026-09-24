@@ -1,15 +1,16 @@
 import { useCallback, useEffect, useState } from 'react';
 import * as Haptics from 'expo-haptics';
 import { useSettings } from '@/context/SettingsContext';
+import { useI18n } from '@/i18n';
 import { useProfile } from '@/context/ProfileContext';
 import { buttonsRepo } from '@/database';
 import { onSpeechStatus, speakWithSettings, speechStatus, stopSpeaking } from '@/services/speech';
 import type { CommunicationButton } from '@/types/models';
 
 /** "I want..." → "I want"; "Water" → "water" ; join → "I want water." */
-function composeSentence(starter: string, ending: CommunicationButton): string {
+function composeSentence(starter: string, endingLabel: string): string {
   const head = starter.replace(/\.\.\.$/, '').trim();
-  const tail = ending.label.trim().replace(/[.!?]+$/, '');
+  const tail = endingLabel.trim().replace(/[.!?]+$/, '');
   const lowered = tail.charAt(0).toLowerCase() + tail.slice(1);
   return `${head} ${lowered}.`;
 }
@@ -25,6 +26,8 @@ function composeSentence(starter: string, ending: CommunicationButton): string {
 export function useSpeak() {
   const { settings } = useSettings();
   const { profile } = useProfile();
+  // Tiles are stored in English; they are translated as they are spoken and shown (src/i18n).
+  const { tContent } = useI18n();
   const [lastPhrase, setLastPhrase] = useState<string | null>(null);
   const [lastButtonId, setLastButtonId] = useState<number | null>(null);
   const [pendingStarter, setPendingStarter] = useState<string | null>(null);
@@ -65,24 +68,26 @@ export function useSpeak() {
       haptic();
       buttonsRepo.recordTap(button.id).catch(() => {});
 
-      const isStarter = button.phrase.trim().endsWith('...');
+      const phrase = tContent(button.phrase);
+      const label = tContent(button.label);
+      const isStarter = phrase.trim().endsWith('...');
       if (profile.communication.sentenceBuilder) {
         if (isStarter) {
-          setPendingStarter(button.phrase);
+          setPendingStarter(phrase);
           setLastPhrase(null);
-          await speakWithSettings(button.phrase.replace(/\.\.\.$/, ''), settings);
+          await speakWithSettings(phrase.replace(/\.\.\.$/, ''), settings);
           return;
         }
         if (pendingStarter) {
-          const sentence = composeSentence(pendingStarter, button);
+          const sentence = composeSentence(pendingStarter, label);
           setPendingStarter(null);
           await speakPhrase(sentence);
           return;
         }
       }
-      await speakPhrase(profile.communication.speakFullPhrase ? button.phrase : button.label);
+      await speakPhrase(profile.communication.speakFullPhrase ? phrase : label);
     },
-    [haptic, speakPhrase, settings, profile.communication, pendingStarter],
+    [haptic, speakPhrase, settings, profile.communication, pendingStarter, tContent],
   );
 
   const repeat = useCallback(async () => {

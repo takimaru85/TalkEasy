@@ -299,4 +299,5 @@ export const DEFAULT_SETTINGS: AppSettings = {
   reducedMotion: false,
   soundEnabled: true,
   rotation: 'auto',
+  language: 'en-US',
 };

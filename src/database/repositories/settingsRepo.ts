@@ -1,11 +1,14 @@
 import { getDb } from '../db';
 import { notify } from '../events';
 import { DEFAULT_SETTINGS } from '@/constants/defaults';
+import { LOCALES } from '@/i18n/registry';
+import type { LocaleCode } from '@/i18n/types';
 import type { AppSettings, Difficulty, RotationMode, SizeOption } from '@/types/models';
 
 const SIZE_OPTIONS: SizeOption[] = ['medium', 'large', 'xlarge'];
 const DIFFICULTIES: Difficulty[] = ['easy', 'medium', 'hard'];
 const ROTATIONS: RotationMode[] = ['auto', 'always', 'portrait'];
+const LOCALE_CODES: LocaleCode[] = LOCALES.map((l) => l.code);
 
 function parseBool(value: string | undefined, fallback: boolean): boolean {
   if (value === undefined) return fallback;
@@ -50,6 +53,8 @@ export const settingsRepo = {
       reducedMotion: parseBool(map.get('reducedMotion'), DEFAULT_SETTINGS.reducedMotion),
       soundEnabled: parseBool(map.get('soundEnabled'), DEFAULT_SETTINGS.soundEnabled),
       rotation: ROTATIONS.includes(map.get('rotation') as RotationMode) ? (map.get('rotation') as RotationMode) : DEFAULT_SETTINGS.rotation,
+      // An unknown code (e.g. a language dropped in a later version) falls back to US English.
+      language: LOCALE_CODES.includes(map.get('language') as LocaleCode) ? (map.get('language') as LocaleCode) : DEFAULT_SETTINGS.language,
     };
   },
 

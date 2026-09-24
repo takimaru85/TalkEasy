@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ScrollView, StyleSheet, Text } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SpeechAnswer } from '@/components/adaptive';
 import { BigButton, Card, Celebration, ChildScreen } from '@/components/common';
 import { matchesFreeAnswer } from '@/adaptive/answers';
@@ -9,6 +9,7 @@ import { useSizes, useSpeak } from '@/hooks';
 import { isSpeechRecognitionAvailable } from '@/services/speechRecognition';
 import type { RootScreenProps } from '@/navigation/types';
 import { Fonts, useTheme } from '@/theme';
+import { useI18n } from '@/i18n';
 
 const PROMPTS: { question: string; emoji: string; answers: string[] }[] = [
   { question: 'What is 5 + 5?', emoji: '🖐️🖐️', answers: ['10', 'ten'] },
@@ -26,6 +27,7 @@ const PROMPTS: { question: string; emoji: string; answers: string[] }[] = [
  */
 export function SpeakPracticeScreen({ navigation }: RootScreenProps<'SpeakPractice'>) {
   const sizes = useSizes();
+  const { t } = useI18n();
   const theme = useTheme();
   const { displayName } = useProfile();
   const { speakFeedback } = useSpeak();
@@ -39,8 +41,8 @@ export function SpeakPracticeScreen({ navigation }: RootScreenProps<'SpeakPracti
     setResult({ text, ok });
     if (ok !== false) {
       setBurst((b) => b + 1);
-      speakFeedback(`Answer recorded. Great job, ${displayName}!`);
-    } else speakFeedback("Let's try that one again.");
+      speakFeedback(`${t('answerRecorded')}. ${t('greatJob', { name: displayName })}`);
+    } else speakFeedback(t('letsTryAgain'));
   };
 
   const nextQuestion = () => {
@@ -50,31 +52,33 @@ export function SpeakPracticeScreen({ navigation }: RootScreenProps<'SpeakPracti
   };
 
   return (
-    <ChildScreen title="Speak your answer" emoji="🎤" back>
+    <ChildScreen title={t('titleSpeakAnswer')} emoji="🎤" back>
       <Celebration trigger={burst} />
-      <ScrollView contentContainerStyle={[styles.content, { paddingHorizontal: sizes.horizontalPadding }]}>
+      <View style={[styles.questionWrap, { paddingHorizontal: sizes.horizontalPadding }]}>
         <Card color={theme.colors.primarySoft} style={styles.qCard}>
           <Text style={styles.emoji} allowFontScaling={false}>{prompt.emoji}</Text>
           <Text style={[styles.question, { fontSize: sizes.phrase - 4, color: theme.colors.text }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>{prompt.question}</Text>
-          <BigButton label="Hear again" icon="volume-high" variant="secondary" minHeight={56} fullWidth={false} style={styles.centred} onPress={() => speakFeedback(prompt.question)} />
+          <BigButton label={t('actionHearAgain')} icon="volume-high" variant="secondary" minHeight={56} fullWidth={false} style={styles.centred} onPress={() => speakFeedback(prompt.question)} />
         </Card>
+      </View>
 
+      <ScrollView style={styles.flex} contentContainerStyle={[styles.content, { paddingHorizontal: sizes.horizontalPadding }]}>
         {result ? (
           <Card>
             <Text style={[styles.recorded, { color: result.ok === false ? theme.colors.danger : theme.colors.success, fontSize: sizes.body + 4 }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
-              {result.ok === false ? '↻ Not quite — try again' : '✅ Answer recorded'}
+              {result.ok === false ? `↻ ${t('answerNotQuite')}` : `✅ ${t('answerRecorded')}`}
             </Text>
             {result.text ? (
               <Text style={[styles.answer, { fontSize: sizes.phrase, color: theme.colors.text }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
-                Answer: {result.text.toUpperCase()}
+                {t('answerLabel')}: {result.text.toUpperCase()}
               </Text>
             ) : null}
-            <BigButton label={result.ok === false ? 'Try again' : 'Next question'} icon={result.ok === false ? 'replay' : 'arrow-right'} minHeight={72} onPress={result.ok === false ? () => setResult(null) : nextQuestion} />
+            <BigButton label={result.ok === false ? t('actionTryAgain') : t('actionNextQuestion')} icon={result.ok === false ? 'replay' : 'arrow-right'} minHeight={72} onPress={result.ok === false ? () => setResult(null) : nextQuestion} />
           </Card>
         ) : (
           <SpeechAnswer
             key={index}
-            onUseAnswer={(t) => finish(t, prompt.answers.length ? matchesFreeAnswer(t, prompt.answers) : null)}
+            onUseAnswer={(text) => finish(text, prompt.answers.length ? matchesFreeAnswer(text, prompt.answers) : null)}
             onAssistedResult={(ok) => finish('', ok)}
           />
         )}
@@ -84,13 +88,17 @@ export function SpeakPracticeScreen({ navigation }: RootScreenProps<'SpeakPracti
             Tip for parents: speech-to-text works in the installed app (not Expo Go) and runs on the device only.
           </Text>
         ) : null}
-        <BigButton label="Done for now" variant="outline" minHeight={56} onPress={() => navigation.goBack()} />
+        <BigButton label={t('actionDoneForNow')} variant="outline" minHeight={56} onPress={() => navigation.goBack()} />
       </ScrollView>
     </ChildScreen>
   );
 }
 
 const styles = StyleSheet.create({
+  flex: { flex: 1 },
+  // flexGrow 0 + flexShrink 0: the question sizes to its own content and never borrows
+  // height from the answer controls below it.
+  questionWrap: { flexGrow: 0, flexShrink: 0, paddingTop: SPACING.sm, paddingBottom: SPACING.md },
   content: { paddingVertical: SPACING.sm, gap: SPACING.md, paddingBottom: SPACING.xl },
   qCard: { alignItems: 'center', gap: SPACING.sm },
   centred: { alignSelf: 'center' },

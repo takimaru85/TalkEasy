@@ -4,6 +4,7 @@ import { MAX_FONT_SCALE, MIN_CHILD_TARGET, SPACING } from '@/constants/sizes';
 import { Fonts, Radius, useTheme } from '@/theme';
 import { Icon } from '@/components/common/Icon';
 import type { Category } from '@/types/models';
+import { useI18n } from '@/i18n';
 
 interface Props {
   categories: Category[];
@@ -21,6 +22,7 @@ interface Props {
  * background AND a check icon, not by colour alone.
  */
 export function CategoryBar({ categories, selectedId, onSelect, visibleCount = 4 }: Props) {
+  const { tContent } = useI18n();
   const theme = useTheme();
   const [expanded, setExpanded] = useState(false);
 
@@ -59,7 +61,7 @@ export function CategoryBar({ categories, selectedId, onSelect, visibleCount = 4
           >
             <Icon name={selected ? 'check-bold' : item.icon} size={24} color={selected ? '#FFFFFF' : theme.colors.text} />
             <Text style={[styles.label, { color: selected ? '#FFFFFF' : theme.colors.text }]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={1}>
-              {item.name}
+              {tContent(item.name)}
             </Text>
           </Pressable>
         );

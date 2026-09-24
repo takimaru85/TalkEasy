@@ -12,6 +12,7 @@ import { Fonts, Radius, useTheme } from '@/theme';
 import type { RoutineItem, RoutineSegment } from '@/types/models';
 import { confirm } from '@/utils/confirm';
 import { formatTime } from '@/utils/date';
+import { useI18n } from '@/i18n';
 
 const SEGMENTS: { key: RoutineSegment; label: string; emoji: string }[] = [
   { key: 'morning', label: 'Morning', emoji: '🌅' },
@@ -33,6 +34,7 @@ export function MyDayScreen(_props: RootScreenProps<'MyDay'>) {
   const { data: routine, loading } = useActiveRoutine();
   const { data: items } = useActiveRoutineItems();
   const { speakPhrase, speakFeedback } = useSpeak();
+  const { t, tContent } = useI18n();
   const award = useAwardStars();
   const [burst, setBurst] = useState(0);
 
@@ -42,9 +44,9 @@ export function MyDayScreen(_props: RootScreenProps<'MyDay'>) {
   const next = currentIndex >= 0 ? items.slice(currentIndex + 1).find((i) => !i.isDone) ?? null : null;
 
   const onPressItem = async (item: RoutineItem) => {
-    speakPhrase(item.label);
+    speakPhrase(tContent(item.label));
     if (!item.isDone && settings.confirmComplete) {
-      const ok = await confirm('Finished?', `Mark "${item.label}" as done?`, 'Yes, done');
+      const ok = await confirm('Finished?', `Mark "${tContent(item.label)}" as done?`, 'Yes, done');
       if (!ok) return;
     }
     await routinesRepo.setItemDone(item.id, !item.isDone);
@@ -61,7 +63,7 @@ export function MyDayScreen(_props: RootScreenProps<'MyDay'>) {
   };
 
   return (
-    <ChildScreen title={routine?.name ?? 'My Day'} emoji={SECTION_EMOJI.myday}>
+    <ChildScreen title={routine ? tContent(routine.name) : t('sectionMyDay')} emoji={SECTION_EMOJI.myday}>
       <Celebration trigger={burst} />
       {!loading && items.length === 0 ? (
         <EmptyState icon="calendar-check" title="No plan yet" message="A parent can build the day in Parent Mode." />
@@ -114,7 +116,7 @@ export function MyDayScreen(_props: RootScreenProps<'MyDay'>) {
                       key={item.id}
                       onPress={() => onPressItem(item)}
                       accessibilityRole="button"
-                      accessibilityLabel={`${item.label}${item.startTime ? `, ${formatTime(item.startTime)}` : ''}${item.notes ? `, ${item.notes}` : ''}${item.isDone ? ', done' : isNow ? ', now' : ''}`}
+                      accessibilityLabel={`${tContent(item.label)}${item.startTime ? `, ${formatTime(item.startTime)}` : ''}${item.notes ? `, ${item.notes}` : ''}${item.isDone ? ', done' : isNow ? ', now' : ''}`}
                       accessibilityState={{ checked: item.isDone }}
                       hitSlop={4}
                       style={({ pressed }) => [
@@ -134,11 +136,11 @@ export function MyDayScreen(_props: RootScreenProps<'MyDay'>) {
                       </View>
                       <View style={styles.stepText}>
                         <Text style={[styles.label, { fontSize: sizes.tileLabel, color: item.isDone ? theme.colors.textMuted : theme.colors.text }, item.isDone && styles.labelDone]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={2}>
-                          {item.label}
+                          {tContent(item.label)}
                         </Text>
                         {item.startTime || item.notes ? (
                           <Text style={[styles.meta, { fontSize: sizes.body - 3, color: theme.colors.textMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={1}>
-                            {[item.startTime ? formatTime(item.startTime) : null, item.notes || null].filter(Boolean).join(' · ')}
+                            {[item.startTime ? formatTime(item.startTime) : null, item.notes ? tContent(item.notes) : null].filter(Boolean).join(' · ')}
                           </Text>
                         ) : null}
                       </View>

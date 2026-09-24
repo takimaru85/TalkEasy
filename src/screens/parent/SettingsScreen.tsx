@@ -7,6 +7,8 @@ import { useSettings } from '@/context/SettingsContext';
 import { useSizes } from '@/hooks';
 import type { ParentScreenProps } from '@/navigation/types';
 import { listVoices, onSpeechStatus, speakWithSettings, speechStatus, type SpeechStatus, type VoiceOption } from '@/services/speech';
+import { LOCALES } from '@/i18n';
+import type { LocaleCode } from '@/i18n/types';
 import type { RotationMode, SizeOption } from '@/types/models';
 import { alertMessage } from '@/utils/confirm';
 import { BRAND } from '@/constants/brand';
@@ -61,6 +63,20 @@ export function SettingsScreen({ navigation }: ParentScreenProps<'Settings'>) {
       <ScreenHeader title="Settings" onBack={() => navigation.goBack()} />
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.form} keyboardShouldPersistTaps="handled">
+          <Section title="Language">
+            <ChoiceRow<LocaleCode>
+              label="App language"
+              value={settings.language}
+              onChange={(v) => updateSetting('language', v)}
+              choices={LOCALES.map((l) => ({ value: l.code, label: `${l.flag} ${l.name}` }))}
+            />
+            <Text style={styles.hint} maxFontSizeMultiplier={MAX_FONT_SCALE}>
+              Changes the child's screens, the words on the communication cards and the voice used for
+              speaking and listening. Your own tiles and notes are never translated or rewritten — switching
+              back restores everything exactly as it was.
+            </Text>
+          </Section>
+
           <Section title="Speech">
             {!status.available ? (
               <View style={styles.warning}>

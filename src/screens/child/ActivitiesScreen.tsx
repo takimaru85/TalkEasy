@@ -11,6 +11,7 @@ import type { RootScreenProps } from '@/navigation/types';
 import { Fonts, Radius, useTheme } from '@/theme';
 import type { ActivityCategory, TherapyActivity } from '@/types/models';
 import { confirm } from '@/utils/confirm';
+import { useI18n } from '@/i18n';
 
 /**
  * Activities: cards grouped by category (games, art, music, exercise, reading, outdoor,
@@ -24,6 +25,7 @@ export function ActivitiesScreen(_props: RootScreenProps<'Activities'>) {
   const { profile, displayName } = useProfile();
   const { data: activities, loading } = useTherapyActivities();
   const { speakPhrase, speakFeedback } = useSpeak();
+  const { t, tContent } = useI18n();
   const award = useAwardStars();
   const [openId, setOpenId] = useState<number | null>(null);
   const [filter, setFilter] = useState<ActivityCategory | null>(null);
@@ -35,12 +37,12 @@ export function ActivitiesScreen(_props: RootScreenProps<'Activities'>) {
 
   const openCard = (ex: TherapyActivity) => {
     setOpenId(ex.id);
-    speakPhrase(ex.name);
+    speakPhrase(tContent(ex.name));
   };
 
   const toggleDone = async (ex: TherapyActivity) => {
     if (!ex.isCompleted && settings.confirmComplete) {
-      const ok = await confirm('Finished?', `Mark "${ex.name}" as done?`, 'Yes, done');
+      const ok = await confirm('Finished?', `Mark "${tContent(ex.name)}" as done?`, 'Yes, done');
       if (!ok) return;
     }
     await therapyRepo.setCompleted(ex.id, !ex.isCompleted);
@@ -50,7 +52,7 @@ export function ActivitiesScreen(_props: RootScreenProps<'Activities'>) {
       speakFeedback(personalize(profile.rewards.celebrationMessage, displayName));
       setTimeout(() => setOpenId(null), 900);
     } else {
-      speakPhrase(ex.name);
+      speakPhrase(tContent(ex.name));
       setOpenId(null);
     }
   };
@@ -58,12 +60,12 @@ export function ActivitiesScreen(_props: RootScreenProps<'Activities'>) {
   if (open) {
     const meta = ACTIVITY_CATEGORY_META[open.category];
     return (
-      <ChildScreen title={open.name} back>
+      <ChildScreen title={tContent(open.name)} back>
         <Celebration trigger={burst} />
         <ScrollView contentContainerStyle={[styles.detail, { paddingHorizontal: sizes.horizontalPadding }]}>
           <Card color={meta.color} style={styles.hero}>
             {open.imageUri ? (
-              <Image source={{ uri: open.imageUri }} style={styles.image} accessibilityIgnoresInvertColors accessibilityLabel={open.name} />
+              <Image source={{ uri: open.imageUri }} style={styles.image} accessibilityIgnoresInvertColors accessibilityLabel={tContent(open.name)} />
             ) : (
               <Icon name={open.icon} size={sizes.iconSize + 36} color={theme.colors.text} />
             )}
@@ -73,9 +75,9 @@ export function ActivitiesScreen(_props: RootScreenProps<'Activities'>) {
             </View>
           </Card>
           <Text style={[styles.instructions, { fontSize: sizes.body + 4, color: theme.colors.text }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
-            {open.instructions || 'No instructions yet.'}
+            {open.instructions ? tContent(open.instructions) : 'No instructions yet.'}
           </Text>
-          <BigButton label="Read it to me" icon="volume-high" variant="secondary" minHeight={76} onPress={() => speakPhrase(`${open.name}. ${open.instructions}`)} />
+          <BigButton label="Read it to me" icon="volume-high" variant="secondary" minHeight={76} onPress={() => speakPhrase(`${tContent(open.name)}. ${tContent(open.instructions)}`)} />
           <BigButton
             label={open.isCompleted ? 'Not done yet' : 'Done!'}
             icon={open.isCompleted ? 'close' : 'check-bold'}
@@ -89,7 +91,7 @@ export function ActivitiesScreen(_props: RootScreenProps<'Activities'>) {
   }
 
   return (
-    <ChildScreen title="Activities" emoji={SECTION_EMOJI.activities}>
+    <ChildScreen title={t('sectionActivities')} emoji={SECTION_EMOJI.activities}>
       {!loading && activities.length === 0 ? (
         <EmptyState icon="puzzle" title="No activities yet" message="A parent can add activities in Parent Mode." />
       ) : (
@@ -109,7 +111,7 @@ export function ActivitiesScreen(_props: RootScreenProps<'Activities'>) {
                 key={ex.id}
                 onPress={() => openCard(ex)}
                 accessibilityRole="button"
-                accessibilityLabel={`${ex.name}, ${meta.label}${ex.isCompleted ? ', done' : ', not completed'}`}
+                accessibilityLabel={`${tContent(ex.name)}, ${meta.label}${ex.isCompleted ? ', done' : ', not completed'}`}
                 hitSlop={4}
                 style={({ pressed }) => [
                   styles.card,
@@ -123,7 +125,7 @@ export function ActivitiesScreen(_props: RootScreenProps<'Activities'>) {
                 </View>
                 <View style={styles.cardText}>
                   <Text style={[styles.cardTitle, { fontSize: sizes.tileLabel + 1, color: ex.isCompleted ? theme.colors.textMuted : theme.colors.text }]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={2}>
-                    {ex.name}
+                    {tContent(ex.name)}
                   </Text>
                   <Text style={[styles.cardMeta, { fontSize: sizes.body - 3, color: theme.colors.textMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
                     {meta.emoji} {meta.label}{ex.durationMinutes > 0 ? ` · ${ex.durationMinutes} min` : ''} · {ex.isCompleted ? '✅ Done' : '⬜ Not done'}

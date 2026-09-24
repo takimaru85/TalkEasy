@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { SettingsProvider, useSettings } from '@/context/SettingsContext';
 import { ProfileProvider, useProfile } from '@/context/ProfileContext';
+import { I18nProvider } from '@/i18n';
 import { ThemeProvider, useAppFonts } from '@/theme';
 import { getDb } from '@/database';
 import { RootNavigator } from '@/navigation/RootNavigator';
@@ -38,11 +39,13 @@ export default function App() {
       <StatusBar style="dark" />
       {boot.status === 'ready' && fontsReady ? (
         <SettingsProvider>
-          <ProfileProvider>
-            <ThemeProvider>
-              <NavigatorWhenLoaded />
-            </ThemeProvider>
-          </ProfileProvider>
+          <I18nProvider>
+            <ProfileProvider>
+              <ThemeProvider>
+                <NavigatorWhenLoaded />
+              </ThemeProvider>
+            </ProfileProvider>
+          </I18nProvider>
         </SettingsProvider>
       ) : boot.status === 'error' ? (
         <View style={styles.center}>

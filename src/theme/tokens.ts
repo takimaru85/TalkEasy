@@ -45,9 +45,10 @@ export const Fonts = {
   extrabold: 'Nunito_800ExtraBold',
   black: 'Nunito_900Black',
   /**
-   * The model letter shown above the writing canvas — single-storey "a". The tracing guide
-   * inside the canvas is drawn from outlines instead (src/adaptive/schoolText.ts), because
-   * react-native-svg cannot use fonts loaded at runtime.
+   * The model letter above the writing canvas for locales whose letterStyle is 'single-storey'
+   * (Filipino) — Nunito with the school-print "a". US English uses `black` and is unchanged.
+   * The tracing guide inside the canvas is drawn from outlines instead
+   * (src/adaptive/schoolText.ts), because react-native-svg cannot use fonts loaded at runtime.
    */
   schoolBlack: 'TalkEasySchool_Black',
 } as const;

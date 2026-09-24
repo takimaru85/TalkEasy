@@ -4,6 +4,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '@/navigation/types';
 import { ScreenContainer } from './ScreenContainer';
 import { ScreenHeader } from './ScreenHeader';
+import { useI18n } from '@/i18n';
 
 interface Props {
   title: string;
@@ -24,13 +25,14 @@ interface Props {
 export function ChildScreen({ title, children, back = false, rightIcon, rightLabel, onRightPress, emoji }: Props) {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const goHome = () => navigation.navigate('ChildHome');
+  const { t } = useI18n();
   return (
     <ScreenContainer>
       <ScreenHeader
         title={title}
         onBack={back ? () => navigation.goBack() : goHome}
         backIcon={back ? 'arrow-left' : 'home'}
-        backLabel={back ? undefined : 'Home'}
+        backLabel={back ? undefined : t('actionHome')}
         rightIcon={rightIcon}
         rightLabel={rightLabel}
         onRightPress={onRightPress}

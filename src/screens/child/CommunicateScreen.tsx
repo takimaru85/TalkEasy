@@ -8,6 +8,7 @@ import { useProfile } from '@/context/ProfileContext';
 import { useHomeCategories, useRecentButtons, useSizes, useSpeak, useVisibleButtons } from '@/hooks';
 import type { RootScreenProps } from '@/navigation/types';
 import { Fonts, useTheme } from '@/theme';
+import { useI18n } from '@/i18n';
 
 /**
  * Talk — the communication board.
@@ -16,6 +17,7 @@ import { Fonts, useTheme } from '@/theme';
  */
 export function CommunicateScreen(_props: RootScreenProps<'Communicate'>) {
   const sizes = useSizes();
+  const { t } = useI18n();
   const theme = useTheme();
   const { profile } = useProfile();
   const [categoryId, setCategoryId] = useState<number | null>(null);
@@ -41,7 +43,7 @@ export function CommunicateScreen(_props: RootScreenProps<'Communicate'>) {
   ) : null;
 
   return (
-    <ChildScreen title="Talk" emoji={SECTION_EMOJI.communicate}>
+    <ChildScreen title={t('sectionTalk')} emoji={SECTION_EMOJI.communicate}>
       <PhraseBanner phrase={lastPhrase} onRepeat={repeat} pending={pendingStarter} onClear={cancelStarter} />
       <CategoryBar categories={categories} selectedId={categoryId} onSelect={setCategoryId} />
       {!loading && buttons.length === 0 ? (
