@@ -1,34 +1,38 @@
+import { requireOptionalNativeModule } from 'expo-modules-core';
+
 /**
  * Optional on-device speech-to-text.
  *
- * Uses `expo-speech-recognition` when its native module is present (development / EAS builds).
- * In Expo Go the module is missing, so `isAvailable()` returns false and the UI offers the
- * parent-assisted oral answer instead. Recognition is requested with
- * `requiresOnDeviceRecognition` so audio is processed on the phone and never stored — only
- * the transcript text reaches the app, and only the final answer text is saved.
+ * The native module is looked up with `requireOptionalNativeModule`, which returns null when it
+ * is not in the build (Expo Go), instead of throwing — the `expo-speech-recognition` JS entry
+ * point is deliberately never imported, because it throws at import time when the native side
+ * is missing. Without it, `isSpeechRecognitionAvailable()` is false and the UI falls back to the
+ * parent-assisted oral answer.
+ *
+ * Recognition is requested with `requiresOnDeviceRecognition` where supported, so audio is
+ * processed on the phone and never stored — only the transcript text reaches the app, and only
+ * the final answer text is saved.
  */
-type Listener = (event: { transcript: string; isFinal: boolean }) => void;
-type ErrorListener = (message: string) => void;
-
-interface Native {
+interface SpeechNativeModule {
   start: (options: Record<string, unknown>) => void;
   stop: () => void;
   abort: () => void;
   requestPermissionsAsync: () => Promise<{ granted: boolean }>;
   isRecognitionAvailable: () => boolean;
   supportsOnDeviceRecognition: () => boolean;
-  addListener: (event: string, fn: (payload: unknown) => void) => { remove: () => void };
+  addListener: (event: string, fn: (payload: never) => void) => { remove: () => void };
 }
 
-let native: Native | null | undefined;
+type Listener = (event: { transcript: string; isFinal: boolean }) => void;
+type ErrorListener = (message: string) => void;
 
-function load(): Native | null {
+let native: SpeechNativeModule | null | undefined;
+
+function load(): SpeechNativeModule | null {
   if (native !== undefined) return native;
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const mod = require('expo-speech-recognition') as { ExpoSpeechRecognitionModule?: Native };
-    native = mod.ExpoSpeechRecognitionModule ?? null;
-    if (native && !native.isRecognitionAvailable()) native = null;
+    const mod = requireOptionalNativeModule<SpeechNativeModule>('ExpoSpeechRecognition');
+    native = mod && typeof mod.start === 'function' && mod.isRecognitionAvailable?.() ? mod : null;
   } catch {
     native = null;
   }
@@ -51,9 +55,8 @@ export async function requestSpeechPermission(): Promise<boolean> {
 }
 
 /**
- * Starts listening. Resolves to a stop function. `onResult` receives partial transcripts
- * (isFinal=false) and then the final one. The session ends by itself after the child stops
- * speaking; call the returned function to end it early.
+ * Starts listening. Returns a function that stops the session early; it ends by itself once the
+ * child stops speaking. `onResult` receives partial transcripts and then the final one.
  */
 export function startListening(lang: string, onResult: Listener, onError: ErrorListener, onEnd: () => void): () => void {
   const n = load();
@@ -61,24 +64,24 @@ export function startListening(lang: string, onResult: Listener, onError: ErrorL
     onError('Speech recognition is not available in this build.');
     return () => {};
   }
-  const subs = [
-    n.addListener('result', (payload) => {
-      const ev = payload as { isFinal: boolean; results: { transcript: string }[] };
-      const transcript = ev.results?.[0]?.transcript ?? '';
-      onResult({ transcript, isFinal: !!ev.isFinal });
-    }),
-    n.addListener('error', (payload) => {
-      const ev = payload as { error?: string; message?: string };
-      onError(ev.message || ev.error || 'Could not hear you.');
-    }),
-    n.addListener('end', () => onEnd()),
-  ];
+  const subs: { remove: () => void }[] = [];
   try {
+    subs.push(
+      n.addListener('result', (payload) => {
+        const ev = payload as unknown as { isFinal: boolean; results?: { transcript: string }[] };
+        onResult({ transcript: ev.results?.[0]?.transcript ?? '', isFinal: !!ev.isFinal });
+      }),
+      n.addListener('error', (payload) => {
+        const ev = payload as unknown as { error?: string; message?: string };
+        onError(ev.message || ev.error || 'Could not hear you.');
+      }),
+      n.addListener('end', () => onEnd()),
+    );
     n.start({
       lang,
       interimResults: true,
       continuous: false,
-      requiresOnDeviceRecognition: n.supportsOnDeviceRecognition(),
+      requiresOnDeviceRecognition: !!n.supportsOnDeviceRecognition?.(),
       addsPunctuation: false,
     });
   } catch (err) {
@@ -88,7 +91,7 @@ export function startListening(lang: string, onResult: Listener, onError: ErrorL
     try {
       n.stop();
     } catch {
-      // ignore
+      // already stopped
     }
     subs.forEach((s) => s.remove());
   };

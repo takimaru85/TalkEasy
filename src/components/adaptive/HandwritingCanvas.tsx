@@ -1,9 +1,10 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { PanResponder, StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
-import Svg, { Circle, Line, Path, Polygon, Rect, Text as SvgText } from 'react-native-svg';
+import Svg, { Circle, G, Line, Path, Polygon, Rect } from 'react-native-svg';
 import { BigButton } from '@/components/common';
 import { MAX_FONT_SCALE, MIN_CHILD_TARGET, SPACING } from '@/constants/sizes';
 import { Fonts, Radius, useTheme } from '@/theme';
+import { layoutSchoolText } from '@/adaptive/schoolText';
 
 export type Guide =
   | { kind: 'none' }
@@ -135,13 +136,17 @@ function renderGuide(guide: Guide, w: number, h: number, color: string) {
       return <Polygon points={`${w / 2},${h / 2 - r} ${w / 2 + r},${h / 2 + r} ${w / 2 - r},${h / 2 + r}`} {...common} />;
     }
     case 'text': {
-      const fontSize = Math.min(h * 0.62, (w * 1.5) / Math.max(1, guide.text.length));
+      // School-print outlines (single-storey "a") drawn as paths — see schoolText.ts.
+      const baseline = h * 0.78;
+      const layout = layoutSchoolText(guide.text, w - m * 2, h * 0.62);
       return (
         <>
-          <Line x1={m} y1={h * 0.78} x2={w - m} y2={h * 0.78} stroke={color} strokeWidth={3} opacity={0.5} />
-          <SvgText x={w / 2} y={h * 0.78} fontSize={fontSize} fontWeight="700" fill={color} textAnchor="middle" fontFamily={Fonts.school}>
-            {guide.text}
-          </SvgText>
+          <Line x1={m} y1={baseline} x2={w - m} y2={baseline} stroke={color} strokeWidth={3} opacity={0.5} />
+          <G transform={`translate(${(w - layout.width) / 2} ${baseline}) scale(${layout.scale})`}>
+            {layout.glyphs.map((g, i) => (
+              <Path key={i} d={g.d} transform={`translate(${g.x} 0)`} fill={color} />
+            ))}
+          </G>
         </>
       );
     }
