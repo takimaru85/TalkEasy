@@ -56,7 +56,7 @@ export function SpeakPracticeScreen({ navigation }: RootScreenProps<'SpeakPracti
         <Card color={theme.colors.primarySoft} style={styles.qCard}>
           <Text style={styles.emoji} allowFontScaling={false}>{prompt.emoji}</Text>
           <Text style={[styles.question, { fontSize: sizes.phrase - 4, color: theme.colors.text }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>{prompt.question}</Text>
-          <BigButton label="Hear again" icon="volume-high" variant="secondary" minHeight={56} fullWidth={false} onPress={() => speakFeedback(prompt.question)} />
+          <BigButton label="Hear again" icon="volume-high" variant="secondary" minHeight={56} fullWidth={false} style={styles.centred} onPress={() => speakFeedback(prompt.question)} />
         </Card>
 
         {result ? (
@@ -93,6 +93,7 @@ export function SpeakPracticeScreen({ navigation }: RootScreenProps<'SpeakPracti
 const styles = StyleSheet.create({
   content: { paddingVertical: SPACING.sm, gap: SPACING.md, paddingBottom: SPACING.xl },
   qCard: { alignItems: 'center', gap: SPACING.sm },
+  centred: { alignSelf: 'center' },
   emoji: { fontSize: 56, lineHeight: 70 },
   question: { fontFamily: Fonts.black, textAlign: 'center' },
   recorded: { fontFamily: Fonts.extrabold, textAlign: 'center', marginBottom: SPACING.sm },

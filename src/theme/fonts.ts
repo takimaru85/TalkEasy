@@ -19,7 +19,6 @@ export function useAppFonts(): boolean {
     Nunito_800ExtraBold,
     Nunito_900Black,
     // Nunito with a single-storey lowercase "a" for handwriting practice (see assets/fonts).
-    TalkEasySchool_ExtraBold: require('../../assets/fonts/TalkEasySchool-ExtraBold.ttf'),
     TalkEasySchool_Black: require('../../assets/fonts/TalkEasySchool-Black.ttf'),
   });
   return loaded || !!error;
