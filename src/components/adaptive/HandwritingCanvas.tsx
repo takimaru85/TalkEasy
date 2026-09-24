@@ -139,7 +139,7 @@ function renderGuide(guide: Guide, w: number, h: number, color: string) {
       return (
         <>
           <Line x1={m} y1={h * 0.78} x2={w - m} y2={h * 0.78} stroke={color} strokeWidth={3} opacity={0.5} />
-          <SvgText x={w / 2} y={h * 0.78} fontSize={fontSize} fontWeight="700" fill={color} textAnchor="middle" fontFamily="Nunito_800ExtraBold">
+          <SvgText x={w / 2} y={h * 0.78} fontSize={fontSize} fontWeight="700" fill={color} textAnchor="middle" fontFamily={Fonts.school}>
             {guide.text}
           </SvgText>
         </>

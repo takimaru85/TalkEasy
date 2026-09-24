@@ -33,13 +33,20 @@ export const ACCENTS: Record<ThemeColorKey, Accent> = {
 
 export const ACCENT_KEYS = Object.keys(ACCENTS) as ThemeColorKey[];
 
-/** Nunito families (see src/theme/fonts.ts for loading). */
+/**
+ * Nunito families (see src/theme/fonts.ts for loading), plus the school-print pair used on the
+ * handwriting / tracing surfaces: identical to Nunito except that lowercase "a" is the
+ * single-storey (infant) form children are taught to read and write.
+ */
 export const Fonts = {
   regular: 'Nunito_500Medium',
   semibold: 'Nunito_600SemiBold',
   bold: 'Nunito_700Bold',
   extrabold: 'Nunito_800ExtraBold',
   black: 'Nunito_900Black',
+  /** Tracing / handwriting model letters — single-storey "a". */
+  school: 'TalkEasySchool_ExtraBold',
+  schoolBlack: 'TalkEasySchool_Black',
 } as const;
 
 export const Radius = {

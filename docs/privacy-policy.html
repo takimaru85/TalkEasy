@@ -1,0 +1,106 @@
+<h1>TalkEasy Privacy Policy</h1>
+<p><strong>Effective Date:</strong> September 23, 2026</p>
+
+<h2>Introduction</h2>
+<p>TalkEasy ("the App") is developed and published by <strong>IB Golden</strong> ("we", "us", "our"), an independent developer based in the Philippines (website: <a href="https://ibgolden.com/">https://ibgolden.com/</a>). TalkEasy is an offline communication, school-organisation and learning companion app, designed primarily to help a child &mdash; including children with communication difficulties &mdash; express themselves, keep track of schoolwork, follow a daily routine, and practice Grade 2 learning material, with the involvement of a parent or caregiver.</p>
+<p>This Privacy Policy explains, in plain language and based on an actual review of the app's source code, what information TalkEasy handles, how it is handled, and what choices you have. We have written this policy to describe what the app <strong>actually does</strong> &mdash; not a generic template &mdash; and we do not make compliance claims (such as COPPA, GDPR, or Google Play Families certification) that our implementation does not support.</p>
+<p><strong>The short version:</strong> TalkEasy works entirely offline. Everything you and your child enter into the app &mdash; the profile, phrases, schoolwork, routines, notes, and learning results &mdash; is stored only in the app's private storage on your device. TalkEasy does not have user accounts, does not use analytics or advertising SDKs, and does not send any of this information to IB Golden or to any other company.</p>
+
+<h2>Information We Collect</h2>
+
+<h3>Information You Provide</h3>
+<p>When you (as the parent or caregiver) set up and use TalkEasy, you may choose to enter the following information directly into the app:</p>
+<ul>
+  <li><strong>Child profile details:</strong> name, nickname, age, grade, school name, a chosen avatar emoji or a photo, favourite colour, and favourite subjects/activities/foods/people.</li>
+  <li><strong>Communication content:</strong> custom AAC (Augmentative and Alternative Communication) phrases and categories, and optional photos attached to communication buttons (for example, a photo of a family member).</li>
+  <li><strong>School and organisation content:</strong> subjects, class schedules, materials lists, assignments (including an optional photo or file attachment), calendar events, and a daily routine.</li>
+  <li><strong>Therapy/activity content:</strong> custom activity cards, optional photos, frequency, and a completion log.</li>
+  <li><strong>Caregiver notes:</strong> free-text notes you choose to write for your own reference.</li>
+  <li><strong>Learning configuration and results:</strong> which learning activities are enabled, difficulty level, and the results of practice sessions (correct/incorrect counts).</li>
+  <li><strong>Adaptive learning answers:</strong> for each practice question, which answer method was used (tap, picture, matching, typing, speaking, writing, or caregiver-assisted), whether it was correct, how many attempts were made, and &mdash; for typed or spoken answers &mdash; the answer text itself.</li>
+  <li><strong>Handwriting practice logs:</strong> the level practiced, number of strokes, and duration (not the handwriting drawing itself).</li>
+  <li><strong>Rewards data:</strong> stars earned/spent and any custom rewards you define.</li>
+  <li><strong>App settings:</strong> display preferences (text size, button size, contrast, motion), spoken-feedback preference, and a 4-digit "Parent Mode" PIN that you set to keep the parent screens separate from the child's view.</li>
+</ul>
+
+<h3>Information Collected Automatically</h3>
+<p>TalkEasy does not automatically collect analytics events, usage statistics, advertising identifiers, or device identifiers. The only automatic processing is:</p>
+<ul>
+  <li><strong>Microphone audio, momentarily, for speech-to-text.</strong> When your child taps a "Say the answer" control in the Learning section, the device microphone is activated and the audio is converted to text using the device's own on-device speech recognizer. The audio itself is <strong>not recorded, saved, or transmitted</strong> &mdash; only the resulting text answer is kept, in the same place as any other typed answer.</li>
+  <li><strong>App version</strong>, read locally from the app's own configuration to display it in Settings &rarr; About. This is not transmitted anywhere.</li>
+</ul>
+
+<h2>App Permissions</h2>
+<p>TalkEasy requests the minimum Android permissions needed for the features described above, and only at the moment a feature is used:</p>
+<ul>
+  <li><strong>Modify audio settings</strong> &mdash; lets TalkEasy briefly lower other audio while it speaks a phrase aloud, and play speech reliably.</li>
+  <li><strong>Microphone</strong> &mdash; used only when your child taps "Say the answer" during a learning activity, so the device can turn speech into text on the device itself.</li>
+  <li><strong>Camera</strong> &mdash; used only when a parent taps "Take photo" to attach a picture to an assignment, activity, communication button, or the child's profile.</li>
+  <li><strong>Photos / media library</strong> &mdash; used only when a parent taps "Choose photo" to pick an existing picture for the same purposes.</li>
+</ul>
+<p>TalkEasy does not request permission for contacts, location, calendar, phone, SMS, or background data access, and does not request any permission it does not immediately use for a visible, parent-initiated action.</p>
+
+<h3>Microphone / Audio Data</h3>
+<p>Microphone access is used exclusively for the optional "Say the answer" feature in Adaptive Learning. Speech recognition is performed <strong>on the device</strong>, using the operating system's built-in recognizer; TalkEasy does not use any cloud speech API. No audio recording is ever created, stored, or transmitted. If on-device recognition is not available on a particular build (for example, when running inside Expo Go for development/testing), the feature falls back to a parent confirming the child's spoken answer themselves &mdash; again, without recording anything.</p>
+
+<h3>Camera / Photos</h3>
+<p>The camera and photo library are only accessed when a parent deliberately taps "Take photo" or "Choose photo." Any picture selected this way is <strong>copied</strong> into the app's own private storage on the device (it is not moved or deleted from your gallery) and is used only to illustrate an assignment, activity, communication button, or the child's profile within the app. Photos are never uploaded, emailed, or shared by the app to any server or third party.</p>
+
+<h3>Speech Recognition</h3>
+<p>See "Microphone / Audio Data" above. Speech recognition is on-device and optional; typing, tapping a picture, matching, writing, or asking a grown-up for help are always available as alternative ways to answer.</p>
+
+<h3>Text-to-Speech</h3>
+<p>TalkEasy uses the text-to-speech engine already built into your device (for example, Android's "Speech Services" or Samsung TTS, or the corresponding engine on iOS) to read phrases and questions aloud. This works entirely offline, does not require an internet connection, and does not send any text to an external server.</p>
+
+<h3>Local Device Storage</h3>
+<p>All of the information described above is stored in a single private database on your device (using the standard on-device SQLite storage built into the app), plus a private folder used to store copies of photos and file attachments you choose to add. This storage is sandboxed to the TalkEasy app by the operating system: other apps cannot read it, and it is not automatically backed up to any cloud service by TalkEasy itself. <strong>Uninstalling the app permanently deletes this storage.</strong></p>
+
+<h2>How We Use Information</h2>
+<p>Because all information stays on the device, it is used only to power the app's own features for the person using that device: showing the child's profile and personalised greetings, displaying communication phrases, tracking schoolwork and routines, generating learning practice questions and scoring them, and remembering your settings and PIN. IB Golden does not receive, view, analyze, or use any of this information, because it is never transmitted to us.</p>
+
+<h2>Third-Party Services</h2>
+<p>TalkEasy does not integrate any third-party analytics, advertising, crash-reporting, cloud database, or authentication service. The app is built using the open-source Expo and React Native frameworks and a small number of associated libraries (for navigation, fonts, icons, on-device audio/speech, on-device file/photo access, and on-device SQLite storage). These libraries run entirely on your device as part of the app itself; none of them, as used in TalkEasy, transmit data to their maintainers or to any server.</p>
+
+<h2>Data Sharing</h2>
+<p>We do not share, sell, rent, or otherwise disclose any information from TalkEasy to any third party, advertiser, data broker, or affiliate, because we never receive that information in the first place. There is no server-side copy of your data for us to share.</p>
+
+<h2>Data Retention</h2>
+<p>Information remains on your device for as long as the app is installed, or until you delete it yourself (many records can be edited or deleted from within the app). Uninstalling TalkEasy removes its private storage &mdash; including the database and any stored photos &mdash; immediately, following your device's normal app-uninstall behaviour. IB Golden does not separately retain any copy, because none is ever transmitted to us.</p>
+
+<h2>Data Security</h2>
+<p>Because TalkEasy has no server component and makes no network requests, there is no data-in-transit or server-side breach risk for the information you enter into the app. Data at rest is protected by your device's own operating-system-level app sandboxing (each app's storage is isolated from other apps) and by whatever device-level security you use (such as a screen lock). TalkEasy additionally provides an in-app 4-digit "Parent Mode" PIN to keep the parent/management screens separate from the child's screens on a shared device; this PIN is a convenience feature for a shared family device, not a strong security mechanism, and it does not encrypt the underlying data.</p>
+
+<h2>Children's Privacy</h2>
+<p>TalkEasy is designed to be used by a child together with, or under the supervision of, a parent or caregiver, who is responsible for setting up the app, entering the child's information, and managing settings such as the Parent PIN. We have written this section based on what the app actually does, rather than asserting a certification we have not obtained:</p>
+<ul>
+  <li>TalkEasy does not require creating an account, and does not ask a child (or anyone) to provide information over the internet, because the app does not connect to the internet at all.</li>
+  <li>No information about a child is transmitted to IB Golden, to advertisers, or to any other third party &mdash; a central concern of children's privacy laws such as COPPA &mdash; because the app has no mechanism to transmit anything.</li>
+  <li>TalkEasy does not show advertising to children, does not use behavioural tracking, and does not enable in-app purchases or external links intended for a child to interact with unsupervised.</li>
+  <li>Some information entered into the app (for example, caregiver notes, or therapy/activity records) may be sensitive in nature, since TalkEasy is intended to support children with communication or developmental needs. This information is treated the same as every other on-device record described in this policy: stored locally only, never transmitted, and deletable by removing the record or uninstalling the app.</li>
+  <li>We have not sought or obtained formal certification under COPPA, GDPR-K, or Google Play's Families Policy program. If your jurisdiction requires a specific certification for apps used by children, please make your own assessment together with the practices described in this policy, since certification is a legal/business process separate from this document.</li>
+</ul>
+
+<h2>Parental / Guardian Information</h2>
+<p>TalkEasy's "Parent Mode" is intended to be set up and controlled by an adult parent or caregiver. The Parent PIN, app settings, and all "Manage" screens (for editing the child's schedule, assignments, communication buttons, rewards, and learning content) are only reachable by entering this PIN. We recommend changing the default PIN (1234) the first time you use the app, and keeping it private from the child if you want to restrict access to the parent screens.</p>
+
+<h2>User Rights and Choices</h2>
+<p>Because all data is stored locally on your own device and under your own control, you already have full, direct access to it at all times through the app's own screens &mdash; there is no separate server-side copy to request, correct, or export. In particular, you can:</p>
+<ul>
+  <li>View, edit, or delete individual records (assignments, communication buttons, activities, notes, schedule entries, rewards, etc.) directly within the relevant "Manage" screen in Parent Mode.</li>
+  <li>Change or reset app settings and the Parent PIN at any time in Parent Mode &rarr; Settings.</li>
+  <li>Remove all data at once by uninstalling the app.</li>
+</ul>
+
+<h2>Data Deletion</h2>
+<p>To delete all data collected by TalkEasy, uninstall the app from your device. This immediately and permanently removes the app's private database and any stored photos/attachments, following your device operating system's standard behaviour for app data. Because TalkEasy has no server and no account system, there is no remote copy of your data for us to delete on request, and no separate "delete my data" request process is needed.</p>
+
+<h2>Changes to This Privacy Policy</h2>
+<p>We may update this Privacy Policy if TalkEasy's features or data practices change &mdash; for example, if a future version adds an optional backup feature. If we make a material change, we will update the "Effective Date" above and, where appropriate, note the change in the app's release notes or on this page. We encourage you to review this page periodically.</p>
+
+<h2>Contact Us</h2>
+<p>If you have questions about this Privacy Policy or about TalkEasy's data practices, you can contact us at:</p>
+<p>
+  <strong>IB Golden</strong><br>
+  Website: <a href="https://ibgolden.com/">https://ibgolden.com/</a><br>
+  Email: <a href="mailto:info@ibgolden.com">info@ibgolden.com</a>
+</p>

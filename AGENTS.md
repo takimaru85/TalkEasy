@@ -12,3 +12,4 @@
 - Personalisation: never hard-code the child. Read `useProfile()` (name/displayName, avatar, favourites, preferences). Child UI colours come from `useTheme()`; text uses `Fonts` from `@/theme`.
 - Rewards: grant stars only through `useAwardStars(kind)`; the amounts live in the profile.
 - Adaptive Learning: answer methods are data (`allowed_methods_json`); never make handwriting the only method. Learning progress and handwriting practice are separate numbers - keep them separate. Speech-to-text is optional and on-device (`services/speechRecognition.ts`); never store audio.
+- Handwriting letterforms: tracing surfaces use `Fonts.school` / `Fonts.schoolBlack` (TalkEasySchool = Nunito with a single-storey lowercase "a", the school-print form). Regenerate with the script noted in assets/fonts/README.md; keep the family name off "Nunito" (OFL reserved name).

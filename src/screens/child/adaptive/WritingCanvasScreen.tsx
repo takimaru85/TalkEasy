@@ -91,7 +91,8 @@ const styles = StyleSheet.create({
   content: { paddingVertical: SPACING.sm, gap: SPACING.md, paddingBottom: SPACING.xl },
   prompt: { fontFamily: Fonts.bold, textAlign: 'center' },
   display: { minHeight: 90, borderRadius: Radius.lg, alignItems: 'center', justifyContent: 'center', paddingHorizontal: SPACING.md },
-  displayText: { fontFamily: Fonts.black, textAlign: 'center' },
+  // School-print face: the model letter the child copies must show the single-storey "a".
+  displayText: { fontFamily: Fonts.schoolBlack, textAlign: 'center' },
   summary: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: SPACING.lg },
   bigEmoji: { fontSize: 72, lineHeight: 88 },
   title: { fontFamily: Fonts.black, textAlign: 'center' },
