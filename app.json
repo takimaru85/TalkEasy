@@ -45,8 +45,8 @@
       [
         "expo-audio",
         {
-          "microphonePermission": false,
-          "recordAudioAndroid": false,
+          "microphonePermission": "TalkEasy uses the microphone so your child can record a practice attempt in Sound Practice and hear it back. The recording stays on this device and is deleted straight after playback.",
+          "recordAudioAndroid": true,
           "enableBackgroundPlayback": false
         }
       ],
@@ -65,9 +65,13 @@
         {
           "microphonePermission": "TalkEasy uses the microphone only when the child taps 'Say the answer'. Speech is turned into text on this device and no recording is kept.",
           "speechRecognitionPermission": "TalkEasy turns the child's spoken answer into text on this device. Nothing is sent anywhere.",
-          "androidSpeechServicePackages": ["com.google.android.as", "com.google.android.tts"]
+          "androidSpeechServicePackages": [
+            "com.google.android.as",
+            "com.google.android.tts"
+          ]
         }
-      ]
+      ],
+      "expo-asset"
     ],
     "extra": {
       "eas": {

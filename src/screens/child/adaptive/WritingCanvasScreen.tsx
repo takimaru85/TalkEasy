@@ -9,6 +9,7 @@ import { adaptiveProgressRepo } from '@/database';
 import { useSizes, useSpeak } from '@/hooks';
 import type { RootScreenProps } from '@/navigation/types';
 import { Fonts, Radius, useTheme } from '@/theme';
+import { useI18n } from '@/i18n';
 
 /**
  * One writing-practice session: the level's items one at a time on a large canvas.
@@ -21,19 +22,23 @@ export function WritingCanvasScreen({ navigation, route }: RootScreenProps<'Writ
   const theme = useTheme();
   const { profile, displayName } = useProfile();
   const { speakFeedback } = useSpeak();
+  const { t, letterStyle } = useI18n();
   const [index, setIndex] = useState(0);
   const [strokeWidth, setStrokeWidth] = useState(14);
   const [burst, setBurst] = useState(0);
   const [finished, setFinished] = useState(false);
 
   const item = level?.items[index];
+  // The model letter is real <Text>, so it needs a font family: the school-print face only
+  // where the language asks for it (Filipino), plain Nunito everywhere else.
+  const modelFont = letterStyle === 'single-storey' ? Fonts.schoolBlack : Fonts.black;
 
   useEffect(() => {
     if (item) speakFeedback(item.prompt);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [index]);
 
-  if (!level || !item) return <ChildScreen title="Writing" back />;
+  if (!level || !item) return <ChildScreen title={t('titleWriting')} back />;
 
   const onDone = async (r: { strokes: number; durationMs: number }) => {
     await adaptiveProgressRepo.recordHandwriting({ childId: profile.id, level: level.level, item: item.display, strokes: r.strokes, durationMs: r.durationMs }).catch(() => {});
@@ -69,7 +74,7 @@ export function WritingCanvasScreen({ navigation, route }: RootScreenProps<'Writ
         <ProgressBar value={index / level.items.length} label={`${index + 1} / ${level.items.length}`} height={12} />
         <Text style={[styles.prompt, { fontSize: sizes.body + 2, color: theme.colors.textMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>{item.prompt}</Text>
         <View style={[styles.display, { backgroundColor: theme.tint(theme.colors.primarySoft) }]}>
-          <Text style={[styles.displayText, { fontSize: item.display.length > 6 ? sizes.heading + 6 : sizes.phrase + 14, color: theme.colors.text }]} allowFontScaling={false}>
+          <Text style={[styles.displayText, { fontFamily: modelFont, fontSize: item.display.length > 6 ? sizes.heading + 6 : sizes.phrase + 14, color: theme.colors.text }]} allowFontScaling={false}>
             {item.model ?? item.display}
           </Text>
         </View>
@@ -92,7 +97,7 @@ const styles = StyleSheet.create({
   prompt: { fontFamily: Fonts.bold, textAlign: 'center' },
   display: { minHeight: 90, borderRadius: Radius.lg, alignItems: 'center', justifyContent: 'center', paddingHorizontal: SPACING.md },
   // School-print face: the model letter the child copies must show the single-storey "a".
-  displayText: { fontFamily: Fonts.schoolBlack, textAlign: 'center' },
+  displayText: { textAlign: 'center' }, // fontFamily is per language — see modelFont above
   summary: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: SPACING.lg },
   bigEmoji: { fontSize: 72, lineHeight: 88 },
   title: { fontFamily: Fonts.black, textAlign: 'center' },

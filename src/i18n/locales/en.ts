@@ -1,0 +1,105 @@
+import type { Locale } from '../types';
+
+/**
+ * US English — the default locale and the source of truth for the key set.
+ *
+ * `content` is empty: the English strings seeded into SQLite are already English, so
+ * translation is a no-op and every label passes through unchanged. The lowercase "a" stays
+ * the ordinary double-storey form here; only 'single-storey' locales swap it.
+ */
+export const en: Locale = {
+  code: 'en-US',
+  name: 'English (US)',
+  flag: '🇺🇸',
+  speechTag: 'en-US',
+  letterStyle: 'standard',
+  content: {},
+  strings: {
+    goodMorning: 'Good morning',
+    goodAfternoon: 'Good afternoon',
+    goodEvening: 'Good evening',
+    statusAllDone: 'Everything on your plan is done! 🎉',
+    statusWeekend: "It's the weekend! Have fun. 🎈",
+    statusBeforeSchool: "You're ready for school! 🎒",
+    statusSchoolDay: 'Have a great day at school! ✏️',
+    statusAfternoon: 'Time to relax and learn. 🧩',
+    statusEvening: 'Almost bedtime. Great day today! ⭐',
+    todaysPlan: "Today's plan",
+    nowLabel: 'Now',
+    nextLabel: 'Next',
+    favouritePhrases: 'Favourite phrases',
+    continueLearning: 'Continue learning',
+    continueLabel: 'Continue',
+    startLabel: 'Start',
+    myStars: 'My stars',
+
+    sectionTalk: 'Talk',
+    sectionLessons: 'Lessons',
+    sectionSchool: 'School',
+    sectionLearn: 'Learn',
+    sectionMyDay: 'My Day',
+    sectionActivities: 'Activities',
+    sectionFavorites: 'Favorites',
+    sectionFeelings: 'Feelings',
+    sectionParent: 'Parent',
+    titleWritingPractice: 'Writing practice',
+    titleWriting: 'Writing',
+    titleSpeakAnswer: 'Speak your answer',
+    titleSubjects: 'Subjects',
+    titleLesson: 'Lesson',
+
+    actionHome: 'Home',
+    actionBack: 'Back',
+    actionDone: 'Done',
+    actionNext: 'Next',
+    actionTryAgain: 'Try again',
+    actionHearAgain: 'Hear again',
+    actionDoneForNow: 'Done for now',
+    actionNextQuestion: 'Next question',
+
+    answerRecorded: 'Answer recorded',
+    answerNotQuite: 'Not quite — try again',
+    answerLabel: 'Answer',
+    cannotWriteThis: "I can't write this",
+    greatJob: 'Great job, {name}!',
+    letsTryAgain: "Let's try that one again.",
+    tapToSpeak: 'Tap to speak',
+    listening: 'Listening…',
+
+    sectionSoundPractice: 'Sound Practice',
+    soundPracticeSubtitle: 'Practice sounds, syllables and simple words',
+    soundChooseSound: 'Choose a sound to practice',
+    soundPracticeCta: 'Practice',
+    soundListen: 'Listen',
+    soundPlaySound: 'Play sound',
+    soundYourTurn: 'Your turn',
+    soundTapToSpeak: 'Tap to speak',
+    soundStopRecording: 'Stop',
+    soundRecording: 'Listening…',
+    soundHearYourself: 'Hear yourself',
+    soundGreatTry: 'Great try!',
+    soundNiceJob: 'Nice job!',
+    soundTryItAgain: "Let's try it again!",
+    soundKeepPracticing: 'Keep practicing!',
+    soundTryAgain: 'Try again',
+    soundNext: 'Next sound',
+    soundTodaysPractice: "Today's practice",
+    soundStatSounds: 'Sounds practiced',
+    soundStatAttempts: 'Attempts',
+    soundStatTime: 'Practice time',
+    soundLikeWord: 'Like {word}',
+    soundMicTitle: 'Microphone',
+    soundMicExplain:
+      'TalkEasy needs access to the microphone so you can practice speaking. Your recording stays on this device and is deleted right after you hear it.',
+    soundMicAllow: 'Allow microphone',
+    soundMicNotNow: 'Not now',
+    soundMicOff: 'The microphone is off. You can still listen and practise out loud.',
+    soundForGrownUps: 'For grown-ups',
+    soundGrownUpNote:
+      'TalkEasy Sound Practice provides simple activities for practicing sounds, syllables and words at home.',
+    soundNotTherapy:
+      'TalkEasy is a communication and practice tool and does not replace professional assessment or therapy from a licensed speech-language pathologist.',
+    soundModelIsSynthetic:
+      'This sound is spoken by the device voice, so it is an approximation. Say it with your child too — a real voice is the best model.',
+  },
+};

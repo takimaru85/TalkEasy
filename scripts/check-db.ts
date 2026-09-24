@@ -57,6 +57,15 @@ async function freshInstall() {
   console.log('favorites:', labels(raw, `SELECT b.label FROM favorites f JOIN communication_buttons b ON b.id=f.button_id ORDER BY f.sort_order`));
   console.log('subjects:', labels(raw, 'SELECT name FROM subjects ORDER BY sort_order'));
   assert(count(raw, 'categories') === 11, 'eleven categories');
+  // Migration 5: Sound Practice tracking. The table must exist and must hold no audio column -
+  // the child's recording is temporary and is never persisted (see soundPracticeRepo).
+  const soundCols = (raw.prepare('PRAGMA table_info(sound_practice_attempts)').all() as any[]).map((c) => c.name);
+  assert(soundCols.length > 0, 'sound_practice_attempts created');
+  assert(soundCols.includes('sound_id') && soundCols.includes('level') && soundCols.includes('duration_ms'), 'sound practice columns');
+  assert(!soundCols.some((c: string) => /audio|uri|path|recording|score|correct/.test(c)), 'sound practice stores no audio and no score');
+  raw.prepare("INSERT INTO sound_practice_attempts (sound_id, level, item, duration_ms, created_at) VALUES ('b','sound','B',1200,?)").run(new Date().toISOString());
+  assert(count(raw, 'sound_practice_attempts') === 1, 'sound practice attempt recorded');
+
   assert(count(raw, 'child_profile') === 1, 'demo profile seeded');
   assert((raw.prepare('SELECT name FROM child_profile').get() as any).name === 'Brayden', 'profile name');
   assert(count(raw, 'rewards') === 3, 'three rewards');
@@ -136,6 +145,14 @@ async function upgradeFromV1() {
   assert((raw.prepare(`SELECT value FROM app_settings WHERE key='seed_version'`).get() as any).value === '4', 'seed_version recorded');
   assert(count(raw, 'lessons') === 4, 'demo lessons added on upgrade');
   assert((raw.prepare('SELECT assistance_level FROM child_profile').get() as any).assistance_level === 'assisted', 'assistance level default');
+  // Migration 5: Sound Practice tracking. The table must exist and must hold no audio column -
+  // the child's recording is temporary and is never persisted (see soundPracticeRepo).
+  const soundCols = (raw.prepare('PRAGMA table_info(sound_practice_attempts)').all() as any[]).map((c) => c.name);
+  assert(soundCols.length > 0, 'sound_practice_attempts created');
+  assert(soundCols.includes('sound_id') && soundCols.includes('level') && soundCols.includes('duration_ms'), 'sound practice columns');
+  assert(!soundCols.some((c: string) => /audio|uri|path|recording|score|correct/.test(c)), 'sound practice stores no audio and no score');
+  raw.prepare("INSERT INTO sound_practice_attempts (sound_id, level, item, duration_ms, created_at) VALUES ('b','sound','B',1200,?)").run(new Date().toISOString());
+  assert(count(raw, 'sound_practice_attempts') === 1, 'sound practice attempt recorded');
   console.log('upgrade OK');
 }
 

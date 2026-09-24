@@ -322,6 +322,23 @@ export const MIGRATIONS: Migration[] = [
       CREATE INDEX IF NOT EXISTS idx_handwriting ON handwriting_sessions(child_id, completed_at DESC);
     `,
   },
+  {
+    version: 5,
+    // Sound Practice. Tracking only: how much practice happened, never how well it went, and
+    // never any audio - the child's recording is a temporary file that is deleted after
+    // playback and is never referenced here.
+    sql: `
+      CREATE TABLE IF NOT EXISTS sound_practice_attempts (
+        id          INTEGER PRIMARY KEY AUTOINCREMENT,
+        sound_id    TEXT    NOT NULL,
+        level       TEXT    NOT NULL DEFAULT 'sound',
+        item        TEXT    NOT NULL DEFAULT '',
+        duration_ms INTEGER NOT NULL DEFAULT 0,
+        created_at  TEXT    NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_sound_practice ON sound_practice_attempts(created_at DESC);
+    `,
+  },
 ];
 
 export const CURRENT_SCHEMA_VERSION = MIGRATIONS[MIGRATIONS.length - 1].version;

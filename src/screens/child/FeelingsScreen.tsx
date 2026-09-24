@@ -8,6 +8,7 @@ import { useCategoryByKey, useSizes, useSpeak, useVisibleButtons } from '@/hooks
 import type { RootScreenProps } from '@/navigation/types';
 import { Fonts, useTheme } from '@/theme';
 import type { CommunicationButton } from '@/types/models';
+import { useI18n } from '@/i18n';
 
 /** Gentle follow-ups after a feeling is shared — spoken, and offered as one big button. */
 const FOLLOW_UP: Record<string, { say: string; offer: string; phrase: string }> = {
@@ -24,6 +25,7 @@ const FOLLOW_UP: Record<string, { say: string; offer: string; phrase: string }> 
  */
 export function FeelingsScreen(_props: RootScreenProps<'Feelings'>) {
   const sizes = useSizes();
+  const { t } = useI18n();
   const theme = useTheme();
   const { displayName } = useProfile();
   const { data: category } = useCategoryByKey('feelings');
@@ -40,7 +42,7 @@ export function FeelingsScreen(_props: RootScreenProps<'Feelings'>) {
   };
 
   return (
-    <ChildScreen title="Feelings" emoji="😊">
+    <ChildScreen title={t('sectionFeelings')} emoji="😊">
       <PhraseBanner phrase={lastPhrase} onRepeat={repeat} placeholder={`How do you feel, ${displayName}?`} />
       {follow ? (
         <View style={[styles.follow, { marginHorizontal: sizes.horizontalPadding }]}>

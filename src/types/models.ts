@@ -1,3 +1,5 @@
+import type { LocaleCode } from '@/i18n/types';
+
 /**
  * Domain models used throughout the app.
  * Database rows are snake_case; repositories map them to these camelCase types.
@@ -417,6 +419,11 @@ export interface AppSettings {
   soundEnabled: boolean;
   /** Screen rotation: 'auto' = landscape allowed on tablets only. */
   rotation: RotationMode;
+  /**
+   * UI language and letterform style (see src/i18n). US English is the default; changing this
+   * never rewrites the database — content is translated as it is rendered.
+   */
+  language: LocaleCode;
 }
 
 export type RotationMode = 'auto' | 'always' | 'portrait';

@@ -9,6 +9,7 @@
     "@react-navigation/native": "^7.4.1",
     "@react-navigation/native-stack": "^7.19.2",
     "expo": "~57.0.24",
+    "expo-asset": "~57.0.18",
     "expo-audio": "~57.0.5",
     "expo-constants": "~57.0.19",
     "expo-document-picker": "~57.0.2",
@@ -40,7 +41,8 @@
     "typecheck": "tsc --noEmit",
     "check:db": "tsx --tsconfig tsconfig.json scripts/check-db.ts",
     "check:learning": "tsx --tsconfig tsconfig.json scripts/check-learning.ts",
-    "check:adaptive": "tsx --tsconfig tsconfig.json scripts/check-adaptive.ts"
+    "check:adaptive": "tsx --tsconfig tsconfig.json scripts/check-adaptive.ts",
+    "check:i18n": "tsx --tsconfig tsconfig.json scripts/check-i18n.ts"
   },
   "private": true
 }

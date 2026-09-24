@@ -52,6 +52,8 @@ export type RootStackParamList = {
   WritingPractice: undefined;
   WritingCanvas: { level: number };
   SpeakPractice: undefined;
+  SoundPractice: undefined;
+  SoundPracticeDetail: { soundId: string };
   ParentPin: undefined;
   Parent: NavigatorScreenParams<ParentStackParamList>;
 };

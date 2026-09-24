@@ -3,7 +3,7 @@ import { acceptedAnswers, choicesForLevel, matchesFreeAnswer, normalizeAnswer, o
 import { DEMO_LESSONS } from '../src/adaptive/demoLessons';
 import { WRITING_LEVELS } from '../src/adaptive/handwriting';
 import type { LessonActivity } from '../src/adaptive/types';
-import { SCHOOL_GLYPHS } from '../src/adaptive/schoolGlyphs';
+import { SCHOOL_GLYPHS, SINGLE_STOREY_A } from '../src/adaptive/schoolGlyphs';
 import { layoutSchoolText } from '../src/adaptive/schoolText';
 
 let problems = 0;
@@ -42,9 +42,12 @@ for (const d of DEMO_LESSONS) {
     if (a.type === 'typing' || a.type === 'speaking') ok(acceptedAnswers({ ...a, id: 0, lessonId: 0, sortOrder: 0 }).length > 0, `${a.question}: accepted answers`);
   }
 }
-// School-print outlines: the tracing guide draws these, so every character a level can show
-// must exist, and "a" must be the patched single-storey glyph (built on the width of "o").
-ok(SCHOOL_GLYPHS['a'] && SCHOOL_GLYPHS['a'].a === SCHOOL_GLYPHS['o'].a, 'single-storey a glyph is present');
+// Letter outlines: the tracing guide draws these, so every character a level can show must
+// exist. The default map is plain Nunito (US English keeps its ordinary double-storey "a");
+// the Filipino single-storey form is a separate glyph, built on the width of "o".
+ok(!!SCHOOL_GLYPHS['a'], 'default a glyph is present');
+ok(SINGLE_STOREY_A.a === SCHOOL_GLYPHS['o'].a, 'single-storey a is built on the width of o');
+ok(SINGLE_STOREY_A.d !== SCHOOL_GLYPHS['a'].d, 'the two letterforms really differ');
 for (const lvl of WRITING_LEVELS) {
   for (const item of lvl.items) {
     const text = item.guide.kind === 'text' ? item.guide.text : '';
@@ -54,6 +57,12 @@ for (const lvl of WRITING_LEVELS) {
 const lay = layoutSchoolText('cat', 500, 200);
 ok(lay.glyphs.length === 3 && lay.width > 0 && lay.scale > 0, 'layoutSchoolText lays out cat');
 ok(layoutSchoolText('', 500, 200).glyphs.length === 0, 'empty text is safe');
+// English must be untouched by the Filipino letterform, and only "a" may differ between them.
+const enCat = layoutSchoolText('cat', 500, 200, 'standard');
+const filCat = layoutSchoolText('cat', 500, 200, 'single-storey');
+ok(enCat.glyphs[0].d === filCat.glyphs[0].d && enCat.glyphs[2].d === filCat.glyphs[2].d, 'c and t are identical in both styles');
+ok(enCat.glyphs[1].d !== filCat.glyphs[1].d, 'only the a differs');
+ok(layoutSchoolText('cat', 500, 200).glyphs[1].d === enCat.glyphs[1].d, 'default letter style is standard (US English)');
 
 ok(WRITING_LEVELS.length === 7 && WRITING_LEVELS.every((l, i) => l.level === i + 1 && l.items.length > 0), 'seven writing levels with items');
 

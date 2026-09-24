@@ -1,11 +1,65 @@
 import React, { useRef } from 'react';
-import { Animated, Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Animated, Image, PixelRatio, Pressable, StyleSheet, Text, View } from 'react-native';
 import { MAX_FONT_SCALE, SPACING, TAP_GUARD_MS } from '@/constants/sizes';
 import { useSizes } from '@/hooks/useSizes';
 import { Fonts, Radius, useTheme } from '@/theme';
 import { Motion } from '@/theme/tokens';
 import { Icon } from '@/components/common/Icon';
 import type { CommunicationButton } from '@/types/models';
+import { useI18n } from '@/i18n';
+
+/** Line box as a multiple of font size, for Nunito ExtraBold. */
+const LINE_HEIGHT = 1.18;
+/** Rough advance width per character, as a multiple of font size, for Nunito ExtraBold. */
+const CHAR_WIDTH = 0.62;
+
+/** Smallest label a child should have to read. The icon disc gives way before this does. */
+const MIN_LABEL = 13;
+
+/** Height the label needs for `lines` lines at `size`. */
+function labelHeight(lines: number, size: number, scale: number): number {
+  return Math.round(lines * LINE_HEIGHT * size * scale);
+}
+
+/**
+ * Icon disc size, shrunk if a big icon would leave the label no room.
+ *
+ * The tile is a fixed height, and "medium" buttons (120dp tile, 48dp icon → 76dp disc) paired
+ * with "large" text (24dp label) asks for 136dp of content in a 104dp box — the label used to
+ * spill out of the card entirely. Sizes are two independent settings, so the combination has to
+ * resolve itself: the icon yields first, because an icon a few dp smaller still reads, while a
+ * clipped or 11dp word does not. Larger presets have room already and are untouched.
+ */
+function fitDisc(preferredDisc: number, tileHeight: number, scale: number): number {
+  const room = tileHeight - SPACING.sm * 2 - SPACING.xs - labelHeight(2, MIN_LABEL, scale);
+  return Math.max(40, Math.min(preferredDisc, room));
+}
+
+/**
+ * Largest label size that still fits under the disc.
+ *
+ * Computed rather than left to `adjustsFontSizeToFit`, which does not shrink multi-line text
+ * reliably on Android. Two limits apply: the widest single word must fit on one line (labels are
+ * never hyphenated — see `textBreakStrategy`), and the lines must fit the remaining height. A
+ * multi-word label is allowed to wrap to two lines; a single word never can, so it is fitted to
+ * the width instead. The OS font scale is folded in, so a large system font setting still lands
+ * inside the tile rather than being clipped.
+ */
+function fitLabel(text: string, tileWidth: number, tileHeight: number, discSize: number, preferred: number): number {
+  const scale = Math.min(PixelRatio.getFontScale(), MAX_FONT_SCALE);
+  const innerWidth = Math.max(24, tileWidth - SPACING.sm * 2 - 4);
+  const roomBelowDisc = Math.max(16, tileHeight - SPACING.sm * 2 - discSize - SPACING.xs);
+
+  const words = text.trim().split(/\s+/);
+  const longestWord = words.reduce((n, w) => Math.max(n, w.length), 1);
+  // Only a label with a space in it can use a second line.
+  const needsTwoLines = words.length > 1 && text.length * CHAR_WIDTH * preferred * scale > innerWidth;
+  const lines = needsTwoLines ? 2 : 1;
+
+  const byWidth = innerWidth / (longestWord * CHAR_WIDTH * scale);
+  const byHeight = roomBelowDisc / (lines * LINE_HEIGHT * scale);
+  return Math.max(MIN_LABEL, Math.floor(Math.min(preferred, byWidth, byHeight)));
+}
 
 interface Props {
   button: CommunicationButton;
@@ -43,16 +97,20 @@ export const CommunicationTile = React.memo(function CommunicationTile({ button,
   };
 
   const height = compact ? Math.max(sizes.tileHeight * 0.72, 96) : sizes.tileHeight;
-  const iconSize = compact ? sizes.iconSize - 12 : sizes.iconSize;
-  const discSize = iconSize + (compact ? 18 : 28);
+  const discPadding = compact ? 18 : 28;
+  const discSize = fitDisc((compact ? sizes.iconSize - 12 : sizes.iconSize) + discPadding, height, Math.min(PixelRatio.getFontScale(), MAX_FONT_SCALE));
+  const iconSize = Math.max(20, discSize - discPadding);
+  const { tContent } = useI18n();
   const isStarter = button.phrase.trim().endsWith('...');
+  const label = tContent(button.label);
+  const labelSize = fitLabel(label, width ?? sizes.tileWidth, height, discSize, compact ? sizes.tileLabel - 3 : sizes.tileLabel);
 
   return (
     <Animated.View style={{ transform: [{ scale }], width: width ?? sizes.tileWidth }}>
       <Pressable
         onPress={handlePress}
         accessibilityRole="button"
-        accessibilityLabel={button.phrase}
+        accessibilityLabel={tContent(button.phrase)}
         accessibilityHint="Says this out loud"
         accessibilityState={{ selected }}
         hitSlop={4}
@@ -76,12 +134,14 @@ export const CommunicationTile = React.memo(function CommunicationTile({ button,
           )}
         </View>
         <Text
-          style={[styles.label, { fontSize: compact ? sizes.tileLabel - 3 : sizes.tileLabel, color: theme.colors.text }]}
+          style={[styles.label, { fontSize: labelSize, lineHeight: Math.round(labelSize * LINE_HEIGHT), color: theme.colors.text }]}
           maxFontSizeMultiplier={MAX_FONT_SCALE}
           numberOfLines={2}
-          adjustsFontSizeToFit
+          // Android splits long words across lines by default ("Bathroo / m"); keep them whole.
+          textBreakStrategy="simple"
+          ellipsizeMode="tail"
         >
-          {button.label}
+          {label}
         </Text>
         {selected ? (
           <View style={[styles.badge, { backgroundColor: theme.colors.primary }]} accessibilityElementsHidden>
@@ -101,6 +161,7 @@ export const CommunicationTile = React.memo(function CommunicationTile({ button,
 const styles = StyleSheet.create({
   tile: {
     borderRadius: Radius.lg,
+    overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: SPACING.sm,

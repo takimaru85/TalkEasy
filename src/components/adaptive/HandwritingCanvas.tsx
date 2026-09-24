@@ -5,6 +5,8 @@ import { BigButton } from '@/components/common';
 import { MAX_FONT_SCALE, MIN_CHILD_TARGET, SPACING } from '@/constants/sizes';
 import { Fonts, Radius, useTheme } from '@/theme';
 import { layoutSchoolText } from '@/adaptive/schoolText';
+import { useI18n } from '@/i18n';
+import type { LetterStyle } from '@/i18n/types';
 
 export type Guide =
   | { kind: 'none' }
@@ -73,6 +75,8 @@ export function HandwritingCanvas({ guide, onDone, strokeWidth = 14, onStrokeWid
   const done = () => onDone({ strokes: strokes.length, durationMs: startedAt.current ? Date.now() - startedAt.current : 0 });
 
   const guideColor = theme.highContrast ? '#555555' : '#B9C2D1';
+  // Which lowercase "a" to trace is a property of the language, not of the app (src/i18n).
+  const { letterStyle } = useI18n();
   const ink = theme.colors.primaryDark;
 
   return (
@@ -85,7 +89,7 @@ export function HandwritingCanvas({ guide, onDone, strokeWidth = 14, onStrokeWid
       >
         {size.w > 0 ? (
           <Svg width={size.w} height={size.h}>
-            {renderGuide(guide, size.w, size.h, guideColor)}
+            {renderGuide(guide, size.w, size.h, guideColor, letterStyle)}
             {strokes.map((d, i) => (
               <Path key={i} d={d} stroke={ink} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" fill="none" />
             ))}
@@ -112,7 +116,7 @@ export function HandwritingCanvas({ guide, onDone, strokeWidth = 14, onStrokeWid
   );
 }
 
-function renderGuide(guide: Guide, w: number, h: number, color: string) {
+function renderGuide(guide: Guide, w: number, h: number, color: string, letterStyle: LetterStyle) {
   const common = { stroke: color, strokeWidth: 10, strokeLinecap: 'round' as const, strokeDasharray: '2 22', fill: 'none' };
   const m = Math.min(w, h) * 0.12;
   switch (guide.kind) {
@@ -138,7 +142,7 @@ function renderGuide(guide: Guide, w: number, h: number, color: string) {
     case 'text': {
       // School-print outlines (single-storey "a") drawn as paths — see schoolText.ts.
       const baseline = h * 0.78;
-      const layout = layoutSchoolText(guide.text, w - m * 2, h * 0.62);
+      const layout = layoutSchoolText(guide.text, w - m * 2, h * 0.62, letterStyle);
       return (
         <>
           <Line x1={m} y1={baseline} x2={w - m} y2={baseline} stroke={color} strokeWidth={3} opacity={0.5} />

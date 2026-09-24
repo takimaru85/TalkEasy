@@ -18,35 +18,39 @@ import {
 import { LEARNING_SUBJECTS, getActivity } from '@/learning';
 import type { RootScreenProps } from '@/navigation/types';
 import { Fonts, Radius, useTheme } from '@/theme';
+import { useI18n } from '@/i18n';
+import type { Strings } from '@/i18n/types';
 import { formatTime } from '@/utils/date';
 
 type SectionScreen = 'Communicate' | 'AdaptiveHome' | 'School' | 'Learn' | 'MyDay' | 'Activities' | 'Favorites' | 'Feelings' | 'ParentPin';
 
-const SECTIONS: { screen: SectionScreen; label: string; emoji: string; color: string }[] = [
-  { screen: 'Communicate', label: 'Talk', emoji: SECTION_EMOJI.communicate, color: '#DCEBFF' },
-  { screen: 'AdaptiveHome', label: 'Lessons', emoji: '🎓', color: '#FFF1C2' },
-  { screen: 'School', label: 'School', emoji: SECTION_EMOJI.school, color: '#DDF5E3' },
-  { screen: 'Learn', label: 'Learn', emoji: SECTION_EMOJI.learn, color: '#E8DFFF' },
-  { screen: 'MyDay', label: 'My Day', emoji: SECTION_EMOJI.myday, color: '#FFE3C7' },
-  { screen: 'Activities', label: 'Activities', emoji: SECTION_EMOJI.activities, color: '#D3F3F0' },
-  { screen: 'Favorites', label: 'Favorites', emoji: SECTION_EMOJI.favorites, color: '#FFF1C2' },
-  { screen: 'Feelings', label: 'Feelings', emoji: '😊', color: '#FFDBEA' },
-  { screen: 'ParentPin', label: 'Parent', emoji: SECTION_EMOJI.parent, color: '#ECEEF2' },
+const SECTIONS: { screen: SectionScreen; labelKey: keyof Strings; emoji: string; color: string }[] = [
+  { screen: 'Communicate', labelKey: 'sectionTalk', emoji: SECTION_EMOJI.communicate, color: '#DCEBFF' },
+  { screen: 'AdaptiveHome', labelKey: 'sectionLessons', emoji: '🎓', color: '#FFF1C2' },
+  { screen: 'School', labelKey: 'sectionSchool', emoji: SECTION_EMOJI.school, color: '#DDF5E3' },
+  { screen: 'Learn', labelKey: 'sectionLearn', emoji: SECTION_EMOJI.learn, color: '#E8DFFF' },
+  { screen: 'MyDay', labelKey: 'sectionMyDay', emoji: SECTION_EMOJI.myday, color: '#FFE3C7' },
+  { screen: 'Activities', labelKey: 'sectionActivities', emoji: SECTION_EMOJI.activities, color: '#D3F3F0' },
+  { screen: 'Favorites', labelKey: 'sectionFavorites', emoji: SECTION_EMOJI.favorites, color: '#FFF1C2' },
+  { screen: 'Feelings', labelKey: 'sectionFeelings', emoji: '😊', color: '#FFDBEA' },
+  { screen: 'ParentPin', labelKey: 'sectionParent', emoji: SECTION_EMOJI.parent, color: '#ECEEF2' },
 ];
 
-function greetingFor(hour: number): { text: string; emoji: string } {
-  if (hour < 12) return { text: 'Good morning', emoji: '☀️' };
-  if (hour < 18) return { text: 'Good afternoon', emoji: '🌤️' };
-  return { text: 'Good evening', emoji: '🌙' };
+type Translate = (key: keyof Strings, vars?: Record<string, string | number>) => string;
+
+function greetingFor(hour: number, t: Translate): { text: string; emoji: string } {
+  if (hour < 12) return { text: t('goodMorning'), emoji: '☀️' };
+  if (hour < 18) return { text: t('goodAfternoon'), emoji: '🌤️' };
+  return { text: t('goodEvening'), emoji: '🌙' };
 }
 
-function statusLine(day: number, hour: number, allDone: boolean): string {
-  if (allDone) return 'Everything on your plan is done! 🎉';
-  if (day === 0 || day === 6) return "It's the weekend! Have fun. 🎈";
-  if (hour < 8) return "You're ready for school! 🎒";
-  if (hour < 15) return 'Have a great day at school! ✏️';
-  if (hour < 19) return 'Time to relax and learn. 🧩';
-  return 'Almost bedtime. Great day today! ⭐';
+function statusLine(day: number, hour: number, allDone: boolean, t: Translate): string {
+  if (allDone) return t('statusAllDone');
+  if (day === 0 || day === 6) return t('statusWeekend');
+  if (hour < 8) return t('statusBeforeSchool');
+  if (hour < 15) return t('statusSchoolDay');
+  if (hour < 19) return t('statusAfternoon');
+  return t('statusEvening');
 }
 
 /**
@@ -65,22 +69,23 @@ export function ChildHomeScreen({ navigation }: RootScreenProps<'ChildHome'>) {
   const { data: recentLearning } = useRecentLearning(1);
   const { data: stars } = useStarSummary();
   const { lastButtonId, speakButton, speakFeedback } = useSpeak();
+  const { t, tContent } = useI18n();
 
-  const greeting = greetingFor(now.getHours());
+  const greeting = greetingFor(now.getHours(), t);
   const done = routine.filter((r) => r.isDone).length;
   const currentIndex = routine.findIndex((r) => !r.isDone);
   const current = currentIndex >= 0 ? routine[currentIndex] : null;
   const next = currentIndex >= 0 ? routine.slice(currentIndex + 1).find((r) => !r.isDone) ?? null : null;
-  const status = statusLine(dayOfWeek, now.getHours(), routine.length > 0 && done === routine.length);
+  const status = statusLine(dayOfWeek, now.getHours(), routine.length > 0 && done === routine.length, t);
   const dayName = now.toLocaleDateString(undefined, { weekday: 'long' });
 
   // "Continue learning": last played activity, else the first activity of a favourite subject.
   const suggestion = useMemo(() => {
     const last = recentLearning[0] ? getActivity(recentLearning[0].activityKey) : undefined;
-    if (last) return { activity: last, label: 'Continue' };
+    if (last) return { activity: last, label: t('continueLabel') };
     const fav = LEARNING_SUBJECTS.find((s) => profile.favorites.subjects.some((f) => s.name.toLowerCase().includes(f.toLowerCase()) || f.toLowerCase().includes(s.name.toLowerCase())));
     const subject = fav ?? LEARNING_SUBJECTS[0];
-    return { activity: subject.activities[0], label: 'Start' };
+    return { activity: subject.activities[0], label: t('startLabel') };
   }, [recentLearning, profile.favorites.subjects]);
   const suggestionSubject = LEARNING_SUBJECTS.find((s) => s.key === suggestion.activity.subjectKey);
 
@@ -189,19 +194,38 @@ export function ChildHomeScreen({ navigation }: RootScreenProps<'ChildHome'>) {
               key={s.screen}
               onPress={() => navigation.navigate(s.screen)}
               accessibilityRole="button"
-              accessibilityLabel={s.label}
+              accessibilityLabel={t(s.labelKey)}
               hitSlop={4}
               style={{ width: tileWidth }}
             >
               <View style={[styles.tile, theme.shadow, { height: tileHeight, backgroundColor: theme.tint(s.color), borderColor: theme.highContrast ? theme.colors.border : 'transparent', borderWidth: theme.highContrast ? theme.borderWidth : 0 }]}>
                 <Text style={[styles.tileEmoji, { fontSize: sizes.iconSize - 4 }]} allowFontScaling={false}>{s.emoji}</Text>
                 <Text style={[styles.tileLabel, { fontSize: sizes.tileLabel, color: theme.colors.text }]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={1} adjustsFontSizeToFit>
-                  {s.label}
+                  {t(s.labelKey)}
                 </Text>
               </View>
             </PressableScale>
           ))}
         </View>
+        <PressableScale
+          onPress={() => navigation.navigate('SoundPractice')}
+          accessibilityRole="button"
+          accessibilityLabel={`${t('sectionSoundPractice')}. ${t('soundPracticeSubtitle')}`}
+        >
+          <View style={[styles.schoolMode, { backgroundColor: theme.colors.surface, borderColor: theme.colors.primary }]}>
+            <Text style={styles.schoolModeEmoji} allowFontScaling={false}>🎯</Text>
+            <View style={styles.soundText}>
+              <Text style={[styles.schoolModeText, { fontSize: sizes.body + 2, color: theme.colors.text }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
+                {t('sectionSoundPractice')}
+              </Text>
+              <Text style={[styles.soundSubtitle, { color: theme.colors.textMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={2}>
+                {t('soundPracticeSubtitle')}
+              </Text>
+            </View>
+            <Icon name="chevron-right" size={26} color={theme.colors.textMuted} />
+          </View>
+        </PressableScale>
+
         <PressableScale onPress={() => navigation.navigate('SchoolMode')} accessibilityRole="button" accessibilityLabel="School Mode">
           <View style={[styles.schoolMode, { backgroundColor: theme.colors.surface, borderColor: theme.colors.primary }]}>
             <Text style={styles.schoolModeEmoji} allowFontScaling={false}>{SECTION_EMOJI.schoolMode}</Text>
@@ -223,7 +247,7 @@ export function ChildHomeScreen({ navigation }: RootScreenProps<'ChildHome'>) {
         ) : null}
 
         {/* Continue learning */}
-        <SectionTitle title="Continue learning" emoji={SECTION_EMOJI.learn} />
+        <SectionTitle title={t('continueLearning')} emoji={SECTION_EMOJI.learn} />
         <PressableScale onPress={() => navigation.navigate('LearnActivity', { activityKey: suggestion.activity.key })} accessibilityRole="button" accessibilityLabel={`${suggestion.label} ${suggestion.activity.title}, ${suggestionSubject?.name ?? ''}`}>
           <Card color={suggestionSubject?.color}>
             <View style={styles.learnRow}>
@@ -249,7 +273,7 @@ export function ChildHomeScreen({ navigation }: RootScreenProps<'ChildHome'>) {
           {nextReward ? (
             <>
               <Text style={[styles.rewardLine, { fontSize: sizes.body, color: theme.colors.text }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
-                {stars.total >= nextReward.starsRequired ? `You can get: ${nextReward.icon} ${nextReward.title}!` : `${nextReward.starsRequired - stars.total} more for ${nextReward.icon} ${nextReward.title}`}
+                {stars.total >= nextReward.starsRequired ? `You can get: ${nextReward.icon} ${tContent(nextReward.title)}!` : `${nextReward.starsRequired - stars.total} more for ${nextReward.icon} ${tContent(nextReward.title)}`}
               </Text>
               <ProgressBar value={rewardProgress} label={`${Math.min(stars.total, nextReward.starsRequired)} / ${nextReward.starsRequired}`} color={theme.colors.selected} />
             </>
@@ -292,6 +316,8 @@ const styles = StyleSheet.create({
   schoolMode: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, minHeight: 64, paddingHorizontal: SPACING.lg, borderRadius: Radius.md, borderWidth: 2 },
   schoolModeEmoji: { fontSize: 28, lineHeight: 34 },
   schoolModeText: { flex: 1, fontFamily: Fonts.extrabold },
+  soundText: { flex: 1, gap: 2, paddingVertical: SPACING.sm },
+  soundSubtitle: { fontFamily: Fonts.semibold, fontSize: 13, lineHeight: 18 },
   favRow: { flexDirection: 'row' },
   learnRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md },
   learnEmoji: { fontSize: 40, lineHeight: 50 },
