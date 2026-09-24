@@ -30,7 +30,7 @@ export function ManageTherapyScreen({ navigation }: ParentScreenProps<'ManageThe
           <ListRow
             key={ex.id}
             title={ex.name}
-            subtitle={[`${ACTIVITY_CATEGORY_META[ex.category].emoji} ${ACTIVITY_CATEGORY_META[ex.category].label}`, ex.durationMinutes > 0 ? `${ex.durationMinutes} min` : null, FREQUENCY_META[ex.frequency].label, ex.isCompleted ? '✅ Completed' : '⬜ Not completed']
+            subtitle={[`${ACTIVITY_CATEGORY_META[ex.category].emoji} ${ACTIVITY_CATEGORY_META[ex.category].label}`, ex.durationMinutes > 0 ? `${ex.durationMinutes} min` : null, FREQUENCY_META[ex.frequency].label, ex.isCompleted ? 'Completed' : 'Not completed']
               .filter(Boolean)
               .join(' · ')}
             icon={ex.icon}

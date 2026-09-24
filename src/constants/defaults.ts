@@ -1,11 +1,12 @@
 import type { ActivityCategory, ActivityFrequency, AppSettings, ChildProfileInput, RoutineSegment } from '@/types/models';
 import { tileColor as c } from './colors';
+import { AVATARS, AVATAR_PREFIX, DEFAULT_AVATAR } from './avatars';
 
 /**
  * Bump when defaults below gain new rows. On upgrade the seed inserts any missing default
  * category / button / subject once, without resurrecting rows the parent deleted earlier.
  */
-export const SEED_VERSION = 4;
+export const SEED_VERSION = 5;
 
 // ---------------------------------------------------------------------------
 // Child profile (demo data — everything here is editable in Parent Mode → My child)
@@ -17,14 +18,14 @@ export const DEFAULT_PROFILE: ChildProfileInput = {
   age: 8,
   grade: 'Grade 2',
   school: '',
-  avatar: '🦖',
+  avatar: DEFAULT_AVATAR,
   photoUri: null,
   favoriteColor: 'blue',
   favorites: {
     subjects: ['Mathematics', 'English'],
     activities: ['Drawing', 'Building blocks', 'Music'],
     foods: ['Pancakes', 'Mango', 'Chicken'],
-    people: ['Mom', 'Dad', 'Ate'],
+    people: ['Mom', 'Dad', 'Sister'],
   },
   communication: {
     showRecent: true,
@@ -45,7 +46,8 @@ export const DEFAULT_PROFILE: ChildProfileInput = {
   preferredMethod: null,
 };
 
-export const AVATAR_CHOICES = ['🦖', '🐯', '🦁', '🐼', '🐨', '🦊', '🐸', '🐧', '🦄', '🐬', '🚀', '⚽', '🎨', '🎸', '🌟', '🙂'];
+/** TalkEasy's illustrated characters (components/common/AvatarArt.tsx), stored as `av:<id>`. */
+export const AVATAR_CHOICES = AVATARS.map((a) => `${AVATAR_PREFIX}${a.id}`);
 
 // ---------------------------------------------------------------------------
 // Communication
@@ -112,8 +114,8 @@ export const DEFAULT_BUTTONS: DefaultButton[] = [
   { category: 'people', label: 'Mom', phrase: 'I want Mom.', icon: 'face-woman', color: c('pink') },
   { category: 'people', label: 'Dad', phrase: 'I want Dad.', icon: 'face-man', color: c('blue') },
   { category: 'people', label: 'Teacher', phrase: 'I want my teacher.', icon: 'human-male-board', color: c('green') },
-  { category: 'people', label: 'Ate', phrase: 'I want Ate.', icon: 'human-female', color: c('purple') },
-  { category: 'people', label: 'Kuya', phrase: 'I want Kuya.', icon: 'human-male', color: c('teal') },
+  { category: 'people', label: 'Sister', phrase: 'I want my sister.', icon: 'human-female', color: c('purple') },
+  { category: 'people', label: 'Brother', phrase: 'I want my brother.', icon: 'human-male', color: c('teal') },
   { category: 'people', label: 'Caregiver', phrase: 'I want my caregiver.', icon: 'mother-heart', color: c('yellow') },
   { category: 'people', label: 'Friend', phrase: 'I want to play with my friend.', icon: 'account-group', color: c('orange') },
 
@@ -254,6 +256,32 @@ export const DEFAULT_THERAPY: {
   { name: 'Walk outside', icon: 'walk', instructions: 'A short walk or wheel around the garden. Name three things you see.', durationMinutes: 15, frequency: 'weekly', category: 'outdoor' },
   { name: 'Sensory bin', icon: 'hand-front-right', instructions: 'Feel the rice, beans or water beads. Find the hidden toys.', durationMinutes: 10, frequency: 'weekly', category: 'sensory' },
   { name: 'Tidy toys', icon: 'basket', instructions: 'Put the toys back in the box. High five when done!', durationMinutes: 5, frequency: 'daily', category: 'chores' },
+  // --- Movement. Every one is "as much as feels good, stop any time"; none of it prescribes
+  // technique, and anything postural defers to the child's own therapist. ---
+  { name: 'Treadmill steps', icon: 'shoe-sneaker', instructions: 'Hold the rails with a grown-up right beside you. Slow, steady steps — stop whenever you need to.', durationMinutes: 10, frequency: 'weekdays', category: 'exercise' },
+  { name: 'Supported walking', icon: 'human-cane', instructions: 'Walk a little way with your walker, or holding a grown-up. Count the steps out loud together.', durationMinutes: 10, frequency: 'daily', category: 'exercise' },
+  { name: 'Pedal bike', icon: 'bike', instructions: 'Pedal round and round. Start slow, then a little faster if it feels good.', durationMinutes: 10, frequency: 'weekdays', category: 'exercise' },
+  { name: 'Reach up high', icon: 'arm-flex', instructions: 'Reach up for the sky, then out to the sides. Stretch as wide as a star.', durationMinutes: 5, frequency: 'daily', category: 'therapy' },
+  { name: 'Sitting balance', icon: 'seesaw', instructions: 'Sit tall and steady with a grown-up right there. Try reaching for a toy.', durationMinutes: 5, frequency: 'daily', category: 'therapy' },
+  { name: 'Gentle yoga', icon: 'yoga', instructions: 'Big slow breaths. Try the stretches your therapist showed you, nice and slowly.', durationMinutes: 10, frequency: 'daily', category: 'therapy' },
+
+  // --- Calm and sensory ---
+  { name: 'Hand and leg massage', icon: 'spa', instructions: 'Warm hands, slow gentle strokes down your arms and legs. Say stop any time.', durationMinutes: 10, frequency: 'daily', category: 'therapy' },
+  { name: 'Warm bath', icon: 'water', instructions: 'Warm water and soft bubbles. Let your arms and legs go floppy and relaxed.', durationMinutes: 15, frequency: 'daily', category: 'sensory' },
+  { name: 'Water play', icon: 'swim', instructions: 'Splash, pour and float the toys. A grown-up stays with you the whole time.', durationMinutes: 20, frequency: 'weekly', category: 'sensory' },
+  { name: 'Blow bubbles', icon: 'balloon', instructions: 'Big breath in, then blow out slowly. See how far the bubbles float.', durationMinutes: 5, frequency: 'daily', category: 'sensory' },
+
+  // --- Play and fun ---
+  { name: 'Ball play', icon: 'soccer', instructions: 'Roll it, push it or throw it. See how far the ball goes!', durationMinutes: 10, frequency: 'daily', category: 'games' },
+  { name: 'Dance party', icon: 'dance-ballroom', instructions: 'Put on your favourite song and move any way you like. Wheels and arms count too!', durationMinutes: 10, frequency: 'daily', category: 'music' },
+  { name: 'Puzzle time', icon: 'puzzle', instructions: 'Find the piece that fits. Take your time — there is no rush.', durationMinutes: 15, frequency: 'weekdays', category: 'games' },
+  { name: 'Look at photos', icon: 'image-multiple', instructions: 'Look through photos together. Point to the people you know and say their names.', durationMinutes: 10, frequency: 'weekly', category: 'reading' },
+  { name: 'Pet time', icon: 'dog', instructions: 'Brush, stroke or feed your pet. Tell them all about your day.', durationMinutes: 15, frequency: 'daily', category: 'sensory' },
+
+  // --- Out and about, and helping ---
+  { name: 'Sunshine time', icon: 'weather-sunny', instructions: 'Sit outside for a little while. Feel the warm air and listen for birds.', durationMinutes: 15, frequency: 'daily', category: 'outdoor' },
+  { name: 'Water the plants', icon: 'watering-can', instructions: 'Give every plant a drink. Look for new leaves and flowers.', durationMinutes: 10, frequency: 'weekly', category: 'outdoor' },
+  { name: 'Kitchen helper', icon: 'chef-hat', instructions: 'Stir, pour or sprinkle. You are the chef\'s helper today!', durationMinutes: 15, frequency: 'weekly', category: 'chores' },
 ];
 
 // ---------------------------------------------------------------------------
@@ -300,4 +328,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   soundEnabled: true,
   rotation: 'auto',
   language: 'en-US',
+  speechPracticeHidden: '',
+  speechPronunciationSet: 'en',
+  speechPronunciationOverrides: '{}',
 };

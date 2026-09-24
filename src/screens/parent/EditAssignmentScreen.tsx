@@ -105,7 +105,7 @@ export function EditAssignmentScreen({ navigation, route }: ParentScreenProps<'E
             label="Subject"
             value={subjectId === null ? 'none' : String(subjectId)}
             onChange={(v) => setSubjectId(v === 'none' ? null : Number(v))}
-            choices={[...subjects.map((s) => ({ value: String(s.id), label: `${s.icon} ${s.name}` })), { value: 'none', label: 'No subject' }]}
+            choices={[...subjects.map((s) => ({ value: String(s.id), label: s.name })), { value: 'none', label: 'No subject' }]}
           />
           <FormField label="Title" value={title} onChangeText={setTitle} placeholder='e.g. "Answer pages 25-26"' maxLength={100} />
           <FormField label="Description" value={description} onChangeText={setDescription} placeholder="What exactly to do" multiline maxLength={1000} />

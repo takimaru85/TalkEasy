@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SPACING } from '@/constants/sizes';
 import { useSizes } from '@/hooks/useSizes';
 import type { CommunicationButton } from '@/types/models';
-import { CommunicationTile } from './CommunicationTile';
+import { useI18n } from '@/i18n';
+import { CommunicationTile, tileMetrics } from './CommunicationTile';
 
 interface Props {
   buttons: CommunicationButton[];
@@ -20,6 +21,13 @@ interface Props {
  */
 export function TileGrid({ buttons, selectedId, onPress, header, footer }: Props) {
   const sizes = useSizes();
+  const { tContent } = useI18n();
+  // One label size for the whole board — the largest that fits EVERY card — so "Hot" and
+  // "Blanket" read as the same size instead of each card shrinking its own word.
+  const labelSize = useMemo(() => {
+    const { fit } = tileMetrics(sizes, false, undefined);
+    return buttons.reduce((min, b) => Math.min(min, fit(tContent(b.label))), sizes.tileLabel);
+  }, [buttons, sizes, tContent]);
   return (
     <ScrollView
       contentContainerStyle={[styles.content, { paddingHorizontal: sizes.horizontalPadding }]}
@@ -29,7 +37,7 @@ export function TileGrid({ buttons, selectedId, onPress, header, footer }: Props
       {header}
       <View style={[styles.grid, { gap: sizes.gap }]}>
         {buttons.map((b) => (
-          <CommunicationTile key={b.id} button={b} selected={b.id === selectedId} onPress={onPress} />
+          <CommunicationTile key={b.id} button={b} selected={b.id === selectedId} onPress={onPress} labelSize={labelSize} />
         ))}
       </View>
       {footer}

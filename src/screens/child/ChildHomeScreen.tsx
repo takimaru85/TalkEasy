@@ -1,8 +1,8 @@
 import React, { useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Avatar, Card, Icon, PressableScale, ProgressBar, ScreenContainer, SectionTitle } from '@/components/common';
+import { Avatar, Card, Glyph, Icon, IconTile, PressableScale, ProgressBar, ScreenContainer, SectionTitle } from '@/components/common';
 import { CommunicationTile } from '@/components/communication';
-import { SECTION_EMOJI } from '@/constants/school';
+import { ROUTINE_SEGMENT_TINT, SECTION_EMOJI } from '@/constants/school';
 import { MAX_FONT_SCALE, SPACING } from '@/constants/sizes';
 import { useProfile } from '@/context/ProfileContext';
 import {
@@ -24,16 +24,17 @@ import { formatTime } from '@/utils/date';
 
 type SectionScreen = 'Communicate' | 'AdaptiveHome' | 'School' | 'Learn' | 'MyDay' | 'Activities' | 'Favorites' | 'Feelings' | 'ParentPin';
 
-const SECTIONS: { screen: SectionScreen; labelKey: keyof Strings; emoji: string; color: string }[] = [
-  { screen: 'Communicate', labelKey: 'sectionTalk', emoji: SECTION_EMOJI.communicate, color: '#DCEBFF' },
-  { screen: 'AdaptiveHome', labelKey: 'sectionLessons', emoji: '🎓', color: '#FFF1C2' },
-  { screen: 'School', labelKey: 'sectionSchool', emoji: SECTION_EMOJI.school, color: '#DDF5E3' },
-  { screen: 'Learn', labelKey: 'sectionLearn', emoji: SECTION_EMOJI.learn, color: '#E8DFFF' },
-  { screen: 'MyDay', labelKey: 'sectionMyDay', emoji: SECTION_EMOJI.myday, color: '#FFE3C7' },
-  { screen: 'Activities', labelKey: 'sectionActivities', emoji: SECTION_EMOJI.activities, color: '#D3F3F0' },
-  { screen: 'Favorites', labelKey: 'sectionFavorites', emoji: SECTION_EMOJI.favorites, color: '#FFF1C2' },
-  { screen: 'Feelings', labelKey: 'sectionFeelings', emoji: '😊', color: '#FFDBEA' },
-  { screen: 'ParentPin', labelKey: 'sectionParent', emoji: SECTION_EMOJI.parent, color: '#ECEEF2' },
+/** The Home grid. Icons use the app's IconTile style (tinted square, deep-tone glyph) — no emoji. */
+const SECTIONS: { screen: SectionScreen; labelKey: keyof Strings; icon: string; color: string }[] = [
+  { screen: 'Communicate', labelKey: 'sectionTalk', icon: 'message-processing-outline', color: '#DCEBFF' },
+  { screen: 'AdaptiveHome', labelKey: 'sectionLessons', icon: 'school-outline', color: '#FFF1C2' },
+  { screen: 'School', labelKey: 'sectionSchool', icon: 'bag-personal-outline', color: '#DDF5E3' },
+  { screen: 'Learn', labelKey: 'sectionLearn', icon: 'book-open-page-variant-outline', color: '#E8DFFF' },
+  { screen: 'MyDay', labelKey: 'sectionMyDay', icon: 'calendar-check-outline', color: '#FFE3C7' },
+  { screen: 'Activities', labelKey: 'sectionActivities', icon: 'puzzle-outline', color: '#D3F3F0' },
+  { screen: 'Favorites', labelKey: 'sectionFavorites', icon: 'star-outline', color: '#FFF1C2' },
+  { screen: 'Feelings', labelKey: 'sectionFeelings', icon: 'emoticon-happy-outline', color: '#FFDBEA' },
+  { screen: 'ParentPin', labelKey: 'sectionParent', icon: 'shield-account-outline', color: '#ECEEF2' },
 ];
 
 type Translate = (key: keyof Strings, vars?: Record<string, string | number>) => string;
@@ -104,10 +105,10 @@ export function ChildHomeScreen({ navigation }: RootScreenProps<'ChildHome'>) {
           accessibilityLabel={`${greeting.text} ${displayName}. Today is ${dayName}. ${status}. Tap to hear.`}
         >
           <Card color={theme.colors.primarySoft} style={styles.greeting}>
-            <Avatar emoji={profile.avatar} photoUri={profile.photoUri} size={Math.max(72, sizes.iconSize + 24)} />
+            <Avatar avatar={profile.avatar} photoUri={profile.photoUri} size={Math.max(72, sizes.iconSize + 24)} />
             <View style={styles.greetingText}>
               <Text style={[styles.hello, { fontSize: sizes.heading + 2, color: theme.colors.text }]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={2} adjustsFontSizeToFit>
-                {greeting.text}, {displayName}! {greeting.emoji}
+                {greeting.text}, {displayName}!
               </Text>
               <Text style={[styles.sub, { fontSize: sizes.body, color: theme.colors.textMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
                 Today is {dayName}.
@@ -134,7 +135,7 @@ export function ChildHomeScreen({ navigation }: RootScreenProps<'ChildHome'>) {
                 {current ? (
                   <View style={[styles.planRow, { backgroundColor: theme.tint(theme.colors.primarySoft), borderColor: theme.colors.primary }]}>
                     <Text style={[styles.planMark, { color: theme.colors.primaryDark }]} allowFontScaling={false}>→</Text>
-                    <Icon name={current.icon} size={30} color={theme.colors.text} />
+                    <IconTile name={current.icon} size={40} tint={ROUTINE_SEGMENT_TINT[current.segment]} />
                     <Text style={[styles.planLabel, { fontSize: sizes.body + 1, color: theme.colors.text }]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={1}>
                       {current.label}
                     </Text>
@@ -144,7 +145,7 @@ export function ChildHomeScreen({ navigation }: RootScreenProps<'ChildHome'>) {
                 {next ? (
                   <View style={[styles.planRow, { backgroundColor: theme.colors.surface, borderColor: theme.colors.borderSoft }]}>
                     <Text style={[styles.planMark, { color: theme.colors.textMuted }]} allowFontScaling={false}>○</Text>
-                    <Icon name={next.icon} size={30} color={theme.colors.textMuted} />
+                    <IconTile name={next.icon} size={40} tint={ROUTINE_SEGMENT_TINT[next.segment]} muted />
                     <Text style={[styles.planLabel, { fontSize: sizes.body + 1, color: theme.colors.textMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={1}>
                       {next.label}
                     </Text>
@@ -162,7 +163,7 @@ export function ChildHomeScreen({ navigation }: RootScreenProps<'ChildHome'>) {
             <Card color="#FFF1C2">
               <View style={styles.planHeader}>
                 <Text style={[styles.planTitle, { fontSize: sizes.body + 2, color: theme.colors.text }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
-                  🎓 Today's schoolwork
+                  Today's schoolwork
                 </Text>
                 <Icon name="chevron-right" size={26} color={theme.colors.textMuted} />
               </View>
@@ -172,7 +173,7 @@ export function ChildHomeScreen({ navigation }: RootScreenProps<'ChildHome'>) {
                   return (
                     <View key={l.id} style={[styles.planRow, { backgroundColor: theme.colors.surface, borderColor: complete ? theme.colors.success : theme.colors.borderSoft }]}>
                       <Text style={[styles.planMark, { color: complete ? theme.colors.success : theme.colors.textMuted }]} allowFontScaling={false}>{complete ? '✓' : '○'}</Text>
-                      <Text style={styles.planEmoji} allowFontScaling={false}>{l.subjectIcon}</Text>
+                      <Glyph value={l.subjectIcon} size={40} />
                       <Text style={[styles.planLabel, { fontSize: sizes.body + 1, color: theme.colors.text }]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={1}>
                         {l.subjectName} – {l.title}
                       </Text>
@@ -198,8 +199,8 @@ export function ChildHomeScreen({ navigation }: RootScreenProps<'ChildHome'>) {
               hitSlop={4}
               style={{ width: tileWidth }}
             >
-              <View style={[styles.tile, theme.shadow, { height: tileHeight, backgroundColor: theme.tint(s.color), borderColor: theme.highContrast ? theme.colors.border : 'transparent', borderWidth: theme.highContrast ? theme.borderWidth : 0 }]}>
-                <Text style={[styles.tileEmoji, { fontSize: sizes.iconSize - 4 }]} allowFontScaling={false}>{s.emoji}</Text>
+              <View style={[styles.tile, theme.shadow, { height: tileHeight, backgroundColor: theme.colors.surface, borderColor: theme.highContrast ? theme.colors.border : theme.colors.borderSoft, borderWidth: theme.highContrast ? theme.borderWidth : 1 }]}>
+                <IconTile name={s.icon} size={Math.round(Math.min(sizes.iconSize + 12, tileHeight * 0.5))} tint={s.color} />
                 <Text style={[styles.tileLabel, { fontSize: sizes.tileLabel, color: theme.colors.text }]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={1} adjustsFontSizeToFit>
                   {t(s.labelKey)}
                 </Text>
@@ -208,18 +209,18 @@ export function ChildHomeScreen({ navigation }: RootScreenProps<'ChildHome'>) {
           ))}
         </View>
         <PressableScale
-          onPress={() => navigation.navigate('SoundPractice')}
+          onPress={() => navigation.navigate('SpeechPractice')}
           accessibilityRole="button"
-          accessibilityLabel={`${t('sectionSoundPractice')}. ${t('soundPracticeSubtitle')}`}
+          accessibilityLabel={`${t('spTitle')}. ${t('spSubtitle')}`}
         >
-          <View style={[styles.schoolMode, { backgroundColor: theme.colors.surface, borderColor: theme.colors.primary }]}>
-            <Text style={styles.schoolModeEmoji} allowFontScaling={false}>🎯</Text>
+          <View style={[styles.schoolMode, theme.shadow, { backgroundColor: theme.colors.surface, borderColor: theme.highContrast ? theme.colors.border : theme.colors.borderSoft }]}>
+            <IconTile name="microphone-outline" size={44} tint="#FFD9D3" />
             <View style={styles.soundText}>
               <Text style={[styles.schoolModeText, { fontSize: sizes.body + 2, color: theme.colors.text }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
-                {t('sectionSoundPractice')}
+                {t('spTitle')}
               </Text>
               <Text style={[styles.soundSubtitle, { color: theme.colors.textMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={2}>
-                {t('soundPracticeSubtitle')}
+                {t('spSubtitle')}
               </Text>
             </View>
             <Icon name="chevron-right" size={26} color={theme.colors.textMuted} />
@@ -227,8 +228,8 @@ export function ChildHomeScreen({ navigation }: RootScreenProps<'ChildHome'>) {
         </PressableScale>
 
         <PressableScale onPress={() => navigation.navigate('SchoolMode')} accessibilityRole="button" accessibilityLabel="School Mode">
-          <View style={[styles.schoolMode, { backgroundColor: theme.colors.surface, borderColor: theme.colors.primary }]}>
-            <Text style={styles.schoolModeEmoji} allowFontScaling={false}>{SECTION_EMOJI.schoolMode}</Text>
+          <View style={[styles.schoolMode, theme.shadow, { backgroundColor: theme.colors.surface, borderColor: theme.highContrast ? theme.colors.border : theme.colors.borderSoft }]}>
+            <IconTile name="google-classroom" size={44} tint="#DDF5E3" />
             <Text style={[styles.schoolModeText, { fontSize: sizes.body + 2, color: theme.colors.text }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>School Mode</Text>
             <Icon name="chevron-right" size={26} color={theme.colors.textMuted} />
           </View>
@@ -251,7 +252,7 @@ export function ChildHomeScreen({ navigation }: RootScreenProps<'ChildHome'>) {
         <PressableScale onPress={() => navigation.navigate('LearnActivity', { activityKey: suggestion.activity.key })} accessibilityRole="button" accessibilityLabel={`${suggestion.label} ${suggestion.activity.title}, ${suggestionSubject?.name ?? ''}`}>
           <Card color={suggestionSubject?.color}>
             <View style={styles.learnRow}>
-              <Text style={styles.learnEmoji} allowFontScaling={false}>{suggestion.activity.emoji}</Text>
+              <Glyph value={suggestion.activity.emoji} size={56} />
               <View style={{ flex: 1 }}>
                 <Text style={[styles.learnTitle, { fontSize: sizes.body + 3, color: theme.colors.text }]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={1}>
                   {suggestion.activity.title}
@@ -310,11 +311,9 @@ const styles = StyleSheet.create({
   planEmoji: { fontSize: 22, lineHeight: 28 },
   question: { fontFamily: Fonts.bold, textAlign: 'center', marginTop: SPACING.xs },
   grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-start' },
-  tile: { borderRadius: Radius.lg, alignItems: 'center', justifyContent: 'center', gap: SPACING.xs, padding: SPACING.sm },
-  tileEmoji: { lineHeight: 70 },
-  tileLabel: { fontFamily: Fonts.extrabold, textAlign: 'center' },
-  schoolMode: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, minHeight: 64, paddingHorizontal: SPACING.lg, borderRadius: Radius.md, borderWidth: 2 },
-  schoolModeEmoji: { fontSize: 28, lineHeight: 34 },
+  tile: { borderRadius: Radius.lg, alignItems: 'center', justifyContent: 'center', gap: SPACING.sm, padding: SPACING.sm },
+  tileLabel: { fontFamily: Fonts.extrabold, textAlign: 'center', alignSelf: 'stretch' },
+  schoolMode: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, minHeight: 72, paddingHorizontal: SPACING.md, borderRadius: Radius.lg, borderWidth: 1 },
   schoolModeText: { flex: 1, fontFamily: Fonts.extrabold },
   soundText: { flex: 1, gap: 2, paddingVertical: SPACING.sm },
   soundSubtitle: { fontFamily: Fonts.semibold, fontSize: 13, lineHeight: 18 },

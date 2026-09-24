@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Avatar, BigButton, ChoiceRow, FormField, ScreenContainer, ScreenHeader, SectionTitle } from '@/components/common';
 import { AVATAR_CHOICES } from '@/constants/defaults';
+import { avatarId, avatarName } from '@/constants/avatars';
+import { AvatarArt } from '@/components/common/AvatarArt';
 import { DIFFICULTY_META } from '@/constants/school';
 import { MAX_FONT_SCALE, MIN_PARENT_TARGET, SPACING } from '@/constants/sizes';
 import { useProfile } from '@/context/ProfileContext';
@@ -13,6 +15,9 @@ import { ACCENTS, ACCENT_KEYS, Fonts, Radius, useTheme } from '@/theme';
 import type { ChildProfileInput, Difficulty, ThemeColorKey } from '@/types/models';
 import { alertMessage } from '@/utils/confirm';
 import { ANSWER_METHOD_META, ASSISTANCE_META, type AnswerMethod, type AssistanceLevel } from '@/adaptive/types';
+
+/** Avatar picker cells: big enough to see each character clearly (and a parent-safe target). */
+const AVATAR_CELL = 76;
 
 const DIFF_CHOICES = (Object.keys(DIFFICULTY_META) as Difficulty[]).map((d) => ({ value: d, label: DIFFICULTY_META[d].label }));
 
@@ -78,7 +83,7 @@ export function ChildProfileScreen({ navigation }: ParentScreenProps<'ChildProfi
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.form} keyboardShouldPersistTaps="handled">
           <View style={styles.preview}>
-            <Avatar emoji={form.avatar} photoUri={form.photoUri} size={96} ring={ACCENTS[form.favoriteColor].strong} />
+            <Avatar avatar={form.avatar} photoUri={form.photoUri} size={96} ring={ACCENTS[form.favoriteColor].strong} />
             <Text style={[styles.previewName, { fontSize: sizes.heading, color: theme.colors.text }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
               Hi {form.nickname || form.name || '…'}! 👋
             </Text>
@@ -98,12 +103,12 @@ export function ChildProfileScreen({ navigation }: ParentScreenProps<'ChildProfi
             <BigButton label="Take photo" icon="camera-outline" variant="secondary" minHeight={60} compact onPress={() => choosePhoto('camera')} style={styles.half} />
             <BigButton label="Choose photo" icon="image-outline" variant="secondary" minHeight={60} compact onPress={() => choosePhoto('library')} style={styles.half} />
           </View>
-          {form.photoUri ? <BigButton label="Use an emoji instead" icon="close" variant="outline" minHeight={56} onPress={() => { deleteImported(form.photoUri); set('photoUri', null); }} /> : null}
+          {form.photoUri ? <BigButton label="Use an avatar instead" icon="close" variant="outline" minHeight={56} onPress={() => { deleteImported(form.photoUri); set('photoUri', null); }} /> : null}
           <Text style={[styles.label, { fontSize: sizes.body, color: theme.colors.text }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>Avatar</Text>
           <View style={styles.emojiRow}>
             {AVATAR_CHOICES.map((e) => (
-              <Pressable key={e} onPress={() => set('avatar', e)} accessibilityRole="button" accessibilityLabel={`Avatar ${e}`} accessibilityState={{ selected: form.avatar === e }} style={[styles.emojiCell, { borderColor: form.avatar === e ? theme.colors.primary : theme.colors.borderSoft, borderWidth: form.avatar === e ? 3 : 1.5, backgroundColor: form.avatar === e ? theme.colors.primarySoft : theme.colors.surface }]}>
-                <Text style={styles.emoji} allowFontScaling={false}>{e}</Text>
+              <Pressable key={e} onPress={() => set('avatar', e)} accessibilityRole="button" accessibilityLabel={`Avatar: ${avatarName(e)}`} accessibilityState={{ selected: form.avatar === e }} style={[styles.avatarCell, { borderColor: form.avatar === e ? theme.colors.primary : theme.colors.borderSoft, borderWidth: form.avatar === e ? 3 : 1.5, backgroundColor: form.avatar === e ? theme.colors.primarySoft : theme.colors.surface }]}>
+                <AvatarArt id={avatarId(e)!} size={AVATAR_CELL - 12} />
               </Pressable>
             ))}
           </View>
@@ -127,7 +132,7 @@ export function ChildProfileScreen({ navigation }: ParentScreenProps<'ChildProfi
           <FormField label="Favourite subjects" value={subjects} onChangeText={setSubjects} placeholder="Mathematics, English" hint="Separate with commas. Shown first in Learn." />
           <FormField label="Favourite activities" value={activities} onChangeText={setActivities} placeholder="Drawing, Music" hint="Separate with commas." />
           <FormField label="Favourite foods" value={foods} onChangeText={setFoods} placeholder="Pancakes, Mango" hint="Separate with commas." />
-          <FormField label="Favourite people" value={people} onChangeText={setPeople} placeholder="Mom, Dad, Ate" hint="Separate with commas." />
+          <FormField label="Favourite people" value={people} onChangeText={setPeople} placeholder="Mom, Dad, Sister" hint="Separate with commas." />
 
           <SectionTitle title="Communication" emoji="🗣️" />
           <ChoiceRow label='Show "Recent" on Talk' value={form.communication.showRecent ? 'on' : 'off'} onChange={(v) => set('communication', { ...form.communication, showRecent: v === 'on' })} choices={[{ value: 'on', label: 'Yes' }, { value: 'off', label: 'No' }]} />
@@ -200,8 +205,7 @@ const styles = StyleSheet.create({
   label: { fontFamily: Fonts.bold },
   hint: { fontFamily: Fonts.semibold, fontSize: 15 },
   emojiRow: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm },
-  emojiCell: { width: MIN_PARENT_TARGET + 6, height: MIN_PARENT_TARGET + 6, borderRadius: Radius.md, alignItems: 'center', justifyContent: 'center' },
-  emoji: { fontSize: 30, lineHeight: 38 },
+  avatarCell: { width: AVATAR_CELL, height: AVATAR_CELL, borderRadius: AVATAR_CELL / 2, alignItems: 'center', justifyContent: 'center' },
   swatch: { flexGrow: 1, flexBasis: '30%', minHeight: MIN_PARENT_TARGET, borderRadius: Radius.md, alignItems: 'center', justifyContent: 'center', gap: 4, padding: 6 },
   swatchDot: { width: 22, height: 22, borderRadius: 11 },
   swatchText: { fontFamily: Fonts.bold, fontSize: 14 },

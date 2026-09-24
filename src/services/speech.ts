@@ -1,8 +1,9 @@
 import * as Speech from 'expo-speech';
-import { setAudioModeAsync } from 'expo-audio';
+import { setAudioModeAsync, setIsAudioActiveAsync } from 'expo-audio';
 import { Platform } from 'react-native';
 import { DEFAULT_LOCALE_CODE, getLocale } from '@/i18n/registry';
 import type { AppSettings } from '@/types/models';
+import { forEnglishVoice, isEnglishVoice } from './pronunciationLexicon';
 
 /**
  * Thin wrapper around expo-speech.
@@ -101,6 +102,24 @@ export function prepareAudioSession(): Promise<void> {
 }
 
 /**
+ * Makes sure the shared audio session is ACTIVE before anything is played.
+ *
+ * iOS: when an expo-audio clip finishes (or is paused) the module deactivates the app's audio
+ * session. Text-to-speech uses the same session, so after one recorded clip every phrase went
+ * silent — Talk included. Re-activating before each utterance and each clip makes sound recover
+ * on the very next tap, whatever deactivated it. Cheap, idempotent, never throws.
+ */
+export async function ensureAudioActive(): Promise<void> {
+  await prepareAudioSession();
+  if (Platform.OS !== 'ios') return;
+  try {
+    await setIsAudioActiveAsync(true);
+  } catch (err) {
+    if (__DEV__) console.log('[speech] activate session', err);
+  }
+}
+
+/**
  * Switches the shared audio session in and out of recording mode.
  *
  * Sound Practice is the only caller: both platforms need `allowsRecording` while the
@@ -118,6 +137,8 @@ export async function setRecordingMode(enabled: boolean): Promise<void> {
   } catch (err) {
     if (__DEV__) console.log('[speech] recording mode', err);
   }
+  // Back from recording: playback must be live again straight away (see ensureAudioActive).
+  if (!enabled) await ensureAudioActive();
 }
 
 export interface SpeakOptions {
@@ -138,18 +159,22 @@ export async function speak(text: string, options: SpeakOptions = {}): Promise<v
   // This call supersedes anything already speaking.
   const seq = ++utteranceSeq;
   try {
-    await prepareAudioSession();
+    await ensureAudioActive();
     await Speech.stop();
     if (seq !== utteranceSeq) return; // a newer phrase was requested while we awaited
     speechStatus.requested += 1;
-    Speech.speak(trimmed, {
+    const language = options.voice ? undefined : options.language ?? Platform.select({ ios: 'en-US', default: undefined });
+    // An English voice reads Filipino words with English rules ("Ate" → "ate"); give it a
+    // pronunciation-safe spelling instead. A chosen Filipino voice reads them correctly as written.
+    const englishVoice = options.voice ? !/(^|[^a-z])(fil|tl)([-_]|$)/i.test(options.voice) : isEnglishVoice(language);
+    Speech.speak(englishVoice ? forEnglishVoice(trimmed) : trimmed, {
       rate: clamp(options.rate ?? 1, 0.5, 1.5),
       pitch: clamp(options.pitch ?? 1, 0.5, 2),
       volume: 1,
       voice: options.voice ?? undefined,
       // Only pass a language when no explicit voice is chosen; some Android engines
       // refuse to speak if they have no voice for the requested language.
-      language: options.voice ? undefined : options.language ?? Platform.select({ ios: 'en-US', default: undefined }),
+      language,
       onStart: () => {
         if (seq !== utteranceSeq) return;
         if (!speechStatus.available) {

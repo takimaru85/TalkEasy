@@ -1,6 +1,6 @@
 import React from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Card, ProgressBar, ScreenContainer, ScreenHeader, SectionTitle, StatTile } from '@/components/common';
+import { Avatar, Card, ProgressBar, ScreenContainer, ScreenHeader, SectionTitle, StatTile } from '@/components/common';
 import { ANSWER_METHOD_META, type AnswerMethod } from '@/adaptive/types';
 import { WRITING_LEVELS } from '@/adaptive/handwriting';
 import { Colors } from '@/constants/colors';
@@ -59,7 +59,10 @@ export function AdaptiveProgressScreen({ navigation }: ParentScreenProps<'Adapti
     <ScreenContainer>
       <ScreenHeader title="Learning progress" onBack={() => navigation.goBack()} />
       <ScrollView contentContainerStyle={styles.list}>
-        <Text style={[styles.name, { fontSize: sizes.heading, color: theme.colors.text }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>{profile.avatar} {profile.name}</Text>
+        <View style={styles.nameRow}>
+          <Avatar avatar={profile.avatar} photoUri={profile.photoUri} size={52} />
+          <Text style={[styles.name, { fontSize: sizes.heading, color: theme.colors.text }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>{profile.name}</Text>
+        </View>
         <Text style={styles.hint} maxFontSizeMultiplier={MAX_FONT_SCALE}>
           Learning progress and handwriting practice are shown separately. A child can understand a lesson well even
           while handwriting is still hard.
@@ -78,7 +81,7 @@ export function AdaptiveProgressScreen({ navigation }: ParentScreenProps<'Adapti
             const pct = s.total ? Math.round((s.correct / s.total) * 100) : 0;
             return (
               <View key={String(s.subjectId)} style={styles.barRow}>
-                <Text style={[styles.barLabel, { color: theme.colors.text }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>{s.icon} {s.name} <Text style={styles.barNote}>· {describe(pct, s.total)}</Text></Text>
+                <Text style={[styles.barLabel, { color: theme.colors.text }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>{s.name} <Text style={styles.barNote}>· {describe(pct, s.total)}</Text></Text>
                 <ProgressBar value={pct / 100} label={`${pct}%`} height={14} />
               </View>
             );
@@ -132,6 +135,7 @@ export function AdaptiveProgressScreen({ navigation }: ParentScreenProps<'Adapti
 }
 
 const styles = StyleSheet.create({
+  nameRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md },
   list: { padding: SPACING.lg, gap: SPACING.md, paddingBottom: SPACING.xl * 2 },
   name: { fontFamily: Fonts.black },
   hint: { fontFamily: Fonts.semibold, color: Colors.textMuted, fontSize: 15, lineHeight: 21 },

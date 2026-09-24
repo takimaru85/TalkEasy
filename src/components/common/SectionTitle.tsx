@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { Fonts, useTheme } from '@/theme';
 import { MAX_FONT_SCALE, SPACING } from '@/constants/sizes';
 import { useSizes } from '@/hooks/useSizes';
+import { Glyph } from './Glyph';
 
 interface Props {
   title: string;
@@ -17,7 +18,7 @@ export function SectionTitle({ title, emoji, trailing }: Props) {
   const theme = useTheme();
   return (
     <View style={styles.row} accessibilityRole="header">
-      {emoji ? <Text style={[styles.emoji, { fontSize: sizes.heading - 2 }]} allowFontScaling={false}>{emoji}</Text> : null}
+      {emoji ? <Glyph value={emoji} size={Math.round(sizes.heading + 6)} /> : null}
       <Text style={[styles.title, { fontSize: sizes.heading - 4, color: theme.colors.text }]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={1}>
         {title}
       </Text>

@@ -70,10 +70,15 @@ export function ChoiceCard({ label, emoji, state = 'idle', onPress, disabled, pi
       >
         {label}
       </Text>
-      {state === 'correct' ? <Icon name="check-circle" size={32} color={c.success} /> : null}
-      {state === 'wrong' ? <Icon name="close-circle" size={32} color={c.danger} /> : null}
-      {state === 'hint' ? <Text style={styles.hintMark} allowFontScaling={false}>💡</Text> : null}
-      {state === 'selected' ? <Icon name="check-bold" size={28} color={c.primary} /> : null}
+      {state !== 'idle' ? (
+        // In picture mode the badge sits in the corner, so it never makes one card taller than the rest.
+        <View style={pictureMode ? styles.badgeCorner : undefined}>
+          {state === 'correct' ? <Icon name="check-circle" size={32} color={c.success} /> : null}
+          {state === 'wrong' ? <Icon name="close-circle" size={32} color={c.danger} /> : null}
+          {state === 'hint' ? <Text style={styles.hintMark} allowFontScaling={false}>💡</Text> : null}
+          {state === 'selected' ? <Icon name="check-bold" size={28} color={c.primary} /> : null}
+        </View>
+      ) : null}
     </Pressable>
   );
 }
@@ -89,6 +94,7 @@ const styles = StyleSheet.create({
   emoji: { textAlign: 'center' },
   label: { fontFamily: Fonts.extrabold, textAlign: 'center', flexShrink: 1 },
   hintMark: { fontSize: 26 },
+  badgeCorner: { position: 'absolute', top: SPACING.sm, right: SPACING.sm },
 });
 
 export function ChoiceGrid({ children }: { children: React.ReactNode }) {

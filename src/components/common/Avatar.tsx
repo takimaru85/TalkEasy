@@ -1,19 +1,24 @@
 import React from 'react';
-import { Image, StyleSheet, Text, View } from 'react-native';
+import { Image, StyleSheet, View } from 'react-native';
+import { avatarId, normalizeAvatar } from '@/constants/avatars';
 import { useTheme } from '@/theme';
+import { AvatarArt } from './AvatarArt';
 
 interface Props {
-  emoji: string;
+  /** The stored avatar (`av:<id>`; an old emoji value is mapped to its character). */
+  avatar: string;
   photoUri?: string | null;
   size?: number;
   /** Ring colour; defaults to the accent. */
   ring?: string;
 }
 
-/** Round avatar: the child's photo if set, otherwise their emoji on a soft accent disc. */
-export function Avatar({ emoji, photoUri, size = 72, ring }: Props) {
+/** Round avatar: the child's photo if set, otherwise their illustrated character. */
+export function Avatar({ avatar, photoUri, size = 72, ring }: Props) {
   const theme = useTheme();
   const radius = size / 2;
+  const border = Math.max(3, size * 0.05);
+  const id = avatarId(normalizeAvatar(avatar))!;
   return (
     <View
       style={[
@@ -24,7 +29,7 @@ export function Avatar({ emoji, photoUri, size = 72, ring }: Props) {
           borderRadius: radius,
           backgroundColor: theme.tint(theme.colors.primarySoft),
           borderColor: ring ?? theme.colors.primary,
-          borderWidth: Math.max(3, size * 0.05),
+          borderWidth: border,
         },
       ]}
       accessibilityLabel="Profile picture"
@@ -32,9 +37,7 @@ export function Avatar({ emoji, photoUri, size = 72, ring }: Props) {
       {photoUri ? (
         <Image source={{ uri: photoUri }} style={{ width: size - 6, height: size - 6, borderRadius: radius }} accessibilityIgnoresInvertColors />
       ) : (
-        <Text style={{ fontSize: size * 0.52, lineHeight: size * 0.7 }} allowFontScaling={false}>
-          {emoji}
-        </Text>
+        <AvatarArt id={id} size={size - border * 2} />
       )}
     </View>
   );

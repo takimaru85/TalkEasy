@@ -103,3 +103,11 @@ export const ROUTINE_SEGMENT_META: Record<RoutineSegment, { label: string; emoji
   afternoon: { label: 'After school', emoji: '🌤️' },
   evening: { label: 'Evening', emoji: '🌙' },
 };
+
+/** Soft tint per part of the day (TileColors): icons are drawn in its matching ink. */
+export const ROUTINE_SEGMENT_TINT: Record<RoutineSegment, string> = {
+  morning: '#FFE3C7',
+  school: '#DCEBFF',
+  afternoon: '#D3F3F0',
+  evening: '#E8DFFF',
+};

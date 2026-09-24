@@ -1,6 +1,7 @@
 import { getDb, nowIso } from '../db';
 import { notify } from '../events';
 import { DEFAULT_PROFILE } from '@/constants/defaults';
+import { normalizeAvatar } from '@/constants/avatars';
 import type {
   ChildProfile,
   ChildProfileInput,
@@ -52,7 +53,8 @@ function toModel(r: ProfileRow): ChildProfile {
     age: r.age,
     grade: r.grade,
     school: r.school,
-    avatar: r.avatar || DEFAULT_PROFILE.avatar,
+    // Older profiles stored an emoji; it is shown as the matching illustrated character.
+    avatar: normalizeAvatar(r.avatar),
     photoUri: r.photo_uri,
     favoriteColor: (ACCENT_KEYS as string[]).includes(r.favorite_color) ? (r.favorite_color as ThemeColorKey) : 'blue',
     favorites: parseJson<ProfileFavorites>(r.favorites_json, DEFAULT_PROFILE.favorites),

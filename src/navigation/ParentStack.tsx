@@ -23,6 +23,8 @@ import { SettingsScreen } from '@/screens/parent/SettingsScreen';
 import { ManageLessonsScreen } from '@/screens/parent/ManageLessonsScreen';
 import { EditLessonScreen } from '@/screens/parent/EditLessonScreen';
 import { AdaptiveProgressScreen } from '@/screens/parent/AdaptiveProgressScreen';
+import { SpeechPracticeSettingsScreen } from '@/screens/parent/SpeechPracticeSettingsScreen';
+import { PronunciationTestScreen } from '@/screens/parent/PronunciationTestScreen';
 import type { ParentStackParamList } from './types';
 
 const Stack = createNativeStackNavigator<ParentStackParamList>();
@@ -54,6 +56,8 @@ export function ParentStack() {
       <Stack.Screen name="ManageLessons" component={ManageLessonsScreen} />
       <Stack.Screen name="EditLesson" component={EditLessonScreen} />
       <Stack.Screen name="AdaptiveProgress" component={AdaptiveProgressScreen} />
+      <Stack.Screen name="SpeechPracticeSettings" component={SpeechPracticeSettingsScreen} />
+      <Stack.Screen name="PronunciationTest" component={PronunciationTestScreen} />
     </Stack.Navigator>
   );
 }

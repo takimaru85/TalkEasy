@@ -149,17 +149,16 @@ export async function seedIfNeeded(db: SQLiteDatabase): Promise<void> {
       `);
     }
 
-    // ---- Activities (fresh only) -----------------------------------------
-    const therapyCount = await txn.getFirstAsync<{ n: number }>('SELECT COUNT(*) AS n FROM therapy_activities');
-    if ((therapyCount?.n ?? 0) === 0) {
-      for (let i = 0; i < DEFAULT_THERAPY.length; i++) {
-        const t = DEFAULT_THERAPY[i];
-        await txn.runAsync(
-          `INSERT INTO therapy_activities (name, icon, instructions, duration_minutes, frequency, category, is_completed, sort_order, created_at)
-           VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?)`,
-          t.name, t.icon, t.instructions, t.durationMinutes, t.frequency, t.category, i, now,
-        );
-      }
+    // ---- Activities (insert missing by name) ------------------------------
+    // Each new default is appended after whatever the parent already has, and an activity that
+    // is already present is left exactly as it is - renamed, re-timed or marked done.
+    for (const t of DEFAULT_THERAPY) {
+      await txn.runAsync(
+        `INSERT INTO therapy_activities (name, icon, instructions, duration_minutes, frequency, category, is_completed, sort_order, created_at)
+         SELECT ?, ?, ?, ?, ?, ?, 0, (SELECT COALESCE(MAX(sort_order), -1) + 1 FROM therapy_activities), ?
+         WHERE NOT EXISTS (SELECT 1 FROM therapy_activities WHERE name = ?)`,
+        t.name, t.icon, t.instructions, t.durationMinutes, t.frequency, t.category, now, t.name,
+      );
     }
 
     // ---- Fresh-install-only: favorites + settings -------------------------

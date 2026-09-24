@@ -6,6 +6,7 @@ import { Fonts, Radius, useTheme } from '@/theme';
 import { Motion } from '@/theme/tokens';
 import { Icon } from '@/components/common/Icon';
 import type { CommunicationButton } from '@/types/models';
+import { tileInk } from '@/constants/colors';
 import { useI18n } from '@/i18n';
 
 /** Line box as a multiple of font size, for Nunito ExtraBold. */
@@ -61,6 +62,27 @@ function fitLabel(text: string, tileWidth: number, tileHeight: number, discSize:
   return Math.max(MIN_LABEL, Math.floor(Math.min(preferred, byWidth, byHeight)));
 }
 
+/**
+ * Tile metrics shared by a tile and its grid: height, icon frame and the label that fits.
+ *
+ * TileGrid uses `fit` to find one label size for the whole board, then passes it to every tile,
+ * so "Hot" and "Blanket" read at the same size. Both sides must measure identically, which is
+ * why this lives here rather than being repeated in the component.
+ */
+export function tileMetrics(
+  sizes: { tileHeight: number; iconSize: number; tileWidth: number; tileLabel: number },
+  compact: boolean | undefined,
+  width: number | undefined,
+) {
+  const height = compact ? Math.max(sizes.tileHeight * 0.72, 96) : sizes.tileHeight;
+  const discPadding = compact ? 18 : 28;
+  const scale = Math.min(PixelRatio.getFontScale(), MAX_FONT_SCALE);
+  const discSize = fitDisc((compact ? sizes.iconSize - 12 : sizes.iconSize) + discPadding, height, scale);
+  const preferred = compact ? sizes.tileLabel - 3 : sizes.tileLabel;
+  const fit = (label: string) => fitLabel(label, width ?? sizes.tileWidth, height, discSize, preferred);
+  return { height, discPadding, discSize, fit };
+}
+
 interface Props {
   button: CommunicationButton;
   selected: boolean;
@@ -69,6 +91,8 @@ interface Props {
   width?: number;
   /** Smaller variant for strips (Recent / Favorites on Home). */
   compact?: boolean;
+  /** A label size shared by the whole grid, so every card's word is the same size. */
+  labelSize?: number;
 }
 
 /**
@@ -79,7 +103,7 @@ interface Props {
  * - A second tap within TAP_GUARD_MS is ignored so a tremor does not double-speak.
  * - Tap only: no long-press, no gestures.
  */
-export const CommunicationTile = React.memo(function CommunicationTile({ button, selected, onPress, width, compact }: Props) {
+export const CommunicationTile = React.memo(function CommunicationTile({ button, selected, onPress, width, compact, labelSize: sharedLabelSize }: Props) {
   const sizes = useSizes();
   const theme = useTheme();
   const scale = useRef(new Animated.Value(1)).current;
@@ -96,14 +120,16 @@ export const CommunicationTile = React.memo(function CommunicationTile({ button,
     onPress(button);
   };
 
-  const height = compact ? Math.max(sizes.tileHeight * 0.72, 96) : sizes.tileHeight;
-  const discPadding = compact ? 18 : 28;
-  const discSize = fitDisc((compact ? sizes.iconSize - 12 : sizes.iconSize) + discPadding, height, Math.min(PixelRatio.getFontScale(), MAX_FONT_SCALE));
-  const iconSize = Math.max(20, discSize - discPadding);
+  const { height, discPadding, discSize, fit } = tileMetrics(sizes, compact, width);
+  // Generous padding: a smaller glyph in a larger frame reads calmer and more refined.
+  const iconSize = Math.max(20, Math.round((discSize - discPadding) * 0.82));
+  // A soft rounded square rather than a circle; the glyph in the deep tone of its own tint.
+  const discRadius = Math.round(discSize * 0.3);
+  const ink = theme.highContrast ? theme.colors.text : tileInk(button.color);
   const { tContent } = useI18n();
   const isStarter = button.phrase.trim().endsWith('...');
   const label = tContent(button.label);
-  const labelSize = fitLabel(label, width ?? sizes.tileWidth, height, discSize, compact ? sizes.tileLabel - 3 : sizes.tileLabel);
+  const labelSize = sharedLabelSize ?? fit(label);
 
   return (
     <Animated.View style={{ transform: [{ scale }], width: width ?? sizes.tileWidth }}>
@@ -126,11 +152,11 @@ export const CommunicationTile = React.memo(function CommunicationTile({ button,
           pressed && { backgroundColor: theme.tint(button.color) },
         ]}
       >
-        <View style={[styles.disc, { width: discSize, height: discSize, borderRadius: discSize / 2, backgroundColor: theme.tint(button.color), borderColor: theme.highContrast ? theme.colors.border : 'transparent', borderWidth: theme.highContrast ? 2 : 0 }]}>
+        <View style={[styles.disc, { width: discSize, height: discSize, borderRadius: discRadius, backgroundColor: theme.tint(button.color), borderColor: theme.highContrast ? theme.colors.border : 'transparent', borderWidth: theme.highContrast ? 2 : 0 }]}>
           {button.imageUri ? (
-            <Image source={{ uri: button.imageUri }} style={{ width: discSize, height: discSize, borderRadius: discSize / 2 }} accessibilityIgnoresInvertColors />
+            <Image source={{ uri: button.imageUri }} style={{ width: discSize, height: discSize, borderRadius: discRadius }} accessibilityIgnoresInvertColors />
           ) : (
-            <Icon name={button.icon} size={iconSize} color={theme.colors.text} />
+            <Icon name={button.icon} size={iconSize} color={ink} />
           )}
         </View>
         <Text
@@ -150,7 +176,7 @@ export const CommunicationTile = React.memo(function CommunicationTile({ button,
         ) : null}
         {isStarter && !selected ? (
           <View style={[styles.badge, { backgroundColor: theme.tint(button.color), borderWidth: 1, borderColor: theme.colors.borderSoft }]} accessibilityElementsHidden>
-            <Icon name="dots-horizontal" size={18} color={theme.colors.text} />
+            <Icon name="dots-horizontal" size={18} color={ink} />
           </View>
         ) : null}
       </Pressable>

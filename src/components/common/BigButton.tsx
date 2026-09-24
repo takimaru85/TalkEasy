@@ -97,6 +97,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: SPACING.md,
   },
-  content: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md },
-  label: { fontFamily: Fonts.extrabold, textAlign: 'center' },
+  // maxWidth + flexShrink: a long label wraps inside the button instead of running past its edge.
+  content: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, maxWidth: '100%' },
+  label: { fontFamily: Fonts.extrabold, textAlign: 'center', flexShrink: 1 },
 });

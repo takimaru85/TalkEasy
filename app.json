@@ -2,7 +2,7 @@
   "expo": {
     "name": "TalkEasy",
     "slug": "talkeasy",
-    "version": "1.0.0",
+    "version": "2.0.0",
     "description": "TalkEasy by IB Golden — an offline communication, school and learning companion for children.",
     "orientation": "default",
     "icon": "./assets/icon.png",

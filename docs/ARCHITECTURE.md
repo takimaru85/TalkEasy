@@ -61,7 +61,7 @@ src/
 ├─ context/            SettingsContext
 ├─ database/           db, schema, seed, events, reorder, repositories/*
 ├─ hooks/              useDbQuery + hooks per data type, useSizes, useSpeak, useToday
-├─ i18n/               types, registry, I18nContext, locales/{en,fil}
+├─ i18n/               types, registry, I18nContext, locales/{en,englishVariants}
 ├─ soundpractice/      types, content (sounds, syllables, words, phrases)
 ├─ learning/           types, engine, content/{english,filipino,math,science,ap,esp}
 ├─ navigation/         RootNavigator (child stack), ParentStack, types
@@ -80,8 +80,11 @@ src/
 
 ## 2b. Localization (`src/i18n`)
 
-US English (`en-US`) is the default and the source of truth for the string keys; every other
-language is an addition. A locale is one object: `{ code, name, flag, speechTag, letterStyle,
+TalkEasy is English-only. US English (`en-US`) is the default and the source of truth for the
+string keys; English (UK), English (Australia) and English (New Zealand) are defined in
+`locales/englishVariants.ts` as US English plus Commonwealth spelling ("Favourites", "practise"),
+"Mum" for the seeded "Mom" cards, and their own `speechTag`, so the voice has the right accent.
+(Filipino was removed; a saved `fil-PH` falls back to US English.) A locale is one object: `{ code, name, flag, speechTag, letterStyle,
 strings, content }`.
 
 * `strings` — child-facing UI text, typed by the `Strings` interface, so TypeScript flags any
@@ -91,8 +94,8 @@ strings, content }`.
   switching language is lossless, and a parent's own tiles and notes pass through unchanged.
 * `speechTag` — the BCP-47 tag given to text-to-speech and on-device speech recognition.
 * `letterStyle` — `'standard'` (Nunito's ordinary double-storey "a") or `'single-storey'` (the
-  Filipino elementary-school "a"). This is the **only** glyph that differs between styles, and
-  English is never affected. See `assets/fonts/README.md`.
+  school-print "a"). Every current locale is `'standard'`; the single-storey glyph is kept for a
+  future locale. It is the **only** glyph that differs between styles. See `assets/fonts/README.md`.
 
 The chosen language is one row in `app_settings` (`language`), so it needed no migration, and an
 unrecognised value falls back to US English. `registry.ts` holds the plain-data registry that
@@ -129,6 +132,48 @@ as clinical. Feedback is encouragement only.
 * **Tracking** is `sound_practice_attempts` (migration 5): counts and minutes, never a score.
   The table has no audio column and no correctness column, and `check:db` asserts both.
 
+## 2d. Speech Practice (`src/speechpractice`)
+
+Twenty practice activities (Listen → Look → Try → Repeat → Encourage → Continue), grouped
+Beginner / Intermediate / Advanced as a guide for grown-ups — nothing is locked. Same rules as
+Sound Practice: a practice aid, never an assessment, no scores, no transcription, encouragement
+only. Wrong taps are never marked wrong: the prompt replays and, after two tries, the right card
+gets a 💡. Nothing is timed.
+
+* **Content is code**: `vocabulary.ts` (one picture bank, 13 categories, shared by every
+  word-based activity) and `content.ts` (phrases, sentence frames, WH questions, stories, social,
+  role play, rhymes, clap words, voice, imitation, turn games). Sounds reuse `src/soundpractice`.
+* **One framework, not twenty screens**: `engine.ts` turns an activity (+ the group the child
+  picked + My Words) into exercises of six kinds — `say`, `choose`, `build`, `story`, `turns`,
+  `clap` — and `SpeechActivityScreen` runs any of them through `components/speech/*`. The screen
+  owns audio, the microphone (`useSoundRecorder`, shared with Sound Practice) and tracking, and
+  hands them to views through a `PracticeKit`. "Sounds" opens the existing Sound Practice screens.
+  Two-step directions are supported (`ordered` answers, `twoStepDirection`) but not yet in rounds.
+* **Audio**: `soundPracticeAudio.playItem` / `playSequence` — a recorded clip (`SpeechItem.audio`)
+  if present, else a sound cue, else TTS, always with an explicit locale.
+* **Pronunciation** (`pronunciation.ts`, `pronunciationDictionary.ts`): the intended pronunciation of
+  every syllable is data — 10 consonants × 5 vowels, IPA + guide, in one pronunciation set
+  (English; `app_settings.speechPronunciationSet`), read in the app's English accent. A voice engine is never
+  given the raw syllable: the dictionary maps each one to a pronunciation-safe spoken form and locale
+  ("BO" → "beau", en-US; real English words where one has exactly the target sound), with tested
+  alternatives. Parent Mode → Pronunciation test plays every entry on the device and lets a grown-up
+  pick an alternative per device (`speechPronunciationOverrides`). A syllable without an entry is
+  not spoken. Model recordings (bundled `modelAudio.ts`, or `services/modelRecordings.ts`) still take
+  priority when present, keyed `syllable:ba`, `word:v-ball`, `phrase:ph-water`, `sound:b`. Words and
+  phrases are spoken as written unless `SPOKEN_OVERRIDES` lists them.
+* **My Words** are Talk cards with `communication_buttons.practice = 1` (migration 6): a parent's
+  "Grandma" + photo is stored once and appears in Talk and in Words, Vocabulary, Picture Naming,
+  Phrases and Sentence Building. Practice → Talk: Parent Mode can add a vocabulary word to the
+  board, and a practice screen shows "Say it" (spoken and logged exactly like a Talk tap) when the
+  board already has the word.
+* **Tracking** is `speech_practice_events` (migration 6): `attempt` / `exercise` / `complete` /
+  `session` rows with an item label and a duration — no audio, no correctness. Summaries add Sound
+  Practice's table in. Parent Mode → Speech Practice shows Today's practice, a 7-day Practice
+  History, which activities are shown (`app_settings.speechPracticeHidden`), My Words, and the
+  "not a substitute for a licensed speech-language pathologist" notice.
+* Verified by `npm run check:speech` (every activity and group builds valid exercises; no clinical
+  or grading words in child-facing text).
+
 ## 3. Navigation
 
 Child mode is a **single native stack** with a Home grid instead of a tab bar — eight sections
@@ -150,6 +195,7 @@ RootStack
 ├─ MyDay
 ├─ Activities
 ├─ Favorites
+├─ SpeechPractice -> SpeechActivity (group picker -> exercises)   Sounds -> SoundPractice
 ├─ ParentPin (modal)
 └─ Parent (ParentStack)
    ├─ Dashboard (today summary, assignment counts, today's schedule, quick links)
@@ -158,6 +204,7 @@ RootStack
    ├─ ManageEvents -> EditEvent          ManageLearning
    ├─ ManageRoutine                      ManageTherapy -> EditTherapy
    ├─ CareNotes -> EditNote              Progress
+   ├─ SpeechPracticeSettings (history, activities, My Words, Practice → Talk)
    └─ Settings
 ```
 

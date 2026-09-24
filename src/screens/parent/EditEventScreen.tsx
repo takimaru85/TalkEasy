@@ -74,7 +74,7 @@ export function EditEventScreen({ navigation, route }: ParentScreenProps<'EditEv
             label="Subject (optional)"
             value={subjectId === null ? 'none' : String(subjectId)}
             onChange={(v) => setSubjectId(v === 'none' ? null : Number(v))}
-            choices={[{ value: 'none', label: 'None' }, ...subjects.map((s) => ({ value: String(s.id), label: `${s.icon} ${s.name}` }))]}
+            choices={[{ value: 'none', label: 'None' }, ...subjects.map((s) => ({ value: String(s.id), label: s.name }))]}
           />
           <FormField label="Notes" value={notes} onChangeText={setNotes} placeholder="Details" multiline maxLength={1000} />
           <BigButton label="Save" icon="content-save" minHeight={72} onPress={save} />

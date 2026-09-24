@@ -14,6 +14,7 @@ interface ButtonRow {
   sort_order: number;
   is_system: number;
   is_hidden: number;
+  practice?: number;
   tap_count: number;
   last_used_at: string | null;
   created_at: string;
@@ -32,6 +33,7 @@ function toModel(r: ButtonRow): CommunicationButton {
     sortOrder: r.sort_order,
     isSystem: r.is_system === 1,
     isHidden: r.is_hidden === 1,
+    practice: r.practice === 1,
     tapCount: r.tap_count,
     lastUsedAt: r.last_used_at,
     createdAt: r.created_at,
@@ -165,6 +167,20 @@ export const buttonsRepo = {
     );
     if (!current) return;
     await moveRow(db, 'communication_buttons', id, direction, 'category_id = ?', [current.category_id]);
+    notify('buttons');
+  },
+
+  /** Talk cards the parent also uses as Speech Practice words ("My Words"). */
+  async getPracticeWords(): Promise<CommunicationButton[]> {
+    const db = await getDb();
+    const rows = await db.getAllAsync<ButtonRow>(`SELECT * FROM communication_buttons WHERE practice = 1 ${ORDER}`);
+    return rows.map(toModel);
+  },
+
+  /** Marks a Talk card as a Speech Practice word (or not). The card itself is unchanged. */
+  async setPractice(id: number, practice: boolean): Promise<void> {
+    const db = await getDb();
+    await db.runAsync('UPDATE communication_buttons SET practice = ?, updated_at = ? WHERE id = ?', practice ? 1 : 0, nowIso(), id);
     notify('buttons');
   },
 

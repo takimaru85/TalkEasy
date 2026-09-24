@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { ANSWER_METHOD_META, type AnswerMethod } from '@/adaptive/types';
 import { MAX_FONT_SCALE, MIN_CHILD_TARGET, SPACING } from '@/constants/sizes';
 import { Fonts, Radius, useTheme } from '@/theme';
+import { Glyph } from '@/components/common/Glyph';
 
 interface Props {
   methods: AnswerMethod[];
@@ -42,7 +43,7 @@ export function AnswerMethodPicker({ methods, value, onChange, compact }: Props)
               },
             ]}
           >
-            <Text style={[styles.emoji, compact && styles.emojiSmall]} allowFontScaling={false}>{meta.emoji}</Text>
+            <Glyph value={meta.emoji} size={compact ? 32 : 48} />
             <View style={styles.text}>
               <Text style={[styles.label, compact && styles.labelSmall, { color: selected ? '#FFFFFF' : theme.colors.text }]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={1}>
                 {selected && !compact ? '✓ ' : ''}{compact ? meta.short : meta.label}

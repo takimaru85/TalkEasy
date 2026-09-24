@@ -1,6 +1,6 @@
 import React from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import { ChildScreen, EmptyState, PressableScale } from '@/components/common';
+import { ChildScreen, EmptyState, Glyph, Icon, PressableScale } from '@/components/common';
 import { MAX_FONT_SCALE, SPACING } from '@/constants/sizes';
 import { useLearningBest, useLearningConfigs, useSizes, useSpeak } from '@/hooks';
 import { getSubject } from '@/learning';
@@ -45,9 +45,7 @@ export function LearnSubjectScreen({ navigation, route }: RootScreenProps<'Learn
               hitSlop={4}
             >
               <View style={[styles.row, theme.shadow, { minHeight: Math.max(sizes.tileHeight * 0.62, 90), backgroundColor: theme.colors.surface, borderColor: theme.highContrast ? theme.colors.border : theme.colors.borderSoft, borderWidth: theme.highContrast ? theme.borderWidth : 1 }]}>
-                <View style={[styles.disc, { backgroundColor: theme.tint(subject.color) }]}>
-                  <Text style={[styles.emoji, { fontSize: sizes.iconSize - 14 }]} allowFontScaling={false}>{a.emoji}</Text>
-                </View>
+                <Glyph value={a.emoji} size={60} />
                 <View style={styles.text}>
                   <Text style={[styles.title, { fontSize: sizes.tileLabel + 1, color: theme.colors.text }]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={2}>{a.title}</Text>
                   <Text style={[styles.desc, { fontSize: sizes.body - 3, color: theme.colors.textMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={2}>{a.description}</Text>
@@ -55,7 +53,7 @@ export function LearnSubjectScreen({ navigation, route }: RootScreenProps<'Learn
                 <View style={styles.right}>
                   <Text style={styles.stars} allowFontScaling={false}>{stars(best.get(a.key))}</Text>
                   <View style={[styles.play, { backgroundColor: theme.colors.primary }]}>
-                    <Text style={styles.playText} allowFontScaling={false}>▶</Text>
+                    <Icon name="play" size={26} color="#FFFFFF" />
                   </View>
                 </View>
               </View>

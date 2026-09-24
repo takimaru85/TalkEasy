@@ -63,7 +63,9 @@ export function ProgressScreen({ navigation }: ParentScreenProps<'Progress'>) {
               return (
                 <ListRow
                   key={r.id}
-                  title={`${a?.emoji ?? '📚'} ${a?.title ?? r.activityKey}`}
+                  title={a?.title ?? r.activityKey}
+                  icon={a?.emoji ?? '📚'}
+                  iconBackground="#E8DFFF"
                   subtitle={`${r.correct} / ${r.total} correct · ${DIFFICULTY_META[r.difficulty].label} · ${formatDateTime(r.playedAt)}`}
                 />
               );

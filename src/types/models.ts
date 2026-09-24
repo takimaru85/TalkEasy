@@ -38,6 +38,8 @@ export interface CommunicationButton {
   sortOrder: number;
   isSystem: boolean;
   isHidden: boolean;
+  /** Also a Speech Practice word ("My Words"). */
+  practice: boolean;
   tapCount: number;
   lastUsedAt: string | null;
   createdAt: string;
@@ -424,6 +426,15 @@ export interface AppSettings {
    * never rewrites the database — content is translated as it is rendered.
    */
   language: LocaleCode;
+  /** Speech Practice activities the parent has hidden from the child (comma list of ids). */
+  speechPracticeHidden: string;
+  /** Speech Practice pronunciation set (see speechpractice/pronunciation.ts). English only for now. */
+  speechPronunciationSet: 'en';
+  /**
+   * Per-device pronunciation corrections chosen in Parent Mode → Pronunciation test:
+   * JSON { "en|syllable:bo": { text, locale } }. Defaults live in speechpractice/pronunciationDictionary.ts.
+   */
+  speechPronunciationOverrides: string;
 }
 
 export type RotationMode = 'auto' | 'always' | 'portrait';

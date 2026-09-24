@@ -8,6 +8,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { MIGRATIONS } from '../src/database/schema';
 import { seedIfNeeded } from '../src/database/seed';
 import { moveRow } from '../src/database/reorder';
+import { DEFAULT_THERAPY, SEED_VERSION } from '../src/constants/defaults';
 
 function makeShim(raw: DatabaseSync): any {
   const shim: any = {
@@ -40,6 +41,19 @@ function assert(cond: unknown, msg: string) {
   if (!cond) throw new Error('ASSERT: ' + msg);
 }
 
+// Migration 6: Speech Practice. Same rule as Sound Practice - a practice log, never audio and
+// never a score - plus the My Words flag on Talk cards, off for every existing card.
+function checkSpeechPractice(raw: DatabaseSync) {
+  const cols = (raw.prepare('PRAGMA table_info(speech_practice_events)').all() as any[]).map((c) => c.name);
+  assert(cols.includes('activity_id') && cols.includes('kind') && cols.includes('duration_ms'), 'speech practice columns');
+  assert(!cols.some((c: string) => /audio|uri|path|recording|score|correct|accuracy/.test(c)), 'speech practice stores no audio and no score');
+  raw.prepare("INSERT INTO speech_practice_events (activity_id, kind, item, duration_ms, created_at) VALUES ('words','exercise','Dog',0,?)").run(new Date().toISOString());
+  assert(count(raw, 'speech_practice_events') === 1, 'speech practice event recorded');
+  const buttonCols = (raw.prepare('PRAGMA table_info(communication_buttons)').all() as any[]).map((c) => c.name);
+  assert(buttonCols.includes('practice'), 'communication_buttons.practice added');
+  assert((raw.prepare('SELECT COUNT(*) AS n FROM communication_buttons WHERE practice = 1').get() as any).n === 0, 'no card is a practice word by default');
+}
+
 async function freshInstall() {
   console.log('--- fresh install');
   const raw = new DatabaseSync(':memory:');
@@ -65,6 +79,7 @@ async function freshInstall() {
   assert(!soundCols.some((c: string) => /audio|uri|path|recording|score|correct/.test(c)), 'sound practice stores no audio and no score');
   raw.prepare("INSERT INTO sound_practice_attempts (sound_id, level, item, duration_ms, created_at) VALUES ('b','sound','B',1200,?)").run(new Date().toISOString());
   assert(count(raw, 'sound_practice_attempts') === 1, 'sound practice attempt recorded');
+  checkSpeechPractice(raw);
 
   assert(count(raw, 'child_profile') === 1, 'demo profile seeded');
   assert((raw.prepare('SELECT name FROM child_profile').get() as any).name === 'Brayden', 'profile name');
@@ -139,10 +154,14 @@ async function upgradeFromV1() {
   assert(water.tap_count === 3, 'existing Water row kept (tap_count preserved), not duplicated');
   assert(count(raw, 'communication_buttons') > 30, 'new defaults added');
   assert((raw.prepare(`SELECT value FROM app_settings WHERE key='parentPin'`).get() as any).value === '9999', 'PIN preserved');
-  assert(count(raw, 'therapy_activities') === 1, 'exercises renamed to therapy_activities with data');
+  // The v1 row must survive the rename, and the default activities must arrive alongside it
+  // without duplicating anything the parent already has.
+  const survived = (raw.prepare("SELECT COUNT(*) AS n FROM therapy_activities WHERE name='Arm stretch'").get() as any).n;
+  assert(survived === 1, 'the v1 exercise row survived the rename to therapy_activities');
+  assert(count(raw, 'therapy_activities') === DEFAULT_THERAPY.length + 1, 'default activities added on upgrade, existing row kept');
   assert(count(raw, 'subjects') === 7, 'subjects seeded on upgrade');
   assert(count(raw, 'routines') === 1, 'routine not duplicated on upgrade');
-  assert((raw.prepare(`SELECT value FROM app_settings WHERE key='seed_version'`).get() as any).value === '4', 'seed_version recorded');
+  assert((raw.prepare(`SELECT value FROM app_settings WHERE key='seed_version'`).get() as any).value === String(SEED_VERSION), 'seed_version recorded');
   assert(count(raw, 'lessons') === 4, 'demo lessons added on upgrade');
   assert((raw.prepare('SELECT assistance_level FROM child_profile').get() as any).assistance_level === 'assisted', 'assistance level default');
   // Migration 5: Sound Practice tracking. The table must exist and must hold no audio column -
@@ -153,11 +172,43 @@ async function upgradeFromV1() {
   assert(!soundCols.some((c: string) => /audio|uri|path|recording|score|correct/.test(c)), 'sound practice stores no audio and no score');
   raw.prepare("INSERT INTO sound_practice_attempts (sound_id, level, item, duration_ms, created_at) VALUES ('b','sound','B',1200,?)").run(new Date().toISOString());
   assert(count(raw, 'sound_practice_attempts') === 1, 'sound practice attempt recorded');
+  checkSpeechPractice(raw);
   console.log('upgrade OK');
+}
+
+// Migration 7: the Filipino family cards become English. A phone installed before it has "Ate" and
+// "Kuya" cards; the untouched ones are renamed, a card the parent edited is left alone.
+async function englishFamilyCards() {
+  console.log('--- migration 7: Ate/Kuya -> Sister/Brother');
+  const fresh = new DatabaseSync(':memory:');
+  fresh.exec('PRAGMA foreign_keys = ON;');
+  migrate(fresh, 99);
+  await seedIfNeeded(makeShim(fresh));
+  const freshLabels = labels(fresh, "SELECT b.label FROM communication_buttons b JOIN categories c ON c.id=b.category_id WHERE c.key='people'");
+  assert(freshLabels.includes('Sister') && freshLabels.includes('Brother'), 'fresh install has Sister and Brother');
+  assert(!/\bAte\b|\bKuya\b/.test(freshLabels), 'fresh install has no Ate / Kuya card');
+
+  const raw = new DatabaseSync(':memory:');
+  raw.exec('PRAGMA foreign_keys = ON;');
+  migrate(raw, 6);
+  await seedIfNeeded(makeShim(raw));
+  const people = (raw.prepare("SELECT id FROM categories WHERE key='people'").get() as any).id;
+  // What an older install looked like: the seeded cards under their old names, and one edited by the parent.
+  raw.prepare("UPDATE communication_buttons SET label='Ate', phrase='I want Ate.' WHERE label='Sister'").run();
+  raw.prepare("UPDATE communication_buttons SET label='Kuya', phrase='Where is Kuya Jun?' WHERE label='Brother'").run();
+  raw.prepare(`UPDATE child_profile SET favorites_json = '{"people":["Mom","Dad","Ate"]}'`).run();
+  migrate(raw, 7);
+  const row = (label: string) => raw.prepare('SELECT label, phrase FROM communication_buttons WHERE category_id = ? AND label = ?').get(people, label) as any;
+  assert(row('Sister')?.phrase === 'I want my sister.', 'seeded Ate renamed to Sister');
+  assert(row('Kuya')?.phrase === 'Where is Kuya Jun?', 'a card the parent edited is left alone');
+  assert(!row('Ate'), 'no Ate card left');
+  assert((raw.prepare('SELECT favorites_json FROM child_profile').get() as any).favorites_json.includes('"Sister"'), 'favourite person Ate -> Sister');
+  console.log('migration 7 OK');
 }
 
 (async () => {
   await freshInstall();
   await upgradeFromV1();
+  await englishFamilyCards();
   console.log('ALL OK');
 })().catch((e) => { console.error('FAILED', e); process.exit(1); });
