@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Card, Celebration, ChildScreen, EmptyState, Icon, ProgressBar } from '@/components/common';
+import { Card, Celebration, ChildScreen, EmptyState, Icon, IconTile, ProgressBar } from '@/components/common';
+import { tileInk } from '@/constants/colors';
+import { ROUTINE_SEGMENT_TINT } from '@/constants/school';
 import { SECTION_EMOJI } from '@/constants/school';
 import { MAX_FONT_SCALE, SPACING } from '@/constants/sizes';
 import { useProfile, personalize } from '@/context/ProfileContext';
@@ -14,12 +16,15 @@ import { confirm } from '@/utils/confirm';
 import { formatTime } from '@/utils/date';
 import { useI18n } from '@/i18n';
 
-const SEGMENTS: { key: RoutineSegment; label: string; emoji: string }[] = [
-  { key: 'morning', label: 'Morning', emoji: '🌅' },
-  { key: 'school', label: 'School', emoji: '🏫' },
-  { key: 'afternoon', label: 'After school', emoji: '🌤️' },
-  { key: 'evening', label: 'Evening', emoji: '🌙' },
+/** Each part of the day has its own colour, so the list reads at a glance: warm morning → night. */
+const SEGMENTS: { key: RoutineSegment; label: string; icon: string; tint: string }[] = [
+  { key: 'morning', label: 'Morning', icon: 'weather-sunset-up', tint: ROUTINE_SEGMENT_TINT.morning },
+  { key: 'school', label: 'School', icon: 'school-outline', tint: ROUTINE_SEGMENT_TINT.school },
+  { key: 'afternoon', label: 'After school', icon: 'weather-partly-cloudy', tint: ROUTINE_SEGMENT_TINT.afternoon },
+  { key: 'evening', label: 'Evening', icon: 'weather-night', tint: ROUTINE_SEGMENT_TINT.evening },
 ];
+
+const tintFor = (segment: RoutineSegment) => ROUTINE_SEGMENT_TINT[segment] ?? ROUTINE_SEGMENT_TINT.school;
 
 /**
  * Visual daily schedule. A fixed card at the top shows NOW / NEXT and progress; below, the
@@ -73,23 +78,23 @@ export function MyDayScreen(_props: RootScreenProps<'MyDay'>) {
             <ProgressBar value={items.length ? done / items.length : 0} label={`${done} / ${items.length}`} color={theme.colors.success} accessibilityLabel={`${done} of ${items.length} steps done`} />
             <View style={styles.nowRow}>
               <View style={styles.nowCol}>
-                <Text style={[styles.caption, { color: theme.colors.textMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>NOW</Text>
+                <Text style={[styles.caption, { color: theme.colors.textMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>{t('dayNow')}</Text>
                 {current ? (
                   <View style={styles.nowItem}>
-                    <Icon name={current.icon} size={sizes.iconSize - 8} color={theme.colors.text} />
+                    <IconTile name={current.icon} size={sizes.iconSize + 4} tint={tintFor(current.segment)} />
                     <Text style={[styles.nowText, { fontSize: sizes.tileLabel + 2, color: theme.colors.text }]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={2} adjustsFontSizeToFit>
                       {current.label}
                     </Text>
                   </View>
                 ) : (
-                  <Text style={[styles.nowText, { fontSize: sizes.tileLabel, color: theme.colors.text }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>All done! 🎉</Text>
+                  <Text style={[styles.nowText, { fontSize: sizes.tileLabel, color: theme.colors.text }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>{t('dayAllDone')} 🎉</Text>
                 )}
               </View>
               <View style={[styles.nowCol, styles.nextCol, { borderColor: theme.colors.borderSoft }]}>
-                <Text style={[styles.caption, { color: theme.colors.textMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>NEXT</Text>
+                <Text style={[styles.caption, { color: theme.colors.textMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>{t('dayNext')}</Text>
                 {next ? (
                   <View style={styles.nowItem}>
-                    <Icon name={next.icon} size={sizes.iconSize - 14} color={theme.colors.textMuted} />
+                    <IconTile name={next.icon} size={sizes.iconSize - 6} tint={tintFor(next.segment)} muted />
                     <Text style={[styles.nowText, { fontSize: sizes.tileLabel - 2, color: theme.colors.textMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={2} adjustsFontSizeToFit>
                       {next.label}
                     </Text>
@@ -106,9 +111,12 @@ export function MyDayScreen(_props: RootScreenProps<'MyDay'>) {
             if (segItems.length === 0) return null;
             return (
               <View key={seg.key} style={styles.segment}>
-                <Text style={[styles.segmentTitle, { fontSize: sizes.body, color: theme.colors.textMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
-                  {seg.emoji} {seg.label.toUpperCase()}
-                </Text>
+                <View style={styles.segmentRow} accessibilityRole="header">
+                  <Icon name={seg.icon} size={22} color={theme.highContrast ? theme.colors.text : tileInk(seg.tint)} />
+                  <Text style={[styles.segmentTitle, { fontSize: sizes.body - 1, color: theme.highContrast ? theme.colors.text : tileInk(seg.tint) }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
+                    {seg.label.toUpperCase()}
+                  </Text>
+                </View>
                 {segItems.map((item) => {
                   const isNow = current?.id === item.id;
                   return (
@@ -131,9 +139,7 @@ export function MyDayScreen(_props: RootScreenProps<'MyDay'>) {
                         pressed && { opacity: 0.85 },
                       ]}
                     >
-                      <View style={[styles.stepIcon, { backgroundColor: item.isDone ? theme.colors.surfaceAlt : theme.tint(theme.colors.primarySoft) }]}>
-                        <Icon name={item.icon} size={sizes.iconSize - 12} color={item.isDone ? theme.colors.textMuted : theme.colors.text} />
-                      </View>
+                      <IconTile name={item.icon} size={56} tint={seg.tint} muted={item.isDone} />
                       <View style={styles.stepText}>
                         <Text style={[styles.label, { fontSize: sizes.tileLabel, color: item.isDone ? theme.colors.textMuted : theme.colors.text }, item.isDone && styles.labelDone]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={2}>
                           {tContent(item.label)}
@@ -168,9 +174,9 @@ const styles = StyleSheet.create({
   nowItem: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
   nowText: { fontFamily: Fonts.black, flexShrink: 1 },
   segment: { gap: SPACING.sm },
-  segmentTitle: { fontFamily: Fonts.black, letterSpacing: 1, marginTop: SPACING.xs },
+  segmentRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginTop: SPACING.xs },
+  segmentTitle: { fontFamily: Fonts.black, letterSpacing: 1.2 },
   step: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, padding: SPACING.md, borderRadius: Radius.lg },
-  stepIcon: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center' },
   stepText: { flex: 1, gap: 2 },
   label: { fontFamily: Fonts.extrabold },
   labelDone: { textDecorationLine: 'line-through' },

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { BigButton, ChoiceRow, DateField, FormField, ListRow, ScreenContainer, ScreenHeader, SectionTitle } from '@/components/common';
+import { BigButton, ChoiceRow, DateField, FormField, Icon, ListRow, ScreenContainer, ScreenHeader, SectionTitle } from '@/components/common';
 import { ACTIVITY_TYPE_META, ALL_ANSWER_METHODS, ANSWER_METHOD_META, type ActivityType, type AnswerMethod, type Choice, type LessonActivity, type LessonActivityInput, type MatchPair } from '@/adaptive/types';
 import { Colors } from '@/constants/colors';
 import { MAX_FONT_SCALE, MIN_PARENT_TARGET, SPACING } from '@/constants/sizes';
@@ -130,7 +130,7 @@ export function EditLessonScreen({ navigation, route }: ParentScreenProps<'EditL
             label="Subject"
             value={subjectId === null ? 'none' : String(subjectId)}
             onChange={(v) => setSubjectId(v === 'none' ? null : Number(v))}
-            choices={[...subjects.map((s) => ({ value: String(s.id), label: `${s.icon} ${s.name}` })), { value: 'none', label: 'Other' }]}
+            choices={[...subjects.map((s) => ({ value: String(s.id), label: s.name })), { value: 'none', label: 'Other' }]}
           />
           <FormField label="Lesson title" value={title} onChangeText={setTitle} placeholder='e.g. "What plants need"' maxLength={80} />
           <FormField label="Grade level" value={grade} onChangeText={setGrade} placeholder="Grade 2" maxLength={30} />
@@ -186,7 +186,8 @@ export function EditLessonScreen({ navigation, route }: ParentScreenProps<'EditL
                       const on = form.methods.includes(m);
                       return (
                         <Pressable key={m} onPress={() => toggleMethod(m)} accessibilityRole="checkbox" accessibilityState={{ checked: on }} accessibilityLabel={ANSWER_METHOD_META[m].label} style={[styles.methodPill, { backgroundColor: on ? theme.colors.primary : theme.colors.surface, borderColor: on ? theme.colors.primaryDark : theme.colors.borderSoft }]}>
-                          <Text style={[styles.methodText, { color: on ? '#FFFFFF' : theme.colors.text }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>{on ? '☑' : '☐'} {ANSWER_METHOD_META[m].emoji} {ANSWER_METHOD_META[m].short}</Text>
+                          <Icon name={on ? 'checkbox-marked' : 'checkbox-blank-outline'} size={18} color={on ? '#FFFFFF' : theme.colors.textMuted} />
+                          <Text style={[styles.methodText, { color: on ? '#FFFFFF' : theme.colors.text }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>{ANSWER_METHOD_META[m].emoji} {ANSWER_METHOD_META[m].short}</Text>
                         </Pressable>
                       );
                     })}
@@ -212,6 +213,6 @@ const styles = StyleSheet.create({
   panelTitle: { fontFamily: Fonts.extrabold },
   label: { fontFamily: Fonts.bold },
   methods: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm },
-  methodPill: { minHeight: MIN_PARENT_TARGET - 8, paddingHorizontal: SPACING.md, borderRadius: Radius.pill, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
+  methodPill: { minHeight: MIN_PARENT_TARGET - 8, paddingHorizontal: SPACING.md, borderRadius: Radius.pill, borderWidth: 1.5, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
   methodText: { fontFamily: Fonts.bold, fontSize: 15 },
 });

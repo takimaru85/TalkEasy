@@ -49,6 +49,12 @@ export const SOUND_EXERCISES: SoundExercise[] = [
     phrases: ['I see the kite.'],
   },
   {
+    id: 'g', sound: 'G', cue: 'guh', exampleWord: 'Goat', emoji: '🐐',
+    syllables: ['GA', 'GE', 'GI', 'GO', 'GU'],
+    words: ['Goat', 'Girl', 'Go'],
+    phrases: ['I see the goat.'],
+  },
+  {
     id: 's', sound: 'S', cue: 'sss', exampleWord: 'Sun', emoji: '☀️',
     syllables: ['SA', 'SE', 'SI', 'SO', 'SU'],
     words: ['Sun', 'Sock', 'Soap'],

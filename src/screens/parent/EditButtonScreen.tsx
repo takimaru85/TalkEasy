@@ -28,7 +28,7 @@ import { Fonts } from '@/theme';
  * favorite. A live preview tile shows exactly what the child will see.
  */
 export function EditButtonScreen({ navigation, route }: ParentScreenProps<'EditButton'>) {
-  const { buttonId, categoryId: initialCategoryId } = route.params ?? {};
+  const { buttonId, categoryId: initialCategoryId, practice: initialPractice } = route.params ?? {};
   const isNew = buttonId === undefined;
   const sizes = useSizes();
   const { settings } = useSettings();
@@ -43,6 +43,7 @@ export function EditButtonScreen({ navigation, route }: ParentScreenProps<'EditB
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [categoryId, setCategoryId] = useState<number | null>(initialCategoryId ?? null);
   const [favorite, setFavorite] = useState(false);
+  const [practice, setPractice] = useState(initialPractice ?? false);
   const [hydrated, setHydrated] = useState(isNew);
   const [saving, setSaving] = useState(false);
 
@@ -56,6 +57,7 @@ export function EditButtonScreen({ navigation, route }: ParentScreenProps<'EditB
       setImageUri(existing.imageUri);
       setCategoryId(existing.categoryId);
       setFavorite(favoriteIds.has(existing.id));
+      setPractice(existing.practice);
       setHydrated(true);
     }
   }, [isNew, existing, hydrated, favoriteIds, favoritesLoading]);
@@ -79,6 +81,7 @@ export function EditButtonScreen({ navigation, route }: ParentScreenProps<'EditB
     sortOrder: 0,
     isSystem: false,
     isHidden: false,
+    practice: false,
     tapCount: 0,
     lastUsedAt: null,
     createdAt: '',
@@ -96,6 +99,7 @@ export function EditButtonScreen({ navigation, route }: ParentScreenProps<'EditB
       const currentlyFav = favoriteIds.has(id);
       if (favorite && !currentlyFav) await favoritesRepo.add(id);
       if (!favorite && currentlyFav) await favoritesRepo.remove(id);
+      if (practice !== (existing?.practice ?? false)) await buttonsRepo.setPractice(id, practice);
       navigation.goBack();
     } finally {
       setSaving(false);
@@ -178,6 +182,19 @@ export function EditButtonScreen({ navigation, route }: ParentScreenProps<'EditB
               { value: 'no', label: 'Not in Favorites' },
             ]}
           />
+
+          <ChoiceRow
+            label="Speech Practice"
+            value={practice ? 'yes' : 'no'}
+            onChange={(v) => setPractice(v === 'yes')}
+            choices={[
+              { value: 'yes', label: 'Practise this word' },
+              { value: 'no', label: 'Talk only' },
+            ]}
+          />
+          <Text style={styles.previewHint} maxFontSizeMultiplier={MAX_FONT_SCALE}>
+            A practised word appears in Speech Practice (My Words, Picture Naming, Phrases, Sentences) with this picture.
+          </Text>
 
           <BigButton label={saving ? 'Saving…' : 'Save'} icon="content-save" onPress={save} disabled={saving} minHeight={72} />
           {!isNew ? (

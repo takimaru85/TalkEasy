@@ -13,6 +13,7 @@ It combines:
 | 🎒 **School** | Today's classes, every subject (teacher, schedule, things to bring, reminders, assignments), calendar |
 | 📝 **Assignments** | Child view: *📝 Math · 📅 Due Monday · ⬜ Not finished* → *✅ Completed* |
 | 📚 **Learn** | Grade 2 practice: English, Filipino, Math, Science, Araling Panlipunan, ESP — 32 activities, 3 difficulty levels |
+| 🎯 **Speech Practice** | 20 practice activities (sounds, words, listening, sentences, stories, social, voice…) in Beginner / Intermediate / Advanced groups, My Words with photos, Practice History — practice only, never a score |
 | 📅 **My Day** | Visual routine with NOW / NEXT, times, tick-off |
 | 🧩 **Activities** | Therapy/activity cards with instructions, duration, frequency, picture, done log |
 | ⭐ **Favorites** | Starred phrases + most-used |

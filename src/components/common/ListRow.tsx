@@ -4,6 +4,7 @@ import { Colors } from '@/constants/colors';
 import { MAX_FONT_SCALE, MIN_PARENT_TARGET, SPACING } from '@/constants/sizes';
 import { useSizes } from '@/hooks/useSizes';
 import { Icon } from './Icon';
+import { tileInk } from '@/constants/colors';
 import { Fonts } from '@/theme';
 
 export interface RowAction {
@@ -37,7 +38,7 @@ export function ListRow({ title, subtitle, icon, iconBackground = Colors.surface
     <View style={styles.top}>
       {icon ? (
         <View style={[styles.iconBox, { backgroundColor: iconBackground }]}>
-          <Icon name={icon} size={30} />
+          <Icon name={icon} size={28} color={iconBackground === Colors.surface ? Colors.text : tileInk(iconBackground)} />
         </View>
       ) : null}
       <View style={styles.text}>
@@ -45,7 +46,7 @@ export function ListRow({ title, subtitle, icon, iconBackground = Colors.surface
           {title}
         </Text>
         {subtitle ? (
-          <Text style={styles.subtitle} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={2}>
+          <Text style={styles.subtitle} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={3}>
             {subtitle}
           </Text>
         ) : null}

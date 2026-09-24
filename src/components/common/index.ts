@@ -1,4 +1,6 @@
 export { Icon, isValidIcon, isEmoji } from './Icon';
+export { IconTile } from './IconTile';
+export { Glyph } from './Glyph';
 export { BigButton } from './BigButton';
 export { ScreenContainer } from './ScreenContainer';
 export { ScreenHeader } from './ScreenHeader';

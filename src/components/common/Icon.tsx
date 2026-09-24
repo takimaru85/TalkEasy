@@ -2,6 +2,7 @@ import React from 'react';
 import { Text } from 'react-native';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { DEFAULT_ICON } from '@/constants/icons';
+import { uiIcon } from '@/constants/uiIcons';
 
 type GlyphName = keyof typeof MaterialCommunityIcons.glyphMap;
 
@@ -9,6 +10,8 @@ interface Props {
   name: string;
   size: number;
   color?: string;
+  /** Draw an emoji as the picture it is (learning pictures), never as its interface line icon. */
+  raw?: boolean;
 }
 
 const ASCII = /^[\x20-\x7E]*$/;
@@ -23,7 +26,10 @@ export function isEmoji(name: string): boolean {
  * Falls back to a default glyph if a stored name no longer exists, so a typo in a custom
  * tile never crashes the app.
  */
-export function Icon({ name, size, color = '#111111' }: Props) {
+export function Icon({ name, size, color = '#111111', raw = false }: Props) {
+  // Interface emoji (📖 for a subject, 🎨 for a category…) are drawn as the app's line icons.
+  const mapped = !raw && isEmoji(name) ? uiIcon(name) : null;
+  if (mapped) return <MaterialCommunityIcons name={mapped.icon as GlyphName} size={size} color={color} />;
   if (isEmoji(name)) {
     return (
       <Text

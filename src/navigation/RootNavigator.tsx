@@ -27,6 +27,8 @@ import { WritingCanvasScreen } from '@/screens/child/adaptive/WritingCanvasScree
 import { SpeakPracticeScreen } from '@/screens/child/adaptive/SpeakPracticeScreen';
 import { SoundPracticeScreen } from '@/screens/child/sound/SoundPracticeScreen';
 import { SoundPracticeDetailScreen } from '@/screens/child/sound/SoundPracticeDetailScreen';
+import { SpeechPracticeScreen } from '@/screens/child/speech/SpeechPracticeScreen';
+import { SpeechActivityScreen } from '@/screens/child/speech/SpeechActivityScreen';
 import { ParentPinScreen } from '@/screens/parent/ParentPinScreen';
 import { ParentStack } from './ParentStack';
 import type { RootStackParamList } from './types';
@@ -82,6 +84,8 @@ export function RootNavigator() {
         <Stack.Screen name="SpeakPractice" component={SpeakPracticeScreen} />
         <Stack.Screen name="SoundPractice" component={SoundPracticeScreen} />
         <Stack.Screen name="SoundPracticeDetail" component={SoundPracticeDetailScreen} />
+        <Stack.Screen name="SpeechPractice" component={SpeechPracticeScreen} />
+        <Stack.Screen name="SpeechActivity" component={SpeechActivityScreen} />
         <Stack.Screen
           name="ParentPin"
           component={ParentPinScreen}

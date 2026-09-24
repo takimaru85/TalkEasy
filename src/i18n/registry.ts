@@ -1,5 +1,5 @@
 import { en } from './locales/en';
-import { fil } from './locales/fil';
+import { enAU, enGB, enNZ } from './locales/englishVariants';
 import type { Locale, LocaleCode } from './types';
 
 /**
@@ -7,11 +7,14 @@ import type { Locale, LocaleCode } from './types';
  * (the settings repository, the speech service) import from here so they never pull the
  * provider in and create a cycle back through SettingsContext.
  *
- * To add Spanish / Japanese / Korean: add the code to LocaleCode in types.ts, copy
- * locales/en.ts, translate it, and add it to LOCALES. Nothing else needs to change —
- * TypeScript will flag any string the new locale is missing.
+ * TalkEasy is English-only: US English (the default) plus UK, Australian and New Zealand English,
+ * which differ in spelling, "Mum" and the voice accent (locales/englishVariants.ts). A saved
+ * language that is no longer offered (e.g. the former Filipino) falls back to US English.
+ *
+ * To add a language later: add the code to LocaleCode in types.ts, copy locales/en.ts, translate
+ * it, and add it to LOCALES. TypeScript will flag any string the new locale is missing.
  */
-export const LOCALES: readonly Locale[] = [en, fil];
+export const LOCALES: readonly Locale[] = [en, enGB, enAU, enNZ];
 
 /** US English. The app only leaves it if a parent picks another language in Settings. */
 export const DEFAULT_LOCALE_CODE: LocaleCode = 'en-US';

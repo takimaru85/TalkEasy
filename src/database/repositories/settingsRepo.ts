@@ -3,6 +3,7 @@ import { notify } from '../events';
 import { DEFAULT_SETTINGS } from '@/constants/defaults';
 import { LOCALES } from '@/i18n/registry';
 import type { LocaleCode } from '@/i18n/types';
+import { isPronunciationSet } from '@/speechpractice/pronunciation';
 import type { AppSettings, Difficulty, RotationMode, SizeOption } from '@/types/models';
 
 const SIZE_OPTIONS: SizeOption[] = ['medium', 'large', 'xlarge'];
@@ -55,6 +56,9 @@ export const settingsRepo = {
       rotation: ROTATIONS.includes(map.get('rotation') as RotationMode) ? (map.get('rotation') as RotationMode) : DEFAULT_SETTINGS.rotation,
       // An unknown code (e.g. a language dropped in a later version) falls back to US English.
       language: LOCALE_CODES.includes(map.get('language') as LocaleCode) ? (map.get('language') as LocaleCode) : DEFAULT_SETTINGS.language,
+      speechPracticeHidden: map.get('speechPracticeHidden') ?? DEFAULT_SETTINGS.speechPracticeHidden,
+      speechPronunciationOverrides: map.get('speechPronunciationOverrides') || DEFAULT_SETTINGS.speechPronunciationOverrides,
+      speechPronunciationSet: isPronunciationSet(map.get('speechPronunciationSet')) ? (map.get('speechPronunciationSet') as AppSettings['speechPronunciationSet']) : DEFAULT_SETTINGS.speechPronunciationSet,
     };
   },
 

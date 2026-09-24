@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Card, ChildScreen, EmptyState, PressableScale, ProgressBar, SectionTitle } from '@/components/common';
+import { Card, ChildScreen, EmptyState, Icon as LineIcon, PressableScale, ProgressBar, SectionTitle } from '@/components/common';
 import { MAX_FONT_SCALE, SPACING } from '@/constants/sizes';
 import { useLessons, useSizes, useSpeak } from '@/hooks';
 import type { RootScreenProps } from '@/navigation/types';
@@ -40,7 +40,7 @@ export function AdaptiveSubjectsScreen({ navigation }: RootScreenProps<'Adaptive
                 return (
                   <PressableScale key={l.id} onPress={() => { speakFeedback(l.title); navigation.navigate('AdaptiveLesson', { lessonId: l.id }); }} accessibilityRole="button" accessibilityLabel={`${l.title}. ${complete ? 'Completed' : `${l.completedCount} of ${l.activityCount} done`}`}>
                     <Card color={complete ? theme.colors.surfaceAlt : g.color} style={styles.row} padding={SPACING.md}>
-                      <Text style={styles.mark} allowFontScaling={false}>{complete ? '✅' : l.completedCount > 0 ? '🔵' : '⬜'}</Text>
+                      <LineIcon name={complete ? 'check-circle' : l.completedCount > 0 ? 'progress-clock' : 'checkbox-blank-circle-outline'} size={32} color={complete ? theme.colors.success : l.completedCount > 0 ? theme.colors.primary : theme.colors.textMuted} />
                       <View style={styles.text}>
                         <Text style={[styles.title, { fontSize: sizes.body + 2, color: theme.colors.text }]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={2}>{l.title}</Text>
                         <Text style={[styles.meta, { color: theme.colors.textMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>{l.activityCount} question{l.activityCount === 1 ? '' : 's'}{l.gradeLevel ? ` · ${l.gradeLevel}` : ''}</Text>

@@ -8,7 +8,7 @@ export type ParentStackParamList = {
   ChildProfile: undefined;
   ManageRewards: undefined;
   ManageButtons: undefined;
-  EditButton: { buttonId?: number; categoryId?: number };
+  EditButton: { buttonId?: number; categoryId?: number; practice?: boolean };
   ManageFavorites: undefined;
   ManageSubjects: undefined;
   EditSubject: { subjectId?: number };
@@ -27,6 +27,8 @@ export type ParentStackParamList = {
   ManageLessons: undefined;
   EditLesson: { lessonId?: number };
   AdaptiveProgress: undefined;
+  SpeechPracticeSettings: undefined;
+  PronunciationTest: undefined;
 };
 
 /** Child mode is one stack: a Home grid plus one screen per section. */
@@ -54,6 +56,8 @@ export type RootStackParamList = {
   SpeakPractice: undefined;
   SoundPractice: undefined;
   SoundPracticeDetail: { soundId: string };
+  SpeechPractice: undefined;
+  SpeechActivity: { activityId: string; category?: string };
   ParentPin: undefined;
   Parent: NavigatorScreenParams<ParentStackParamList>;
 };

@@ -20,7 +20,7 @@ interface Props {
 
 /**
  * The child's view of an assignment:
- *   📝 Math Assignment / 📅 Due Monday / ⬜ Not finished   →   ✅ Math Assignment / Completed
+ *   Math Assignment / Due Monday / Not finished   →   Math Assignment / Completed
  */
 export function AssignmentCard({ assignment: a, today, onPress, onToggleDone, compact }: Props) {
   const sizes = useSizes();
@@ -54,7 +54,7 @@ export function AssignmentCard({ assignment: a, today, onPress, onToggleDone, co
           {a.title}
         </Text>
         <Text style={[styles.meta, { fontSize: sizes.body - 2 }, overdue && styles.metaOverdue]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={1}>
-          {done ? '✅ Completed' : `📅 Due ${describeDueDate(a.dueDate, today)} · ${status.childLabel}`}
+          {done ? 'Completed' : `Due ${describeDueDate(a.dueDate, today)} · ${status.childLabel}`}
         </Text>
       </View>
       {onToggleDone ? (

@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { MAX_FONT_SCALE, MIN_CHILD_TARGET, SPACING } from '@/constants/sizes';
 import { useSizes } from '@/hooks/useSizes';
 import { Fonts, Radius, useTheme } from '@/theme';
+import { fitFontSize } from '@/utils/fitText';
 import { Icon } from './Icon';
+import { Glyph } from './Glyph';
 
 interface Props {
   title: string;
@@ -15,17 +17,22 @@ interface Props {
   rightIcon?: string;
   rightLabel?: string;
   onRightPress?: () => void;
-  /** Optional emoji shown before the title. */
+  /** Optional icon before the title: an interface emoji or a line-icon name. */
   emoji?: string;
+  /** Tint for `emoji` when it is a plain icon name. */
+  emojiTint?: string;
 }
 
 /**
  * Header with optional back button (left) and one optional action (right).
  * Both controls are pill-shaped, at least 64pt, and always in the same position.
  */
-export function ScreenHeader({ title, onBack, backIcon = 'arrow-left', backLabel, rightIcon, rightLabel, onRightPress, emoji }: Props) {
+export function ScreenHeader({ title, onBack, backIcon = 'arrow-left', backLabel, rightIcon, rightLabel, onRightPress, emoji, emojiTint }: Props) {
   const sizes = useSizes();
   const theme = useTheme();
+  // Room left for the title between the two buttons; the title is sized to fit it on one line.
+  const [titleWidth, setTitleWidth] = useState(0);
+  const titleSize = fitFontSize(title, titleWidth - (emoji ? 42 : 0), sizes.heading, 'line', 18);
   const buttonStyle = [
     styles.iconButton,
     theme.shadow,
@@ -53,10 +60,10 @@ export function ScreenHeader({ title, onBack, backIcon = 'arrow-left', backLabel
         ) : null}
       </View>
 
-      <View style={styles.titleWrap}>
-        {emoji ? <Text style={styles.emoji} allowFontScaling={false}>{emoji}</Text> : null}
+      <View style={styles.titleWrap} onLayout={(e) => setTitleWidth(e.nativeEvent.layout.width)}>
+        {emoji ? <Glyph value={emoji} size={34} tint={emojiTint} /> : null}
         <Text
-          style={[styles.title, { fontSize: sizes.heading, color: theme.colors.text }]}
+          style={[styles.title, { fontSize: titleSize, color: theme.colors.text }]}
           maxFontSizeMultiplier={MAX_FONT_SCALE}
           numberOfLines={1}
           adjustsFontSizeToFit
@@ -99,7 +106,7 @@ const styles = StyleSheet.create({
   },
   side: { width: MIN_CHILD_TARGET + 12, alignItems: 'flex-start' },
   sideRight: { alignItems: 'flex-end' },
-  titleWrap: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
+  titleWrap: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginHorizontal: SPACING.sm },
   emoji: { fontSize: 24, lineHeight: 30 },
   title: { fontFamily: Fonts.black, textAlign: 'center', flexShrink: 1 },
   iconButton: {

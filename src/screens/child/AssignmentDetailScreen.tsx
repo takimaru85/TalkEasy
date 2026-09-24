@@ -51,10 +51,10 @@ export function AssignmentDetailScreen({ navigation, route }: RootScreenProps<'A
             {a.title}
           </Text>
           <Text style={[styles.line, { fontSize: sizes.body + 2 }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
-            {KIND_META[a.kind].label} · {a.dueDate ? `📅 Due ${describeDueDate(a.dueDate, isoDate)} (${formatShortDate(a.dueDate)})` : 'No due date'}
+            {KIND_META[a.kind].label} · {a.dueDate ? `Due ${describeDueDate(a.dueDate, isoDate)} (${formatShortDate(a.dueDate)})` : 'No due date'}
           </Text>
           <Text style={[styles.line, styles.status, { fontSize: sizes.body + 2 }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
-            {done ? '✅ Completed' : `⬜ ${STATUS_META[a.status].childLabel}`}
+            {done ? 'Completed' : STATUS_META[a.status].childLabel}
           </Text>
         </View>
 

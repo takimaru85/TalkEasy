@@ -10,12 +10,13 @@
  */
 
 /** Registered locales. Add a code here when you add a locale file. */
-export type LocaleCode = 'en-US' | 'fil-PH';
+export type LocaleCode = 'en-US' | 'en-GB' | 'en-AU' | 'en-NZ';
 
 /**
  * Which lowercase "a" the handwriting surfaces draw.
  * - 'standard': the ordinary double-storey "a" (US English and most languages).
- * - 'single-storey': the Filipino elementary-school print form taught for reading and writing.
+ * - 'single-storey': the school-print form some schools teach (no locale uses it at the moment;
+ *   the glyph is kept in adaptive/schoolGlyphs.ts).
  */
 export type LetterStyle = 'standard' | 'single-storey';
 
@@ -111,6 +112,91 @@ export interface Strings {
   soundGrownUpNote: string;
   soundNotTherapy: string;
   soundModelIsSynthetic: string;
+
+  // Speech Practice
+  spTitle: string;
+  spSubtitle: string;
+  spLevelBeginner: string;
+  spLevelIntermediate: string;
+  spLevelAdvanced: string;
+  spSounds: string;
+  spSyllables: string;
+  spWords: string;
+  spListening: string;
+  spMatching: string;
+  spPictureNaming: string;
+  spImitation: string;
+  spRepetition: string;
+  spPhrases: string;
+  spSentences: string;
+  spQuestions: string;
+  spStories: string;
+  spDirections: string;
+  spVocabulary: string;
+  spTurnTaking: string;
+  spSocial: string;
+  spRolePlay: string;
+  spMemory: string;
+  spRhythm: string;
+  spVoice: string;
+  spChooseGroup: string;
+  spMyWords: string;
+  spHearIt: string;
+  spListenAgain: string;
+  spWatchThenDo: string;
+  spIDidIt: string;
+  spSayIt: string;
+  spWhatDidYouHear: string;
+  spWhatIsThis: string;
+  spSameOrDifferent: string;
+  spSame: string;
+  spDifferent: string;
+  spWhichSound: string;
+  spWhatDidYouSee: string;
+  spLookCarefully: string;
+  spImReady: string;
+  spFindThem: string;
+  spFoundSome: string;
+  spLetsListenAgain: string;
+  spTapStarter: string;
+  spChoosePicture: string;
+  spPlaySentence: string;
+  spStartOver: string;
+  spPage: string;
+  spQuestionTime: string;
+  spMyTurn: string;
+  spYourTurnButton: string;
+  spWhoseTurn: string;
+  spItsYourTurn: string;
+  spItsMyTurn: string;
+  spIGot: string;
+  spYouGot: string;
+  spPlayAgain: string;
+  spTapToClap: string;
+  spClapAgain: string;
+  spAllDone: string;
+  spPracticeAgain: string;
+  spMoreActivities: string;
+  spProgress: string;
+  spStatActivities: string;
+  spStatWords: string;
+  spNoWords: string;
+  spAllHidden: string;
+  spGrownUps: string;
+  spNotice: string;
+  spModelMissing: string;
+
+  // Talk board and My day chrome
+  talkPlaceholder: string;
+  talkPending: string;
+  actionAgain: string;
+  actionCancel: string;
+  categoryAll: string;
+  categoryMore: string;
+  categoryLess: string;
+  dayNow: string;
+  dayNext: string;
+  dayAllDone: string;
 }
 
 /** The English text seeded into SQLite, mapped to this language. Missing keys pass through. */

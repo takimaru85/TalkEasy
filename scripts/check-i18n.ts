@@ -4,6 +4,7 @@ import { en } from '../src/i18n/locales/en';
 import { DEFAULT_BUTTONS, DEFAULT_CATEGORIES, DEFAULT_SETTINGS } from '../src/constants/defaults';
 import { layoutSchoolText } from '../src/adaptive/schoolText';
 import type { Strings } from '../src/i18n/types';
+import { forEnglishVoice, isEnglishVoice } from '../src/services/pronunciationLexicon';
 
 let problems = 0;
 const ok = (cond: unknown, msg: string) => { if (!cond) { problems++; console.log('FAIL', msg); } };
@@ -24,12 +25,12 @@ for (const locale of LOCALES) {
   ok(locale.speechTag.length > 0 && locale.name.length > 0 && locale.flag.length > 0, `${locale.code}: has a name, flag and speech tag`);
   for (const k of keys) ok(locale.strings[k]?.trim(), `${locale.code}: string "${k}"`);
   ok(Object.keys(locale.strings).length === keys.length, `${locale.code}: no extra string keys`);
-  // A translation that is still the English text is almost always an oversight.
-  if (locale.code !== 'en-US') {
-    const same = keys.filter((k) => locale.strings[k] === en.strings[k]);
-    ok(same.length === 0, `${locale.code}: untranslated strings: ${same.join(', ')}`);
-  }
+  // TalkEasy is English-only: every locale is an English variant with an English voice.
+  ok(locale.speechTag.startsWith('en-'), `${locale.code}: speaks with an English voice`);
+  ok(locale.letterStyle === 'standard', `${locale.code}: ordinary double-storey a`);
 }
+ok(LOCALES.map((l) => l.code).join() === 'en-US,en-GB,en-AU,en-NZ', 'US, UK, Australian and New Zealand English, US first');
+ok(getLocale('fil-PH').code === 'en-US', 'a saved Filipino setting falls back to US English');
 
 // {name} interpolation, used by the celebration lines.
 for (const locale of LOCALES) ok(locale.strings.greatJob.includes('{name}'), `${locale.code}: greatJob keeps {name}`);
@@ -37,34 +38,39 @@ ok(interpolate('Hi {name}!', { name: 'Brayden' }) === 'Hi Brayden!', 'interpolat
 ok(interpolate('Hi {who}!', { name: 'x' }) === 'Hi {who}!', 'unknown placeholder is left alone');
 ok(interpolate('Hi {name}!') === 'Hi {name}!', 'no vars is safe');
 
-// The words the child taps must be translated in every non-English locale.
-const CORE = ['Water', 'Mom', 'Dad', 'Help', 'Yes', 'No', 'Hungry', 'Bathroom', 'Home', 'Food'];
+// UK / Australian / New Zealand English: Commonwealth spelling and "Mum", nothing else.
+const seeded = new Set([...DEFAULT_BUTTONS.flatMap((b) => [b.label, b.phrase]), ...DEFAULT_CATEGORIES.map((c) => c.name)]);
 for (const locale of LOCALES) {
   if (locale.code === 'en-US') continue;
-  for (const word of CORE) ok(locale.content[word], `${locale.code}: core word "${word}"`);
-  const missing = DEFAULT_BUTTONS.filter((b) => !locale.content[b.label]).map((b) => b.label);
-  ok(missing.length === 0, `${locale.code}: untranslated tile labels: ${missing.join(', ')}`);
-  const phrases = DEFAULT_BUTTONS.filter((b) => !locale.content[b.phrase]).map((b) => b.phrase);
-  ok(phrases.length === 0, `${locale.code}: untranslated tile phrases: ${phrases.join(', ')}`);
-  const cats = DEFAULT_CATEGORIES.filter((c) => !locale.content[c.name]).map((c) => c.name);
-  ok(cats.length === 0, `${locale.code}: untranslated categories: ${cats.join(', ')}`);
-  // Anything the parent added themselves must pass straight through.
+  ok(locale.strings.sectionFavorites === 'Favourites', `${locale.code}: Favourites`);
+  ok(locale.strings.spPracticeAgain === 'Practise again', `${locale.code}: practise (verb)`);
+  ok(locale.content['Mom'] === 'Mum' && locale.content['Please call Mom.'] === 'Please call Mum.', `${locale.code}: Mum`);
+  for (const k of Object.keys(locale.content)) ok(seeded.has(k), `${locale.code}: content key "${k}" is seeded text`);
   ok(locale.content['Brayden picked this'] === undefined, `${locale.code}: custom text is not in the map`);
+  const differs = keys.filter((k) => locale.strings[k] !== en.strings[k]);
+  ok(differs.every((k) => /practis|favourite|individualis/i.test(locale.strings[k])), `${locale.code}: only spelling differs (${differs.join(', ')})`);
 }
 
-// The Filipino letterform must not leak into English.
-const fil = getLocale('fil-PH');
-ok(fil.letterStyle === 'single-storey', 'Filipino asks for the school-print a');
-ok(fil.speechTag === 'fil-PH', 'Filipino speaks with a Filipino voice');
-const enA = layoutSchoolText('a', 400, 200, en.letterStyle);
-const filA = layoutSchoolText('a', 400, 200, fil.letterStyle);
-ok(enA.glyphs[0].d !== filA.glyphs[0].d, 'the two languages draw a different a');
+// Handwriting: no locale uses the single-storey school-print "a" now, but the glyph is kept and
+// must still differ only in "a".
+const stdA = layoutSchoolText('a', 400, 200, 'standard');
+const printA = layoutSchoolText('a', 400, 200, 'single-storey');
+ok(stdA.glyphs[0].d !== printA.glyphs[0].d, 'the two letter styles draw a different a');
 for (const ch of ['A', 'b', 'c', 'd', 'e', 'f', 'o', 'g', '5']) {
   const a = layoutSchoolText(ch, 400, 200, 'standard');
   const b = layoutSchoolText(ch, 400, 200, 'single-storey');
-  ok(a.glyphs[0].d === b.glyphs[0].d, `"${ch}" is identical in both languages`);
+  ok(a.glyphs[0].d === b.glyphs[0].d, `"${ch}" is identical in both letter styles`);
 }
 
-console.log(`locales ${LOCALES.length}, strings ${keys.length}, fil-PH content entries ${Object.keys(getLocale('fil-PH').content).length}, problems ${problems}`);
+// Filipino words spoken by an English voice: pronunciation-safe spelling, display unchanged.
+ok(forEnglishVoice('Ate') === 'ah-teh', 'Ate is spoken ah-teh');
+ok(forEnglishVoice('I want Ate.') === 'I want ah-teh.', 'the Ate tile phrase');
+ok(forEnglishVoice('I ate lunch.') === 'I ate lunch.', 'the English verb ate is untouched');
+ok(forEnglishVoice('Theater, Kuyas') === 'Theater, Kuyas', 'only whole words change');
+ok(forEnglishVoice('Kuya and Lola') === 'koo-yah and loh-lah', 'other kinship words');
+ok(forEnglishVoice('Ate (older sister)') === 'ah-teh (older sister)', 'Learn distractor text');
+ok(isEnglishVoice('en-US') && isEnglishVoice(undefined) && !isEnglishVoice('fil-PH'), 'a Filipino voice gets the text as written');
+
+console.log(`locales ${LOCALES.length}, strings ${keys.length}, problems ${problems}`);
 if (problems) process.exit(1);
 console.log('ALL OK');

@@ -50,6 +50,11 @@ export interface SoundRecorder {
   playBack: () => Promise<void>;
   /** Deletes the temporary clip and returns to 'idle'. */
   discard: () => void;
+  /**
+   * Parent Mode only: hands the just-recorded clip to `keep` (which copies it somewhere
+   * permanent), then deletes the temporary file as usual. Never used for a child's attempt.
+   */
+  keepAs: (keep: (tempUri: string) => Promise<boolean>) => Promise<boolean>;
 }
 
 export function useSoundRecorder(): SoundRecorder {
@@ -167,7 +172,20 @@ export function useSoundRecorder(): SoundRecorder {
     if (mounted.current) setPhase((p) => (p === 'recorded' ? 'idle' : p));
   }, [deleteClip]);
 
+  const keepAs = useCallback(
+    async (keep: (tempUri: string) => Promise<boolean>) => {
+      const uri = uriRef.current;
+      if (!uri) return false;
+      const ok = await keep(uri).catch(() => false);
+      deleteClip();
+      if (mounted.current) setPhase('idle');
+      return ok;
+    },
+    [deleteClip],
+  );
+
   return {
+    keepAs,
     phase,
     durationMs,
     message,

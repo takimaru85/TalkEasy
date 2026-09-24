@@ -1,6 +1,6 @@
 import React from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Card, ChildScreen, PressableScale, ProgressBar } from '@/components/common';
+import { Card, ChildScreen, Glyph, Icon as LineIcon, PressableScale, ProgressBar } from '@/components/common';
 import { WRITING_LEVELS } from '@/adaptive/handwriting';
 import { MAX_FONT_SCALE, SPACING } from '@/constants/sizes';
 import { useAdaptiveProgress, useSizes, useSpeak } from '@/hooks';
@@ -29,15 +29,13 @@ export function WritingPracticeScreen({ navigation }: RootScreenProps<'WritingPr
         {WRITING_LEVELS.map((l) => (
           <PressableScale key={l.level} onPress={() => { speakFeedback(l.title); navigation.navigate('WritingCanvas', { level: l.level }); }} accessibilityRole="button" accessibilityLabel={`Level ${l.level}, ${l.title}. ${l.description}${tried.has(l.level) ? '. Practised' : ''}`}>
             <Card style={styles.row} padding={SPACING.md}>
-              <View style={[styles.badge, { backgroundColor: theme.tint(theme.colors.primarySoft) }]}>
-                <Text style={styles.badgeEmoji} allowFontScaling={false}>{l.emoji}</Text>
-              </View>
+              <Glyph value={l.emoji} size={60} />
               <View style={styles.text}>
                 <Text style={[styles.level, { color: theme.colors.textMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>LEVEL {l.level}</Text>
                 <Text style={[styles.title, { fontSize: sizes.tileLabel + 1, color: theme.colors.text }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>{l.title}</Text>
                 <Text style={[styles.desc, { color: theme.colors.textMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={2}>{l.description}</Text>
               </View>
-              <Text style={styles.star} allowFontScaling={false}>{tried.has(l.level) ? '⭐' : '▶'}</Text>
+              <LineIcon name={tried.has(l.level) ? 'star' : 'play-circle-outline'} size={32} color={tried.has(l.level) ? '#E0A800' : theme.colors.primary} />
             </Card>
           </PressableScale>
         ))}

@@ -34,7 +34,7 @@ export function ManageLessonsScreen({ navigation }: ParentScreenProps<'ManageLes
             key={l.id}
             title={l.title}
             subtitle={[
-              `${l.subjectIcon} ${l.subjectName}${l.gradeLevel ? ` · ${l.gradeLevel}` : ''}`,
+              `${l.subjectName}${l.gradeLevel ? ` · ${l.gradeLevel}` : ''}`,
               `${l.activityCount} question${l.activityCount === 1 ? '' : 's'} · ${l.completedCount}/${l.activityCount} done` +
                 (l.assignedDate ? ` · ${describeDueDate(l.assignedDate, isoDate)}` : '') +
                 (l.isActive ? '' : ' · Hidden'),

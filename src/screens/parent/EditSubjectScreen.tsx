@@ -23,8 +23,9 @@ import type { DayOfWeek } from '@/types/models';
 import { alertMessage, confirm } from '@/utils/confirm';
 import { formatTime } from '@/utils/date';
 import { Fonts } from '@/theme';
-
-const SUBJECT_EMOJI = ['📖', '🇵🇭', '🔢', '🔬', '🏘️', '💗', '🎨', '🎵', '⚽', '💻', '🌍', '✏️', '📚', '🧪', '🎭', '🙏'];
+import { SUBJECT_ICON_CHOICES } from '@/constants/uiIcons';
+import { Glyph } from '@/components/common/Glyph';
+import { Pressable } from 'react-native';
 
 /**
  * Create / edit a subject. Once saved, the same screen manages its weekly schedule and
@@ -39,7 +40,7 @@ export function EditSubjectScreen({ navigation, route }: ParentScreenProps<'Edit
   const { data: materials } = useSubjectMaterials(subjectId);
 
   const [name, setName] = useState('');
-  const [icon, setIcon] = useState('📖');
+  const [icon, setIcon] = useState(SUBJECT_ICON_CHOICES[0]);
   const [color, setColor] = useState(DEFAULT_TILE_COLOR);
   const [teacher, setTeacher] = useState('');
   const [notes, setNotes] = useState('');
@@ -110,8 +111,10 @@ export function EditSubjectScreen({ navigation, route }: ParentScreenProps<'Edit
 
           <Text style={[styles.label, { fontSize: sizes.body }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>Picture</Text>
           <View style={styles.emojiRow}>
-            {SUBJECT_EMOJI.map((e) => (
-              <BigButton key={e} label={e} variant={icon === e ? 'primary' : 'outline'} fullWidth={false} compact minHeight={56} onPress={() => setIcon(e)} accessibilityLabel={`Picture ${e}`} />
+            {SUBJECT_ICON_CHOICES.map((e) => (
+              <Pressable key={e} onPress={() => setIcon(e)} accessibilityRole="button" accessibilityLabel={`Icon ${e.replace(/-/g, ' ')}`} accessibilityState={{ selected: icon === e }} hitSlop={4} style={{ padding: 3, borderRadius: 18, borderWidth: 3, borderColor: icon === e ? Colors.primary : 'transparent' }}>
+                <Glyph value={e} size={52} tint={color} />
+              </Pressable>
             ))}
           </View>
           <BigButton label={useGlyphPicker ? 'Hide icon list' : 'Choose an icon instead'} variant="secondary" minHeight={56} onPress={() => setUseGlyphPicker((v) => !v)} />

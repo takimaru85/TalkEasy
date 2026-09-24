@@ -70,8 +70,8 @@ export function ActivitiesScreen(_props: RootScreenProps<'Activities'>) {
               <Icon name={open.icon} size={sizes.iconSize + 36} color={theme.colors.text} />
             )}
             <View style={styles.metaRow}>
-              <Text style={[styles.chip, { color: theme.colors.text, backgroundColor: theme.colors.surface }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>{meta.emoji} {meta.label}</Text>
-              {open.durationMinutes > 0 ? <Text style={[styles.chip, { color: theme.colors.text, backgroundColor: theme.colors.surface }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>⏱ {open.durationMinutes} min</Text> : null}
+              <Text style={[styles.chip, { color: theme.colors.text, backgroundColor: theme.colors.surface }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>{meta.label}</Text>
+              {open.durationMinutes > 0 ? <Text style={[styles.chip, { color: theme.colors.text, backgroundColor: theme.colors.surface }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>{open.durationMinutes} min</Text> : null}
             </View>
           </Card>
           <Text style={[styles.instructions, { fontSize: sizes.body + 4, color: theme.colors.text }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
@@ -128,7 +128,7 @@ export function ActivitiesScreen(_props: RootScreenProps<'Activities'>) {
                     {tContent(ex.name)}
                   </Text>
                   <Text style={[styles.cardMeta, { fontSize: sizes.body - 3, color: theme.colors.textMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
-                    {meta.emoji} {meta.label}{ex.durationMinutes > 0 ? ` · ${ex.durationMinutes} min` : ''} · {ex.isCompleted ? '✅ Done' : '⬜ Not done'}
+                    {meta.label}{ex.durationMinutes > 0 ? ` · ${ex.durationMinutes} min` : ''} · {ex.isCompleted ? 'Done' : 'Not done'}
                   </Text>
                 </View>
                 <View style={[styles.check, { borderColor: ex.isCompleted ? theme.colors.success : theme.colors.borderSoft, backgroundColor: ex.isCompleted ? theme.colors.success : theme.colors.surface }]}>
@@ -153,8 +153,9 @@ function FilterPill({ label, emoji, selected, onPress }: { label: string; emoji:
       accessibilityLabel={label}
       style={[styles.pill, { backgroundColor: selected ? theme.colors.primary : theme.colors.surface, borderColor: selected ? theme.colors.primaryDark : theme.colors.borderSoft }]}
     >
+      <Icon name={selected ? 'check-bold' : emoji} size={20} color={selected ? '#FFFFFF' : theme.colors.textMuted} />
       <Text style={[styles.pillText, { color: selected ? '#FFFFFF' : theme.colors.text }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
-        {selected ? '✓ ' : ''}{emoji} {label}
+        {label}
       </Text>
     </Pressable>
   );

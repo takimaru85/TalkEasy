@@ -14,6 +14,7 @@ interface FavoriteButtonRow {
   sort_order: number;
   is_system: number;
   is_hidden: number;
+  practice?: number;
   tap_count: number;
   last_used_at: string | null;
   created_at: string;
@@ -34,6 +35,7 @@ function toButton(r: FavoriteButtonRow): CommunicationButton {
     sortOrder: r.favorite_order,
     isSystem: r.is_system === 1,
     isHidden: r.is_hidden === 1,
+    practice: r.practice === 1,
     tapCount: r.tap_count,
     lastUsedAt: r.last_used_at,
     createdAt: r.created_at,

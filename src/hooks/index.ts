@@ -47,3 +47,4 @@ export {
 export { useTodaySoundPractice, useSoundAttemptsToday } from './useSoundPractice';
 export { useSoundRecorder } from './useSoundRecorder';
 export type { SoundRecorder, RecorderPhase } from './useSoundRecorder';
+export { useTodaySpeechPractice, useSpeechPracticeByActivity, useSpeechPracticeHistory, useMyWords } from './useSpeechPractice';

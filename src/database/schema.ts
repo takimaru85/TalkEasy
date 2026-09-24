@@ -339,6 +339,40 @@ export const MIGRATIONS: Migration[] = [
       CREATE INDEX IF NOT EXISTS idx_sound_practice ON sound_practice_attempts(created_at DESC);
     `,
   },
+  {
+    version: 6,
+    // Speech Practice. Same rules as Sound Practice: a log of practice that happened (attempts,
+    // exercises, finished activities, minutes) - never audio, never a score, never correctness.
+    // `communication_buttons.practice` lets a parent's own Talk card ("Grandma", with a photo)
+    // double as a practice word, so a word is never stored twice.
+    sql: `
+      CREATE TABLE IF NOT EXISTS speech_practice_events (
+        id          INTEGER PRIMARY KEY AUTOINCREMENT,
+        activity_id TEXT    NOT NULL,
+        kind        TEXT    NOT NULL,
+        item        TEXT    NOT NULL DEFAULT '',
+        duration_ms INTEGER NOT NULL DEFAULT 0,
+        created_at  TEXT    NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_speech_practice ON speech_practice_events(created_at DESC);
+
+      ALTER TABLE communication_buttons ADD COLUMN practice INTEGER NOT NULL DEFAULT 0;
+    `,
+  },
+  {
+    version: 7,
+    // TalkEasy is English-only: the seeded Filipino family cards become English ones
+    // ("Ate" -> "Sister", "Kuya" -> "Brother"). Only the untouched built-in cards are renamed; a card
+    // a parent edited (different phrase) is left exactly as it is. The demo favourite person
+    // "Ate" follows.
+    sql: `
+      UPDATE communication_buttons SET label = 'Sister', phrase = 'I want my sister.'
+       WHERE is_system = 1 AND label = 'Ate' AND phrase = 'I want Ate.';
+      UPDATE communication_buttons SET label = 'Brother', phrase = 'I want my brother.'
+       WHERE is_system = 1 AND label = 'Kuya' AND phrase = 'I want Kuya.';
+      UPDATE child_profile SET favorites_json = REPLACE(favorites_json, '"Ate"', '"Sister"');
+    `,
+  },
 ];
 
 export const CURRENT_SCHEMA_VERSION = MIGRATIONS[MIGRATIONS.length - 1].version;

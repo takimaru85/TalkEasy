@@ -70,7 +70,7 @@ export function ManageAssignmentsScreen({ navigation }: ParentScreenProps<'Manag
         ))}
         <View>
           <Text style={styles.hint} maxFontSizeMultiplier={MAX_FONT_SCALE}>
-            ☑ marks completed. The clock button cycles To Do → In Progress → Done.
+            The tick marks an assignment completed. The clock button cycles To Do → In Progress → Done.
           </Text>
         </View>
       </ScrollView>

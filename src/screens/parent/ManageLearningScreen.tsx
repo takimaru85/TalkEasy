@@ -51,7 +51,9 @@ export function ManageLearningScreen({ navigation }: ParentScreenProps<'ManageLe
               return (
                 <ListRow
                   key={a.key}
-                  title={`${a.emoji} ${a.title}`}
+                  title={a.title}
+              icon={a.emoji}
+              iconBackground="#DCEBFF"
                   subtitle={[
                     a.description,
                     `Difficulty: ${own ? DIFFICULTY_META[own].label : `Default (${DIFFICULTY_META[settings.learningDifficulty].label})`}` +
