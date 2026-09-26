@@ -329,6 +329,6 @@ export const DEFAULT_SETTINGS: AppSettings = {
   rotation: 'auto',
   language: 'en-US',
   speechPracticeHidden: '',
-  speechPronunciationSet: 'en',
+  speechPronunciationSet: 'fil',
   speechPronunciationOverrides: '{}',
 };

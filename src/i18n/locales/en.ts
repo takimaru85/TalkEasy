@@ -12,7 +12,7 @@ export const en: Locale = {
   name: 'English (US)',
   flag: '🇺🇸',
   speechTag: 'en-US',
-  letterStyle: 'standard',
+  letterStyle: 'single-storey',
   content: {},
   strings: {
     goodMorning: 'Good morning',

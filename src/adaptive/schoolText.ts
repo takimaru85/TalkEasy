@@ -1,4 +1,4 @@
-import { SCHOOL_GLYPHS, SCHOOL_UPEM, SINGLE_STOREY_A } from './schoolGlyphs';
+import { SCHOOL_GLYPHS, SCHOOL_UPEM, SINGLE_STOREY_A, type SchoolGlyph } from './schoolGlyphs';
 import type { LetterStyle } from '@/i18n/types';
 
 export interface SchoolTextLayout {
@@ -6,11 +6,26 @@ export interface SchoolTextLayout {
   scale: number;
   /** Rendered width in pixels, for centring. */
   width: number;
-  /** Glyph outlines with their pen position in font units. */
-  glyphs: { d: string; x: number }[];
+  /** Glyph outlines with their pen position and advance in font units. */
+  glyphs: { ch: string; d: string; x: number; adv: number }[];
 }
 
 const SPACE_UNITS = SCHOOL_GLYPHS[' ']?.a ?? 250;
+
+/**
+ * School-print substitutions used when `letterStyle` is 'single-storey' — the letters a child is
+ * taught to WRITE differently from the way a typeface prints them.
+ *
+ * - "a": a circle and a stem, not Nunito's double-storey bowl.
+ * - "l": a plain bar. Nunito's lowercase "l" finishes with a curved tail (its outline runs the
+ *   full advance width and is all curves), which a child copying it would draw as a hook. The bar
+ *   used instead is the font's OWN uppercase "I" — same stroke weight, same height, no tail — so
+ *   nothing has to be drawn or bundled to get it.
+ */
+const SCHOOL_PRINT: Record<string, SchoolGlyph> = {
+  a: SINGLE_STOREY_A,
+  l: SCHOOL_GLYPHS['I'],
+};
 
 /**
  * Lays out tracing text from the bundled letter outlines.
@@ -33,16 +48,17 @@ export function layoutSchoolText(
   letterStyle: LetterStyle = 'standard',
 ): SchoolTextLayout {
   const items = [...text].map((ch) => {
-    if (ch === 'a' && letterStyle === 'single-storey') return SINGLE_STOREY_A;
-    return SCHOOL_GLYPHS[ch] ?? { d: '', a: SPACE_UNITS };
+    const print = letterStyle === 'single-storey' ? SCHOOL_PRINT[ch] : undefined;
+    const glyph = print ?? SCHOOL_GLYPHS[ch] ?? { d: '', a: SPACE_UNITS };
+    return { ch, ...glyph };
   });
   const totalUnits = items.reduce((n, g) => n + g.a, 0) || 1;
   const scale = Math.min(maxFontSize / SCHOOL_UPEM, maxWidth / totalUnits);
 
-  const glyphs: { d: string; x: number }[] = [];
+  const glyphs: { ch: string; d: string; x: number; adv: number }[] = [];
   let pen = 0;
   for (const g of items) {
-    if (g.d) glyphs.push({ d: g.d, x: pen });
+    if (g.d) glyphs.push({ ch: g.ch, d: g.d, x: pen, adv: g.a });
     pen += g.a;
   }
   return { scale, width: totalUnits * scale, glyphs };

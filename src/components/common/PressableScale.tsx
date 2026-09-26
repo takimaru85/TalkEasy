@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { Animated, Pressable, type PressableProps, type StyleProp, type ViewStyle } from 'react-native';
+import { Animated, Pressable, StyleSheet, type PressableProps, type StyleProp, type ViewStyle } from 'react-native';
 import { useTheme } from '@/theme';
 import { Motion } from '@/theme/tokens';
 
@@ -34,10 +34,21 @@ export function PressableScale({ style, pressedScale = 0.97, children, onPressIn
           to(1);
           onPressOut?.(e);
         }}
-        style={{ flex: 1 }}
+        style={styles.fill}
       >
         {children}
       </Pressable>
     </Animated.View>
   );
 }
+
+const styles = StyleSheet.create({
+  /**
+   * flexGrow, NOT flex. `flex: 1` also sets flexBasis to 0, and inside a parent whose height
+   * comes from its content that resolves to a ZERO-height pressable: the button still paints,
+   * because its inner view has a minHeight and nothing clips it, but the touch target is a
+   * sliver, so taps land on what you can see and miss it. flexGrow fills the parent when there
+   * is definite room and falls back to the content height when there is not.
+   */
+  fill: { flexGrow: 1 },
+});

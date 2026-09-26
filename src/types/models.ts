@@ -429,7 +429,8 @@ export interface AppSettings {
   /** Speech Practice activities the parent has hidden from the child (comma list of ids). */
   speechPracticeHidden: string;
   /** Speech Practice pronunciation set (see speechpractice/pronunciation.ts). English only for now. */
-  speechPronunciationSet: 'en';
+  /** Vowel values for the syllable drill. Source of truth: speechpractice/pronunciation.ts. */
+  speechPronunciationSet: 'en' | 'fil';
   /**
    * Per-device pronunciation corrections chosen in Parent Mode → Pronunciation test:
    * JSON { "en|syllable:bo": { text, locale } }. Defaults live in speechpractice/pronunciationDictionary.ts.
