@@ -44,7 +44,7 @@ function variant(code: Locale['code'], name: string, flag: string): Locale {
     name,
     flag,
     speechTag: code,
-    letterStyle: 'standard',
+    letterStyle: 'single-storey',
     strings: { ...en.strings, ...COMMONWEALTH_STRINGS },
     content: MUM,
   };

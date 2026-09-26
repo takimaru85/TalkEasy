@@ -15,7 +15,9 @@ ok(DEFAULT_LOCALE_CODE === 'en-US', 'US English is the default locale code');
 ok(LOCALES[0].code === 'en-US', 'English is listed first in the language selector');
 ok(getLocale('xx-YY').code === 'en-US', 'an unknown code falls back to English');
 ok(getLocale(null).code === 'en-US', 'a missing code falls back to English');
-ok(en.letterStyle === 'standard', 'English uses the ordinary double-storey a');
+// Handwriting, not typography: the app's TEXT is ordinary Nunito, but a child is taught to
+// write "a" as a circle and a stem, so the tracing surfaces use the school-print form.
+ok(en.letterStyle === 'single-storey', 'handwriting uses the school-print a');
 ok(Object.keys(en.content).length === 0, 'English needs no content translation');
 
 // Every locale is complete, so no screen can fall back to a stray English word.
@@ -27,7 +29,7 @@ for (const locale of LOCALES) {
   ok(Object.keys(locale.strings).length === keys.length, `${locale.code}: no extra string keys`);
   // TalkEasy is English-only: every locale is an English variant with an English voice.
   ok(locale.speechTag.startsWith('en-'), `${locale.code}: speaks with an English voice`);
-  ok(locale.letterStyle === 'standard', `${locale.code}: ordinary double-storey a`);
+  ok(locale.letterStyle === 'single-storey', `${locale.code}: school-print a on handwriting surfaces`);
 }
 ok(LOCALES.map((l) => l.code).join() === 'en-US,en-GB,en-AU,en-NZ', 'US, UK, Australian and New Zealand English, US first');
 ok(getLocale('fil-PH').code === 'en-US', 'a saved Filipino setting falls back to US English');
@@ -51,12 +53,17 @@ for (const locale of LOCALES) {
   ok(differs.every((k) => /practis|favourite|individualis/i.test(locale.strings[k])), `${locale.code}: only spelling differs (${differs.join(', ')})`);
 }
 
-// Handwriting: no locale uses the single-storey school-print "a" now, but the glyph is kept and
-// must still differ only in "a".
-const stdA = layoutSchoolText('a', 400, 200, 'standard');
-const printA = layoutSchoolText('a', 400, 200, 'single-storey');
-ok(stdA.glyphs[0].d !== printA.glyphs[0].d, 'the two letter styles draw a different a');
-for (const ch of ['A', 'b', 'c', 'd', 'e', 'f', 'o', 'g', '5']) {
+// Handwriting: the school-print style swaps exactly two letters — "a" (circle and stem) and
+// "l" (a plain bar, because Nunito's "l" ends in a curved tail a child would copy as a hook).
+// Every other character must be byte-identical in both styles.
+for (const ch of ['a', 'l']) {
+  const std = layoutSchoolText(ch, 400, 200, 'standard');
+  const print = layoutSchoolText(ch, 400, 200, 'single-storey');
+  ok(std.glyphs[0].d !== print.glyphs[0].d, `the two letter styles draw a different "${ch}"`);
+}
+const printL = layoutSchoolText('l', 400, 200, 'single-storey');
+ok(printL.glyphs[0].d === layoutSchoolText('I', 400, 200, 'single-storey').glyphs[0].d, 'the school-print l is the plain bar');
+for (const ch of ['A', 'b', 'c', 'd', 'e', 'f', 'o', 'g', '5', 'i', 't']) {
   const a = layoutSchoolText(ch, 400, 200, 'standard');
   const b = layoutSchoolText(ch, 400, 200, 'single-storey');
   ok(a.glyphs[0].d === b.glyphs[0].d, `"${ch}" is identical in both letter styles`);

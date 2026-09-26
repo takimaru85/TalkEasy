@@ -5,6 +5,8 @@ import { BigButton } from '@/components/common';
 import { MAX_FONT_SCALE, MIN_CHILD_TARGET, SPACING } from '@/constants/sizes';
 import { Fonts, Radius, useTheme } from '@/theme';
 import { layoutSchoolText } from '@/adaptive/schoolText';
+import { CAP_HEIGHT, strokesFor } from '@/adaptive/strokeOrder';
+import { StrokeArrows, type Point } from './StrokeArrows';
 import { useI18n } from '@/i18n';
 import type { LetterStyle } from '@/i18n/types';
 
@@ -89,7 +91,7 @@ export function HandwritingCanvas({ guide, onDone, strokeWidth = 14, onStrokeWid
       >
         {size.w > 0 ? (
           <Svg width={size.w} height={size.h}>
-            {renderGuide(guide, size.w, size.h, guideColor, letterStyle)}
+            {renderGuide(guide, size.w, size.h, guideColor, letterStyle, theme.colors.danger)}
             {strokes.map((d, i) => (
               <Path key={i} d={d} stroke={ink} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" fill="none" />
             ))}
@@ -116,28 +118,74 @@ export function HandwritingCanvas({ guide, onDone, strokeWidth = 14, onStrokeWid
   );
 }
 
-function renderGuide(guide: Guide, w: number, h: number, color: string, letterStyle: LetterStyle) {
+/** Samples a circle anticlockwise from the top — the direction "o" and "0" are taught. */
+function circlePoints(cx: number, cy: number, r: number, steps = 12): Point[] {
+  return Array.from({ length: steps + 1 }, (_, i) => {
+    const angle = -Math.PI / 2 - (i / steps) * Math.PI * 2;
+    return [cx + r * Math.cos(angle), cy + r * Math.sin(angle)] as Point;
+  });
+}
+
+/**
+ * Where each guide starts and which way it goes, in canvas pixels. Built from the very same
+ * numbers the guide itself is drawn with, so an arrow can never drift off its line.
+ */
+function guideStrokes(guide: Guide, w: number, h: number, m: number): Point[][] {
+  switch (guide.kind) {
+    case 'line': {
+      if (guide.variant === 'horizontal') return [[[m, h / 2], [w - m, h / 2]]];
+      if (guide.variant === 'vertical') return [[[w / 2, m], [w / 2, h - m]]];
+      if (guide.variant === 'diagonal') return [[[m, h - m], [w - m, m]]];
+      if (guide.variant === 'zigzag') {
+        return [[0, 1, 2, 3, 4].map((i) => [m + ((w - 2 * m) / 4) * i, i % 2 === 0 ? h - m : m] as Point)];
+      }
+      // wave: the quadratic's ends plus its peaks, which is enough for an arrow to follow
+      const seg = (w - 2 * m) / 4;
+      const pts: Point[] = [[m, h / 2]];
+      for (let i = 0; i < 4; i++) {
+        pts.push([m + seg * i + seg / 2, i % 2 === 0 ? m + (h / 2 - m) * 0.35 : h - m - (h / 2 - m) * 0.35]);
+        pts.push([m + seg * (i + 1), h / 2]);
+      }
+      return [pts];
+    }
+    case 'shape': {
+      const r = Math.min(w, h) / 2 - m;
+      if (guide.variant === 'circle') return [circlePoints(w / 2, h / 2, r)];
+      if (guide.variant === 'square') {
+        const [l, t, right, b] = [w / 2 - r, h / 2 - r, w / 2 + r, h / 2 + r];
+        return [[[l, t], [right, t], [right, b], [l, b], [l, t]]];
+      }
+      return [[[w / 2, h / 2 - r], [w / 2 + r, h / 2 + r], [w / 2 - r, h / 2 + r], [w / 2, h / 2 - r]]];
+    }
+    default:
+      return [];
+  }
+}
+
+function renderGuide(guide: Guide, w: number, h: number, color: string, letterStyle: LetterStyle, arrowColor: string) {
   const common = { stroke: color, strokeWidth: 10, strokeLinecap: 'round' as const, strokeDasharray: '2 22', fill: 'none' };
   const m = Math.min(w, h) * 0.12;
   switch (guide.kind) {
     case 'line': {
-      if (guide.variant === 'horizontal') return <Line x1={m} y1={h / 2} x2={w - m} y2={h / 2} {...common} />;
-      if (guide.variant === 'vertical') return <Line x1={w / 2} y1={m} x2={w / 2} y2={h - m} {...common} />;
-      if (guide.variant === 'diagonal') return <Line x1={m} y1={h - m} x2={w - m} y2={m} {...common} />;
+      const arrows = <StrokeArrows strokes={guideStrokes(guide, w, h, m)} color={arrowColor} size={Math.min(w, h) - m * 2} />;
+      if (guide.variant === 'horizontal') return <>{<Line x1={m} y1={h / 2} x2={w - m} y2={h / 2} {...common} />}{arrows}</>;
+      if (guide.variant === 'vertical') return <>{<Line x1={w / 2} y1={m} x2={w / 2} y2={h - m} {...common} />}{arrows}</>;
+      if (guide.variant === 'diagonal') return <>{<Line x1={m} y1={h - m} x2={w - m} y2={m} {...common} />}{arrows}</>;
       if (guide.variant === 'zigzag') {
         const pts = [0, 1, 2, 3, 4].map((i) => `${m + ((w - 2 * m) / 4) * i},${i % 2 === 0 ? h - m : m}`).join(' ');
-        return <Polygon points={pts} {...common} strokeDasharray={undefined} strokeWidth={8} opacity={0.6} />;
+        return <>{<Polygon points={pts} {...common} strokeDasharray={undefined} strokeWidth={8} opacity={0.6} />}{arrows}</>;
       }
       // wave
       const seg = (w - 2 * m) / 4;
       const d = `M ${m} ${h / 2} ` + [0, 1, 2, 3].map((i) => `Q ${m + seg * i + seg / 2} ${i % 2 === 0 ? m : h - m} ${m + seg * (i + 1)} ${h / 2}`).join(' ');
-      return <Path d={d} {...common} />;
+      return <>{<Path d={d} {...common} />}{arrows}</>;
     }
     case 'shape': {
       const r = Math.min(w, h) / 2 - m;
-      if (guide.variant === 'circle') return <Circle cx={w / 2} cy={h / 2} r={r} {...common} />;
-      if (guide.variant === 'square') return <Rect x={w / 2 - r} y={h / 2 - r} width={2 * r} height={2 * r} {...common} />;
-      return <Polygon points={`${w / 2},${h / 2 - r} ${w / 2 + r},${h / 2 + r} ${w / 2 - r},${h / 2 + r}`} {...common} />;
+      const arrows = <StrokeArrows strokes={guideStrokes(guide, w, h, m)} color={arrowColor} size={Math.min(w, h) - m * 2} />;
+      if (guide.variant === 'circle') return <>{<Circle cx={w / 2} cy={h / 2} r={r} {...common} />}{arrows}</>;
+      if (guide.variant === 'square') return <>{<Rect x={w / 2 - r} y={h / 2 - r} width={2 * r} height={2 * r} {...common} />}{arrows}</>;
+      return <>{<Polygon points={`${w / 2},${h / 2 - r} ${w / 2 + r},${h / 2 + r} ${w / 2 - r},${h / 2 + r}`} {...common} />}{arrows}</>;
     }
     case 'text': {
       // School-print outlines (single-storey "a") drawn as paths — see schoolText.ts.
@@ -148,9 +196,33 @@ function renderGuide(guide: Guide, w: number, h: number, color: string, letterSt
           <Line x1={m} y1={baseline} x2={w - m} y2={baseline} stroke={color} strokeWidth={3} opacity={0.5} />
           <G transform={`translate(${(w - layout.width) / 2} ${baseline}) scale(${layout.scale})`}>
             {layout.glyphs.map((g, i) => (
-              <Path key={i} d={g.d} transform={`translate(${g.x} 0)`} fill={color} />
+              // Hollow, like a handwriting worksheet: the child's own stroke stays visible
+              // inside the letter, and the dashed centre path reads against white rather than
+              // against a solid block. Stroke width is in font units, so it scales with the text.
+              <Path
+                key={i}
+                d={g.d}
+                transform={`translate(${g.x} 0)`}
+                fill="none"
+                stroke={color}
+                strokeWidth={34}
+                strokeLinejoin="round"
+              />
             ))}
           </G>
+          {/* Numbering restarts on every letter, so "cat" reads 1 · 1,2 · 1,2 and not 1…5. */}
+          {layout.glyphs.map((g, i) => {
+            const order = strokesFor(g.ch, letterStyle);
+            if (!order) return null;
+            const originX = (w - layout.width) / 2;
+            const strokes = order.map((stroke) =>
+              stroke.points.map(
+                ([nx, ny]) =>
+                  [originX + (g.x + nx * g.adv) * layout.scale, baseline + (ny - 1) * CAP_HEIGHT * layout.scale] as Point,
+              ),
+            );
+            return <StrokeArrows key={`a${i}`} strokes={strokes} color={arrowColor} size={CAP_HEIGHT * layout.scale} />;
+          })}
         </>
       );
     }
