@@ -1,10 +1,12 @@
 import React from 'react';
 import { ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { ChildScreen, Glyph, Icon, PressableScale } from '@/components/common';
+import { GameTile, HeroPanel } from '@/components/adventure';
 import { SECTION_EMOJI } from '@/constants/school';
 import { MAX_FONT_SCALE, SPACING } from '@/constants/sizes';
 import { useProfile } from '@/context/ProfileContext';
 import { useLearningConfigs, useLearningStats, useSizes, useSpeak } from '@/hooks';
+import { useI18n } from '@/i18n';
 import { LEARNING_SUBJECTS } from '@/learning';
 import type { RootScreenProps } from '@/navigation/types';
 import { Fonts, Radius, useTheme } from '@/theme';
@@ -17,6 +19,7 @@ export function LearnScreen({ navigation }: RootScreenProps<'Learn'>) {
   const theme = useTheme();
   const { profile, displayName } = useProfile();
   const { speakFeedback } = useSpeak();
+  const { t } = useI18n();
   const { data: configs } = useLearningConfigs();
   const { data: stats } = useLearningStats();
 
@@ -34,15 +37,39 @@ export function LearnScreen({ navigation }: RootScreenProps<'Learn'>) {
   const labelSize = subjects.reduce((min, s) => Math.min(min, fitFontSize(s.name, tileInner, sizes.tileLabel, 'word', 13)), sizes.tileLabel);
 
   return (
-    <ChildScreen title="Learn" emoji={SECTION_EMOJI.learn}>
+    <ChildScreen title={theme.night ? t('questPlay') : 'Learn'} emoji={SECTION_EMOJI.learn} art="play">
       <ScrollView contentContainerStyle={[styles.content, { paddingHorizontal: sizes.horizontalPadding }]}>
-        <Text style={[styles.intro, { fontSize: sizes.body + 1, color: theme.colors.textMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
-          What do you want to practise, {displayName}?
-        </Text>
+        <HeroPanel color="coral" art="play" title={t('questPlaySub')} subtitle={`What do you want to practise, ${displayName}?`} mascot />
+        {theme.night ? null : (
+          <Text style={[styles.intro, { fontSize: sizes.body + 1, color: theme.colors.textMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
+            What do you want to practise, {displayName}?
+          </Text>
+        )}
         <View style={[styles.grid, { gap: sizes.gap }]}>
           {subjects.map((s) => {
             const st = stats.find((x) => x.subjectKey === s.key);
             const sessions = st?.sessions ?? 0;
+            const open = () => {
+              speakFeedback(s.name);
+              navigation.navigate('LearnSubject', { subjectKey: s.key });
+            };
+            const a11y = `${s.name}${isFav(s.name) ? ', favourite' : ''}${sessions ? `, ${sessions} sessions played` : ''}`;
+            if (theme.night) {
+              return (
+                <GameTile
+                  key={s.key}
+                  label={s.name}
+                  tint={s.color}
+                  glyph={s.emoji}
+                  onPress={open}
+                  accessibilityLabel={a11y}
+                  width={`${columnPercent}%`}
+                  minHeight={Math.max(sizes.tileHeight, 130)}
+                  labelSize={labelSize}
+                  badge={isFav(s.name) ? (sessions ? `⭐ ${sessions}` : '⭐') : sessions ? `${sessions} played` : undefined}
+                />
+              );
+            }
             return (
               <PressableScale
                 key={s.key}

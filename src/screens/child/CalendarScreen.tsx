@@ -7,7 +7,7 @@ import { MAX_FONT_SCALE, SPACING } from '@/constants/sizes';
 import { useCalendarEntries, useSizes, useSpeak, useToday } from '@/hooks';
 import type { RootScreenProps } from '@/navigation/types';
 import { formatDate, monthRange } from '@/utils/date';
-import { Fonts } from '@/theme';
+import { Fonts, useTheme } from '@/theme';
 
 /**
  * School calendar: month grid with dots, then the selected day's items, then "coming up".
@@ -15,6 +15,7 @@ import { Fonts } from '@/theme';
  */
 export function CalendarScreen({ navigation }: RootScreenProps<'Calendar'>) {
   const sizes = useSizes();
+  const theme = useTheme();
   const { isoDate } = useToday();
   const [month, setMonth] = useState(isoDate);
   const [selected, setSelected] = useState<string | null>(isoDate);
@@ -33,7 +34,7 @@ export function CalendarScreen({ navigation }: RootScreenProps<'Calendar'>) {
   };
 
   return (
-    <ChildScreen title="Calendar" back>
+    <ChildScreen title="Calendar" art="myday" back>
       <ScrollView contentContainerStyle={[styles.content, { paddingHorizontal: sizes.horizontalPadding }]}>
         <MonthGrid
           month={month}
@@ -52,7 +53,7 @@ export function CalendarScreen({ navigation }: RootScreenProps<'Calendar'>) {
           <>
             <SectionTitle title={selected === isoDate ? 'Today' : formatDate(selected)} emoji="📌" />
             {dayEntries.length === 0 ? (
-              <Text style={[styles.empty, { fontSize: sizes.body }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>Nothing on this day.</Text>
+              <Text style={[styles.empty, { fontSize: sizes.body, color: theme.colors.textMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>Nothing on this day.</Text>
             ) : (
               dayEntries.map((e) => <EventRow key={e.key} entry={e} today={isoDate} hideDate onPress={() => openEntry(e.key)} />)
             )}
@@ -72,5 +73,5 @@ export function CalendarScreen({ navigation }: RootScreenProps<'Calendar'>) {
 
 const styles = StyleSheet.create({
   content: { paddingVertical: SPACING.sm, gap: SPACING.md, paddingBottom: SPACING.xl },
-  empty: { color: Colors.textMuted, fontFamily: Fonts.semibold },
+  empty: { fontFamily: Fonts.semibold },
 });

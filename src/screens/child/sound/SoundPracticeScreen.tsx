@@ -1,6 +1,7 @@
 import React from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Card, ChildScreen, PressableScale, SectionTitle } from '@/components/common';
+import { HeroPanel, StatPill } from '@/components/adventure';
 import { MAX_FONT_SCALE, SPACING } from '@/constants/sizes';
 import { useSizes, useTodaySoundPractice } from '@/hooks';
 import { SOUND_EXERCISES } from '@/soundpractice/content';
@@ -28,11 +29,18 @@ export function SoundPracticeScreen({ navigation }: RootScreenProps<'SoundPracti
   const tileWidth = `${Math.floor(100 / sizes.gridColumns) - 2}%` as const;
 
   return (
-    <ChildScreen title={t('sectionSoundPractice')} emoji="🎯">
+    <ChildScreen title={t('sectionSoundPractice')} emoji="🎯" art="mission">
       <ScrollView style={styles.flex} contentContainerStyle={[styles.content, { paddingHorizontal: sizes.horizontalPadding }]}>
-        <Text style={[styles.subtitle, { fontSize: sizes.body + 2, color: theme.colors.textMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
-          {t('soundChooseSound')}
-        </Text>
+        <HeroPanel color="sun" art="mission" title={t('advDaily')} subtitle={t('soundChooseSound')}>
+          <View style={styles.pills}>
+            <StatPill icon="star" value={String(stats.soundsPracticed)} label={`${t('soundStatSounds')}: ${stats.soundsPracticed}`} color="sun" />
+          </View>
+        </HeroPanel>
+        {theme.night ? null : (
+          <Text style={[styles.subtitle, { fontSize: sizes.body + 2, color: theme.colors.textMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
+            {t('soundChooseSound')}
+          </Text>
+        )}
 
         <View style={[styles.grid, { gap: sizes.gap }]}>
           {SOUND_EXERCISES.map((ex) => (
@@ -48,7 +56,7 @@ export function SoundPracticeScreen({ navigation }: RootScreenProps<'SoundPracti
                   {ex.sound}
                 </Text>
                 <Text style={styles.tileEmoji} allowFontScaling={false}>{ex.emoji}</Text>
-                <Text style={[styles.practice, { color: theme.colors.textMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
+                <Text style={[styles.practice, { color: theme.night ? 'rgba(255,255,255,0.9)' : theme.colors.textMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
                   {t('soundPracticeCta')}
                 </Text>
               </Card>
@@ -100,6 +108,7 @@ const styles = StyleSheet.create({
   content: { paddingVertical: SPACING.sm, gap: SPACING.md, paddingBottom: SPACING.xl },
   subtitle: { fontFamily: Fonts.semibold, textAlign: 'center' },
   grid: { flexDirection: 'row', flexWrap: 'wrap' },
+  pills: { flexDirection: 'row', justifyContent: 'center' },
   tile: { alignItems: 'center', justifyContent: 'center', gap: 2 },
   letter: { fontFamily: Fonts.black },
   tileEmoji: { fontSize: 22, lineHeight: 28 },

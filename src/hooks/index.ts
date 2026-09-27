@@ -31,6 +31,8 @@ export { useSizes } from './useSizes';
 export type { Sizes } from './useSizes';
 export { useSpeak } from './useSpeak';
 export { useRewardList, useStarSummary, useStarHistory, useAwardStars } from './useRewards';
+export { useAdventureWorld, useCollection } from './useAdventureWorld';
+export { useWeeklySummary, useTodaySummary, useStarsEarned } from './useParentSummary';
 export type { StarEventKind } from './useRewards';
 export { useOrientationLock } from './useOrientationLock';
 export {
@@ -48,3 +50,6 @@ export { useTodaySoundPractice, useSoundAttemptsToday } from './useSoundPractice
 export { useSoundRecorder } from './useSoundRecorder';
 export type { SoundRecorder, RecorderPhase } from './useSoundRecorder';
 export { useTodaySpeechPractice, useSpeechPracticeByActivity, useSpeechPracticeHistory, useMyWords } from './useSpeechPractice';
+export { useAdventure, levelFor, streakFrom } from './useAdventure';
+export type { AdventureProgress } from './useAdventure';
+export { useAchievements } from './useAchievements';

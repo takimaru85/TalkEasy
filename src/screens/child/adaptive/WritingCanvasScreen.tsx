@@ -1,14 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import { HandwritingCanvas } from '@/components/adaptive';
-import { BigButton, Celebration, ChildScreen, ProgressBar } from '@/components/common';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { HandwritingCanvas, TraceTarget } from '@/components/adaptive';
+import { GradientSurface } from '@/components/adventure/GradientSurface';
+import { BigButton, Celebration, ChildScreen, Icon, ProgressBar } from '@/components/common';
 import { getWritingLevel } from '@/adaptive/handwriting';
-import { MAX_FONT_SCALE, SPACING } from '@/constants/sizes';
+import { MAX_FONT_SCALE, MIN_CHILD_TARGET, SPACING } from '@/constants/sizes';
 import { useProfile } from '@/context/ProfileContext';
 import { adaptiveProgressRepo } from '@/database';
 import { useSizes, useSpeak } from '@/hooks';
 import type { RootScreenProps } from '@/navigation/types';
-import { Fonts, Radius, useTheme } from '@/theme';
+import { Adventure, Fonts, Radius, useTheme } from '@/theme';
 import { useI18n } from '@/i18n';
 
 /**
@@ -40,6 +41,8 @@ export function WritingCanvasScreen({ navigation, route }: RootScreenProps<'Writ
 
   if (!level || !item) return <ChildScreen title={t('titleWriting')} back />;
 
+  const skip = () => (index + 1 >= level.items.length ? setFinished(true) : setIndex((i) => i + 1));
+
   const onDone = async (r: { strokes: number; durationMs: number }) => {
     await adaptiveProgressRepo.recordHandwriting({ childId: profile.id, level: level.level, item: item.display, strokes: r.strokes, durationMs: r.durationMs }).catch(() => {});
     setBurst((b) => b + 1);
@@ -68,16 +71,42 @@ export function WritingCanvasScreen({ navigation, route }: RootScreenProps<'Writ
   }
 
   return (
-    <ChildScreen title={`Level ${level.level}`} emoji={level.emoji} back>
+    <ChildScreen title={`Level ${level.level}`} emoji={level.emoji} art="trace" back>
       <Celebration trigger={burst} />
       <ScrollView contentContainerStyle={[styles.content, { paddingHorizontal: sizes.horizontalPadding }]}>
-        <ProgressBar value={index / level.items.length} label={`${index + 1} / ${level.items.length}`} height={12} />
-        <Text style={[styles.prompt, { fontSize: sizes.body + 2, color: theme.colors.textMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>{item.prompt}</Text>
-        <View style={[styles.display, { backgroundColor: theme.tint(theme.colors.primarySoft) }]}>
-          <Text style={[styles.displayText, { fontFamily: modelFont, fontSize: item.display.length > 6 ? sizes.heading + 6 : sizes.phrase + 14, color: theme.colors.text }]} allowFontScaling={false}>
-            {item.model ?? item.display}
-          </Text>
-        </View>
+        {theme.night ? (
+          // Game progress: a gold star pill with "1 / 5" and a gold track.
+          <View
+            style={styles.progress}
+            accessibilityRole="progressbar"
+            accessibilityLabel={`${index + 1} of ${level.items.length}`}
+            accessibilityValue={{ min: 0, max: level.items.length, now: index + 1 }}
+          >
+            <View style={styles.progressTrack}>
+              <View style={[styles.progressFill, { width: `${Math.max(4, Math.round(((index + 1) / level.items.length) * 100))}%` }]}>
+                <GradientSurface from={Adventure.sun.from} to={Adventure.sun.to} direction="vertical" />
+              </View>
+            </View>
+            <View style={styles.progressPill}>
+              <Icon name="star" size={16} color={Adventure.sun.to} />
+              <Text style={styles.progressText} maxFontSizeMultiplier={MAX_FONT_SCALE}>{`${index + 1} / ${level.items.length}`}</Text>
+            </View>
+          </View>
+        ) : (
+          <>
+            <ProgressBar value={index / level.items.length} label={`${index + 1} / ${level.items.length}`} height={12} />
+            <Text style={[styles.prompt, { fontSize: sizes.body + 2, color: theme.colors.textMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>{item.prompt}</Text>
+          </>
+        )}
+        {theme.night ? (
+          <TraceTarget guide={item.guide} display={item.display} model={item.model} prompt={item.prompt} fontFamily={modelFont} letterSize={sizes.phrase + 18} />
+        ) : (
+          <View style={[styles.display, { backgroundColor: theme.tint(theme.colors.primarySoft) }]}>
+            <Text style={[styles.displayText, { fontFamily: modelFont, fontSize: item.display.length > 6 ? sizes.heading + 6 : sizes.phrase + 14, lineHeight: Math.round((item.display.length > 6 ? sizes.heading + 6 : sizes.phrase + 14) * 1.28), color: theme.colors.text }]} allowFontScaling={false}>
+              {item.model ?? item.display}
+            </Text>
+          </View>
+        )}
         <HandwritingCanvas
           key={`${level.level}-${index}`}
           guide={item.guide}
@@ -86,7 +115,21 @@ export function WritingCanvasScreen({ navigation, route }: RootScreenProps<'Writ
           onStrokeWidthChange={setStrokeWidth}
           height={Math.max(300, sizes.tileHeight * 2.2)}
         />
-        <BigButton label="Skip this one" variant="outline" minHeight={56} onPress={() => (index + 1 >= level.items.length ? setFinished(true) : setIndex((i) => i + 1))} />
+        {theme.night ? (
+          // Secondary on purpose: an outline on the dark sky, quieter than Done in every way.
+          <Pressable
+            onPress={skip}
+            accessibilityRole="button"
+            accessibilityLabel="Skip this one"
+            hitSlop={6}
+            style={({ pressed }) => [styles.skip, pressed && { opacity: 0.7 }]}
+          >
+            <Icon name="skip-next" size={20} color="#B8C3EA" />
+            <Text style={styles.skipText} maxFontSizeMultiplier={MAX_FONT_SCALE}>Skip this one</Text>
+          </Pressable>
+        ) : (
+          <BigButton label="Skip this one" variant="outline" minHeight={56} onPress={skip} />
+        )}
       </ScrollView>
     </ChildScreen>
   );
@@ -98,6 +141,24 @@ const styles = StyleSheet.create({
   display: { minHeight: 90, borderRadius: Radius.lg, alignItems: 'center', justifyContent: 'center', paddingHorizontal: SPACING.md },
   // School-print face: the model letter the child copies must show the single-storey "a".
   displayText: { textAlign: 'center' }, // fontFamily is per language — see modelFont above
+  progress: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
+  progressTrack: { flex: 1, height: 14, borderRadius: 999, overflow: 'hidden', backgroundColor: 'rgba(255,255,255,0.14)', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.22)' },
+  progressFill: { height: '100%', borderRadius: 999, overflow: 'hidden' },
+  progressPill: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, backgroundColor: '#FFFFFF' },
+  progressText: { fontFamily: Fonts.black, fontSize: 15, color: '#8A5406' },
+  skip: {
+    alignSelf: 'center',
+    minHeight: MIN_CHILD_TARGET - 8,
+    paddingHorizontal: SPACING.xl,
+    borderRadius: 999,
+    borderWidth: 1.5,
+    borderColor: 'rgba(184,195,234,0.45)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  skipText: { fontFamily: Fonts.bold, fontSize: 16, color: '#B8C3EA' },
   summary: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: SPACING.lg },
   bigEmoji: { fontSize: 72, lineHeight: 88 },
   title: { fontFamily: Fonts.black, textAlign: 'center' },

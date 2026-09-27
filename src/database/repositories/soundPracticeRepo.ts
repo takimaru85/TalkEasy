@@ -32,6 +32,36 @@ export const soundPracticeRepo = {
     notify('soundPractice');
   },
 
+  /**
+   * All-time counts, for badges and the progress screen. Counting rows rather than storing a
+   * total means a badge can never disagree with the practice that actually happened.
+   */
+  async lifetime(): Promise<{ attempts: number; sounds: number }> {
+    const db = await getDb();
+    const row = await db.getFirstAsync<{ attempts: number; sounds: number }>(
+      'SELECT COUNT(*) AS attempts, COUNT(DISTINCT sound_id) AS sounds FROM sound_practice_attempts',
+    );
+    return { attempts: row?.attempts ?? 0, sounds: row?.sounds ?? 0 };
+  },
+
+  /**
+   * Days on which the Daily Mission was completed: at least `target` different sounds practised
+   * on the same local day (the Home card's own rule).
+   */
+  async missionDays(target: number): Promise<number> {
+    const db = await getDb();
+    const row = await db.getFirstAsync<{ n: number }>(
+      `SELECT COUNT(*) AS n FROM (
+         SELECT date(created_at, 'localtime') AS day
+           FROM sound_practice_attempts
+          GROUP BY day
+         HAVING COUNT(DISTINCT sound_id) >= ?
+       )`,
+      target,
+    );
+    return row?.n ?? 0;
+  },
+
   /** "Today's practice": distinct sounds, total attempts and total time spent attempting. */
   async todayStats(): Promise<SoundPracticeStats> {
     const db = await getDb();

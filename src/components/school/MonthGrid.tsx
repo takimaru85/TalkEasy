@@ -5,6 +5,7 @@ import { MAX_FONT_SCALE, MIN_PARENT_TARGET, SPACING } from '@/constants/sizes';
 import type { CalendarEntry } from '@/types/models';
 import { addDays, monthRange, parseIsoDate, toIsoDate } from '@/utils/date';
 import { Icon } from '@/components/common/Icon';
+import { useTheme } from '@/theme';
 import { Fonts } from '@/theme';
 
 interface Props {
@@ -28,6 +29,9 @@ export function MonthGrid({ month, today, selected, entries, onSelect, onPrevMon
   const { from } = monthRange(month);
   const first = parseIsoDate(from) ?? new Date();
   const title = first.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+  const theme = useTheme();
+  const night = theme.night;
+  const c = theme.colors;
 
   const cells = useMemo(() => {
     const out: (string | null)[] = [];
@@ -52,22 +56,22 @@ export function MonthGrid({ month, today, selected, entries, onSelect, onPrevMon
   }, [entries]);
 
   return (
-    <View style={styles.wrap}>
+    <View style={[styles.wrap, night && { backgroundColor: c.surface, borderRadius: 24, padding: SPACING.sm, borderWidth: 1.5, borderColor: c.borderSoft }]}>
       <View style={styles.header}>
-        <Pressable onPress={onPrevMonth} accessibilityRole="button" accessibilityLabel="Previous month" style={styles.nav}>
-          <Icon name="chevron-left" size={34} />
+        <Pressable onPress={onPrevMonth} accessibilityRole="button" accessibilityLabel="Previous month" style={[styles.nav, night && { backgroundColor: c.surfaceAlt, borderColor: c.border }]}>
+          <Icon name="chevron-left" size={34} color={night ? '#FFFFFF' : undefined} />
         </Pressable>
-        <Text style={styles.title} maxFontSizeMultiplier={MAX_FONT_SCALE} accessibilityRole="header">
+        <Text style={[styles.title, night && { color: c.text }]} maxFontSizeMultiplier={MAX_FONT_SCALE} accessibilityRole="header">
           {title}
         </Text>
-        <Pressable onPress={onNextMonth} accessibilityRole="button" accessibilityLabel="Next month" style={styles.nav}>
-          <Icon name="chevron-right" size={34} />
+        <Pressable onPress={onNextMonth} accessibilityRole="button" accessibilityLabel="Next month" style={[styles.nav, night && { backgroundColor: c.surfaceAlt, borderColor: c.border }]}>
+          <Icon name="chevron-right" size={34} color={night ? '#FFFFFF' : undefined} />
         </Pressable>
       </View>
 
       <View style={styles.weekRow}>
         {WEEKDAYS.map((w, i) => (
-          <Text key={i} style={styles.weekday} maxFontSizeMultiplier={MAX_FONT_SCALE}>{w}</Text>
+          <Text key={i} style={[styles.weekday, night && { color: c.textMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>{w}</Text>
         ))}
       </View>
 
@@ -85,9 +89,9 @@ export function MonthGrid({ month, today, selected, entries, onSelect, onPrevMon
               accessibilityRole="button"
               accessibilityLabel={`${d.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })}${dayEntries.length ? `, ${dayEntries.length} items` : ''}${isToday ? ', today' : ''}`}
               accessibilityState={{ selected: isSelected }}
-              style={[styles.cell, styles.dayCell, isToday && styles.today, isSelected && styles.selected]}
+              style={[styles.cell, styles.dayCell, night && { backgroundColor: c.surfaceAlt, borderColor: c.borderSoft }, isToday && styles.today, night && isToday && { backgroundColor: c.primary, borderColor: '#FFD84D' }, isSelected && styles.selected]}
             >
-              <Text style={[styles.dayText, isToday && styles.todayText]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
+              <Text style={[styles.dayText, night && { color: c.text }, isToday && (night ? { color: '#FFFFFF' } : styles.todayText), isSelected && { color: '#13233F' }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
                 {d.getDate()}
               </Text>
               <View style={styles.dots}>

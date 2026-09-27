@@ -141,6 +141,17 @@ export const routinesRepo = {
   async setItemDone(id: number, done: boolean): Promise<void> {
     const db = await getDb();
     await db.runAsync('UPDATE routine_items SET is_done = ? WHERE id = ?', done ? 1 : 0, id);
+    // Remember the day, for the weekly summary (un-ticking the same day takes it back out).
+    const d = new Date();
+    const day = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    if (done) {
+      await db.runAsync(
+        'INSERT OR IGNORE INTO routine_log (routine_item_id, label, day, created_at) SELECT id, label, ?, ? FROM routine_items WHERE id = ?',
+        day, nowIso(), id,
+      );
+    } else {
+      await db.runAsync('DELETE FROM routine_log WHERE routine_item_id = ? AND day = ?', id, day);
+    }
     notify('routines');
   },
 

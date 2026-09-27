@@ -10,7 +10,7 @@ import { useSettings } from '@/context/SettingsContext';
 import { routinesRepo } from '@/database';
 import { useActiveRoutine, useActiveRoutineItems, useAwardStars, useSizes, useSpeak } from '@/hooks';
 import type { RootScreenProps } from '@/navigation/types';
-import { Fonts, Radius, useTheme } from '@/theme';
+import { Fonts, Radius, useTheme, shade } from '@/theme';
 import type { RoutineItem, RoutineSegment } from '@/types/models';
 import { confirm } from '@/utils/confirm';
 import { formatTime } from '@/utils/date';
@@ -68,7 +68,7 @@ export function MyDayScreen(_props: RootScreenProps<'MyDay'>) {
   };
 
   return (
-    <ChildScreen title={routine ? tContent(routine.name) : t('sectionMyDay')} emoji={SECTION_EMOJI.myday}>
+    <ChildScreen title={routine ? tContent(routine.name) : t('sectionMyDay')} emoji={SECTION_EMOJI.myday} art="myday">
       <Celebration trigger={burst} />
       {!loading && items.length === 0 ? (
         <EmptyState icon="calendar-check" title="No plan yet" message="A parent can build the day in Parent Mode." />
@@ -112,13 +112,16 @@ export function MyDayScreen(_props: RootScreenProps<'MyDay'>) {
             return (
               <View key={seg.key} style={styles.segment}>
                 <View style={styles.segmentRow} accessibilityRole="header">
-                  <Icon name={seg.icon} size={22} color={theme.highContrast ? theme.colors.text : tileInk(seg.tint)} />
-                  <Text style={[styles.segmentTitle, { fontSize: sizes.body - 1, color: theme.highContrast ? theme.colors.text : tileInk(seg.tint) }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
+                  <Icon name={seg.icon} size={22} color={theme.highContrast ? theme.colors.text : theme.night ? seg.tint : tileInk(seg.tint)} />
+                  <Text style={[styles.segmentTitle, { fontSize: sizes.body - 1, color: theme.highContrast ? theme.colors.text : theme.night ? seg.tint : tileInk(seg.tint) }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
                     {seg.label.toUpperCase()}
                   </Text>
                 </View>
                 {segItems.map((item) => {
                   const isNow = current?.id === item.id;
+                  // On the night sky a step is a solid card in its part of the day's colour; the
+                  // step happening now gets the gold rim, a finished one steps back to the panel.
+                  const deep = item.isDone ? theme.colors.surfaceAlt : tileInk(seg.tint);
                   return (
                     <Pressable
                       key={item.id}
@@ -136,6 +139,13 @@ export function MyDayScreen(_props: RootScreenProps<'MyDay'>) {
                           borderColor: isNow ? theme.colors.primary : theme.highContrast ? theme.colors.border : theme.colors.borderSoft,
                           borderWidth: isNow ? 3 : theme.highContrast ? theme.borderWidth : 1,
                         },
+                        theme.night && {
+                          backgroundColor: deep,
+                          borderColor: isNow ? theme.colors.selected : shade(deep, 1.4),
+                          borderWidth: isNow ? 3.5 : 1.5,
+                          borderBottomWidth: 5,
+                          borderBottomColor: isNow ? theme.colors.selected : shade(deep, 0.64),
+                        },
                         pressed && { opacity: 0.85 },
                       ]}
                     >
@@ -145,13 +155,13 @@ export function MyDayScreen(_props: RootScreenProps<'MyDay'>) {
                           {tContent(item.label)}
                         </Text>
                         {item.startTime || item.notes ? (
-                          <Text style={[styles.meta, { fontSize: sizes.body - 3, color: theme.colors.textMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={1}>
+                          <Text style={[styles.meta, { fontSize: sizes.body - 3, color: theme.night && !item.isDone ? 'rgba(255,255,255,0.88)' : theme.colors.textMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={1}>
                             {[item.startTime ? formatTime(item.startTime) : null, item.notes ? tContent(item.notes) : null].filter(Boolean).join(' · ')}
                           </Text>
                         ) : null}
                       </View>
-                      <View style={[styles.check, { borderColor: item.isDone ? theme.colors.success : theme.colors.borderSoft, backgroundColor: item.isDone ? theme.colors.success : theme.colors.surface }]}>
-                        {item.isDone ? <Icon name="check-bold" size={28} color="#FFFFFF" /> : isNow ? <Text style={[styles.arrow, { color: theme.colors.primaryDark }]} allowFontScaling={false}>→</Text> : null}
+                      <View style={[styles.check, { borderColor: item.isDone ? theme.colors.success : theme.colors.borderSoft, backgroundColor: item.isDone ? theme.colors.success : theme.colors.surface }, theme.night && !item.isDone && { backgroundColor: shade(deep, 0.78), borderColor: 'rgba(255,255,255,0.9)' }]}>
+                        {item.isDone ? <Icon name="check-bold" size={28} color="#FFFFFF" /> : isNow ? <Text style={[styles.arrow, { color: theme.night ? '#FFFFFF' : theme.colors.primaryDark }]} allowFontScaling={false}>→</Text> : null}
                       </View>
                     </Pressable>
                   );

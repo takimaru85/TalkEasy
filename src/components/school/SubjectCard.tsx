@@ -5,6 +5,7 @@ import { MAX_FONT_SCALE, RADIUS, SPACING } from '@/constants/sizes';
 import { useSizes } from '@/hooks/useSizes';
 import type { Subject } from '@/types/models';
 import { Icon } from '@/components/common/Icon';
+import { useCardPalette } from '@/components/common/cardPalette';
 import { Fonts } from '@/theme';
 
 interface Props {
@@ -18,6 +19,7 @@ interface Props {
 /** Large subject tile / row used on the School screens. */
 export function SubjectCard({ subject, subtitle, onPress, highlighted }: Props) {
   const sizes = useSizes();
+  const pal = useCardPalette(subject.color);
   return (
     <Pressable
       onPress={onPress}
@@ -27,23 +29,24 @@ export function SubjectCard({ subject, subtitle, onPress, highlighted }: Props) 
       hitSlop={4}
       style={({ pressed }) => [
         styles.card,
-        { backgroundColor: subject.color, minHeight: Math.max(sizes.tileHeight * 0.6, 84) },
+        pal.night ? pal.cardStyle : { backgroundColor: subject.color },
+        { minHeight: Math.max(sizes.tileHeight * 0.6, 84) },
         highlighted && styles.highlighted,
         pressed && onPress && styles.pressed,
       ]}
     >
-      <Icon name={subject.icon} size={sizes.iconSize} color={Colors.text} />
+      <Icon name={subject.icon} size={sizes.iconSize} color={pal.ink} />
       <View style={styles.text}>
-        <Text style={[styles.name, { fontSize: sizes.tileLabel + 2 }]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={2} adjustsFontSizeToFit>
+        <Text style={[styles.name, { fontSize: sizes.tileLabel + 2, color: pal.ink }]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={2} adjustsFontSizeToFit>
           {subject.name}
         </Text>
         {subtitle ? (
-          <Text style={[styles.subtitle, { fontSize: sizes.body - 2 }]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={2}>
+          <Text style={[styles.subtitle, { fontSize: sizes.body - 2, color: pal.inkMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={2}>
             {subtitle}
           </Text>
         ) : null}
       </View>
-      {onPress ? <Icon name="chevron-right" size={30} color={Colors.textMuted} /> : null}
+      {onPress ? <Icon name="chevron-right" size={30} color={pal.inkMuted} /> : null}
     </Pressable>
   );
 }

@@ -10,7 +10,7 @@ import { MAX_FONT_SCALE, SPACING } from '@/constants/sizes';
 import { useAssignmentsDueBy, useQuickButtons, useScheduleForDay, useSizes, useSpeak, useToday } from '@/hooks';
 import type { RootScreenProps } from '@/navigation/types';
 import { formatTime } from '@/utils/date';
-import { Fonts } from '@/theme';
+import { Fonts, useTheme } from '@/theme';
 
 /**
  * School Mode: the simplest possible screen for the classroom.
@@ -19,6 +19,7 @@ import { Fonts } from '@/theme';
  */
 export function SchoolModeScreen({ navigation }: RootScreenProps<'SchoolMode'>) {
   const sizes = useSizes();
+  const theme = useTheme();
   const { isoDate, dayOfWeek, time } = useToday();
   const { data: quick } = useQuickButtons(SCHOOL_MODE_QUICK);
   const { data: schedule } = useScheduleForDay(dayOfWeek);
@@ -28,7 +29,7 @@ export function SchoolModeScreen({ navigation }: RootScreenProps<'SchoolMode'>) 
   const current = schedule.find((s) => s.startTime <= time && (!s.endTime || s.endTime >= time));
 
   return (
-    <ChildScreen title="School Mode" emoji={SECTION_EMOJI.schoolMode}>
+    <ChildScreen title="School Mode" emoji={SECTION_EMOJI.schoolMode} art="school">
       <PhraseBanner phrase={lastPhrase} onRepeat={repeat} placeholder="Tap what you need" />
       <ScrollView contentContainerStyle={[styles.content, { paddingHorizontal: sizes.horizontalPadding }]}>
         <View style={[styles.grid, { gap: sizes.gap }]}>
@@ -40,7 +41,7 @@ export function SchoolModeScreen({ navigation }: RootScreenProps<'SchoolMode'>) 
 
         <SectionTitle title="Today's subjects" emoji={SECTION_EMOJI.school} />
         {schedule.length === 0 ? (
-          <Text style={[styles.empty, { fontSize: sizes.body }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
+          <Text style={[styles.empty, { fontSize: sizes.body, color: theme.colors.textMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
             No classes today.
           </Text>
         ) : (
@@ -57,7 +58,7 @@ export function SchoolModeScreen({ navigation }: RootScreenProps<'SchoolMode'>) 
 
         <SectionTitle title="Today's assignments" emoji={SECTION_EMOJI.assignments} />
         {due.length === 0 ? (
-          <Text style={[styles.empty, { fontSize: sizes.body }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
+          <Text style={[styles.empty, { fontSize: sizes.body, color: theme.colors.textMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
             Nothing due today. 🎉
           </Text>
         ) : (
@@ -73,5 +74,5 @@ export function SchoolModeScreen({ navigation }: RootScreenProps<'SchoolMode'>) 
 const styles = StyleSheet.create({
   content: { paddingVertical: SPACING.sm, gap: SPACING.md, paddingBottom: SPACING.xl },
   grid: { flexDirection: 'row', flexWrap: 'wrap' },
-  empty: { color: Colors.textMuted, fontFamily: Fonts.semibold },
+  empty: { fontFamily: Fonts.semibold },
 });

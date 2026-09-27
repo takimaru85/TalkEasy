@@ -1,326 +1,764 @@
-import React, { useMemo } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Avatar, Card, Glyph, Icon, IconTile, PressableScale, ProgressBar, ScreenContainer, SectionTitle } from '@/components/common';
-import { CommunicationTile } from '@/components/communication';
-import { ROUTINE_SEGMENT_TINT, SECTION_EMOJI } from '@/constants/school';
-import { MAX_FONT_SCALE, SPACING } from '@/constants/sizes';
-import { useProfile } from '@/context/ProfileContext';
+import React from 'react';
+import { ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Avatar, Icon, PressableScale, ScreenContainer } from '@/components/common';
 import {
-  useActiveRoutineItems,
-  useFavoriteButtons,
-  useRecentLearning,
-  useSizes,
-  useTodayLessons,
-  useSpeak,
-  useStarSummary,
-  useToday,
-} from '@/hooks';
-import { LEARNING_SUBJECTS, getActivity } from '@/learning';
-import type { RootScreenProps } from '@/navigation/types';
-import { Fonts, Radius, useTheme } from '@/theme';
+  AdventureButton,
+  GameIcon,
+  HeroSparkles,
+  GradientSurface,
+  Mascot,
+  SpaceNav,
+  SyllableChips,
+  TalkEasyLogo,
+  WorldArt,
+  WorldBackground,
+} from '@/components/adventure';
+import type { WorldArtName } from '@/adventure/worlds';
+import type { GameIconName } from '@/components/adventure/GameIcon';
+import { MAX_FONT_SCALE, MIN_CHILD_TARGET, SPACING } from '@/constants/sizes';
+import { useProfile } from '@/context/ProfileContext';
+import { useAdventure, useAdventureWorld, useCollection, useSizes, useToday, useTodayLessons, useTodaySoundPractice } from '@/hooks';
 import { useI18n } from '@/i18n';
 import type { Strings } from '@/i18n/types';
-import { formatTime } from '@/utils/date';
+import type { RootScreenProps } from '@/navigation/types';
+import { AdventureZone, Fonts, useTheme } from '@/theme';
+import { Adventure, AdventureNight, AdventureRadius, shade, type AdventureKey } from '@/theme/adventure';
+import { fitFontSize, textWidth } from '@/utils/fitText';
 
-type SectionScreen = 'Communicate' | 'AdaptiveHome' | 'School' | 'Learn' | 'MyDay' | 'Activities' | 'Favorites' | 'Feelings' | 'ParentPin';
+type Destination =
+  | 'SpeechPractice' | 'WritingPractice' | 'Learn' | 'Communicate' | 'Favorites' | 'AdaptiveHome'
+  | 'MyProgress' | 'Achievements' | 'SoundPractice'
+  | 'School' | 'MyDay' | 'Activities' | 'Feelings' | 'SchoolMode' | 'ParentPin'
+  | 'Collection' | 'ChooseAdventure';
 
-/** The Home grid. Icons use the app's IconTile style (tinted square, deep-tone glyph) — no emoji. */
-const SECTIONS: { screen: SectionScreen; labelKey: keyof Strings; icon: string; color: string }[] = [
-  { screen: 'Communicate', labelKey: 'sectionTalk', icon: 'message-processing-outline', color: '#DCEBFF' },
-  { screen: 'AdaptiveHome', labelKey: 'sectionLessons', icon: 'school-outline', color: '#FFF1C2' },
-  { screen: 'School', labelKey: 'sectionSchool', icon: 'bag-personal-outline', color: '#DDF5E3' },
-  { screen: 'Learn', labelKey: 'sectionLearn', icon: 'book-open-page-variant-outline', color: '#E8DFFF' },
-  { screen: 'MyDay', labelKey: 'sectionMyDay', icon: 'calendar-check-outline', color: '#FFE3C7' },
-  { screen: 'Activities', labelKey: 'sectionActivities', icon: 'puzzle-outline', color: '#D3F3F0' },
-  { screen: 'Favorites', labelKey: 'sectionFavorites', icon: 'star-outline', color: '#FFF1C2' },
-  { screen: 'Feelings', labelKey: 'sectionFeelings', icon: 'emoticon-happy-outline', color: '#FFDBEA' },
-  { screen: 'ParentPin', labelKey: 'sectionParent', icon: 'shield-account-outline', color: '#ECEEF2' },
-];
+/** How many different sounds today's mission asks for — small enough to finish in one sitting. */
+const DAILY_TARGET = 5;
 
-type Translate = (key: keyof Strings, vars?: Record<string, string | number>) => string;
-
-function greetingFor(hour: number, t: Translate): { text: string; emoji: string } {
-  if (hour < 12) return { text: t('goodMorning'), emoji: '☀️' };
-  if (hour < 18) return { text: t('goodAfternoon'), emoji: '🌤️' };
-  return { text: t('goodEvening'), emoji: '🌙' };
+function greetingKey(hour: number): keyof Strings {
+  if (hour < 12) return 'goodMorning';
+  if (hour < 18) return 'goodAfternoon';
+  return 'goodEvening';
 }
 
-function statusLine(day: number, hour: number, allDone: boolean, t: Translate): string {
-  if (allDone) return t('statusAllDone');
-  if (day === 0 || day === 6) return t('statusWeekend');
-  if (hour < 8) return t('statusBeforeSchool');
-  if (hour < 15) return t('statusSchoolDay');
-  if (hour < 19) return t('statusAfternoon');
-  return t('statusEvening');
-}
+/** Narrowest a More-to-Explore card may be before the row wraps to two by two. */
+/**
+ * The smallest an explore label may be before the row gives up on four across.
+ *
+ * 10, not 11: at 11 the longest label ("Activities") never fits four-up on ANY supported width,
+ * so the row would drop to two-by-two on every phone and lose the compact strip the design wants.
+ */
+const EXPLORE_LABEL_MIN = 10;
+/** A capsule minus its number: padding + border + the 15pt icon + the gap before the digits. */
+const CAPSULE_FIXED = 9 * 2 + 1.5 * 2 + 15 + 4;
+const HUD_GAP = 6;
+/** Narrower than this and the child's own name is no longer worth reading. */
+const NAME_MIN = 96;
 
 /**
- * The child's home. Everything here is driven by the profile: name, avatar, accent colour,
- * favourite phrases, favourite subjects, rewards. Layout (fixed order, top to bottom):
- * greeting → today's plan → the 8 sections → favourite phrases → continue learning → stars.
+ * More to Explore colours: softer than the quest cards (these are secondary), but solid and
+ * saturated enough to belong to the same palette — golden, mint, lavender, coral — with a dark ink
+ * of the same hue for the label, which reads better than white on these lighter fills.
+ */
+const EXPLORE_TONES = {
+  myday: { from: '#FFE38F', to: '#F6C343', rim: '#FFF0BF', ink: '#553800' },
+  school: { from: '#A6EDCB', to: '#5CCB98', rim: '#CFF7E3', ink: '#0D4A2F' },
+  activities: { from: '#D3C1FF', to: '#A688F2', rim: '#E7DEFF', ink: '#32176B' },
+  feelings: { from: '#FFC2B4', to: '#F5908E', rim: '#FFDCD3', ink: '#651D24' },
+} as const;
+
+/**
+ * Home — the TalkEasy universe.
+ *
+ * Every part is built for the theme rather than dropped on top of a space wallpaper: the sky is
+ * layered (nebula → planets → stars), Pip wears an explorer's helmet and headset, the level bar
+ * is a mission meter, the destinations are glowing consoles and the bottom bar is a flight deck.
+ *
+ * Two deliberate limits:
+ *  - The night surface STOPS HERE. The other child screens were built for a light background with
+ *    dark body text; flipping the shared container would make twenty screens unreadable at once.
+ *  - The bottom bar NAVIGATES, it is not a tab navigator. The app is a stack where every child
+ *    screen carries a Home button, which the child has already learned; real tabs would
+ *    restructure all 27 routes, and the brief says not to change navigation logic.
+ *
+ * Every number is derived from practice that really happened (hooks/useAdventure, today's sound
+ * practice) — this screen never shows a figure the app cannot justify.
  */
 export function ChildHomeScreen({ navigation }: RootScreenProps<'ChildHome'>) {
   const sizes = useSizes();
   const theme = useTheme();
+  const { t } = useI18n();
   const { profile, displayName } = useProfile();
-  const { now, dayOfWeek, isoDate } = useToday();
+  const { now, isoDate } = useToday();
   const { data: todayLessons } = useTodayLessons(isoDate);
-  const { data: routine } = useActiveRoutineItems();
-  const { data: favorites } = useFavoriteButtons();
-  const { data: recentLearning } = useRecentLearning(1);
-  const { data: stars } = useStarSummary();
-  const { lastButtonId, speakButton, speakFeedback } = useSpeak();
-  const { t, tContent } = useI18n();
+  const { data: soundToday } = useTodaySoundPractice();
+  const adventure = useAdventure();
+  // The child's interest world: scenery, collectibles and a little artwork. Never the layout.
+  const { world, unchosen } = useAdventureWorld();
+  const collection = useCollection();
+  const { width, height } = useWindowDimensions();
 
-  const greeting = greetingFor(now.getHours(), t);
-  const done = routine.filter((r) => r.isDone).length;
-  const currentIndex = routine.findIndex((r) => !r.isDone);
-  const current = currentIndex >= 0 ? routine[currentIndex] : null;
-  const next = currentIndex >= 0 ? routine.slice(currentIndex + 1).find((r) => !r.isDone) ?? null : null;
-  const status = statusLine(dayOfWeek, now.getHours(), routine.length > 0 && done === routine.length, t);
-  const dayName = now.toLocaleDateString(undefined, { weekday: 'long' });
+  // High contrast opts out of the universe: a starfield behind text is what that mode removes.
+  const night = !theme.highContrast;
+  const ink = night ? AdventureNight.ink : theme.colors.text;
+  const inkMuted = night ? AdventureNight.inkMuted : theme.colors.textMuted;
 
-  // "Continue learning": last played activity, else the first activity of a favourite subject.
-  const suggestion = useMemo(() => {
-    const last = recentLearning[0] ? getActivity(recentLearning[0].activityKey) : undefined;
-    if (last) return { activity: last, label: t('continueLabel') };
-    const fav = LEARNING_SUBJECTS.find((s) => profile.favorites.subjects.some((f) => s.name.toLowerCase().includes(f.toLowerCase()) || f.toLowerCase().includes(s.name.toLowerCase())));
-    const subject = fav ?? LEARNING_SUBJECTS[0];
-    return { activity: subject.activities[0], label: t('startLabel') };
-  }, [recentLearning, profile.favorites.subjects]);
-  const suggestionSubject = LEARNING_SUBJECTS.find((s) => s.key === suggestion.activity.subjectKey);
+  const contentWidth = width - sizes.horizontalPadding * 2;
+  const half = (contentWidth - SPACING.md) / 2;
+  const exploreLabels = (['sectionMyDay', 'sectionSchool', 'sectionActivities', 'sectionFeelings'] as const).map((k) => t(k));
+  const longestExplore = exploreLabels.reduce((a, b) => (b.length > a.length ? b : a));
+  /**
+   * More to Explore: four compact cards in ONE row, dropping to two rows of two when four would
+   * squeeze the longest label ("Activities") below EXPLORE_LABEL_MIN.
+   *
+   * The question is asked of the FITTER, not of a width constant: the answer depends on the OS
+   * font scale as much as the screen, and the old width-only rule said yes on a 375pt phone while
+   * the label needed more room than its tile had and ran over its neighbour. Passing min 1 asks
+   * for the true fit rather than the clamped one.
+   */
+  const exploreRoom = (cols: number) => (contentWidth - SPACING.sm * (cols - 1)) / cols - SPACING.xs * 2 - 4;
+  const exploreColumns = fitFontSize(longestExplore, exploreRoom(4), 14, 'line', 1) >= EXPLORE_LABEL_MIN ? 4 : 2;
+  const exploreWidth = (contentWidth - SPACING.sm * (exploreColumns - 1)) / exploreColumns;
+  const exploreArt = Math.round(Math.min(44, exploreWidth * 0.5));
+  // One label size for all four, so the row reads evenly.
+  const exploreLabelSize = exploreLabels.reduce((min, l) => Math.min(min, fitFontSize(l, exploreRoom(exploreColumns), 14, 'line', EXPLORE_LABEL_MIN)), 14);
 
-  const nextReward = stars.nextReward;
-  const rewardProgress = nextReward ? Math.min(1, stars.total / nextReward.starsRequired) : 1;
-  const tileHeight = Math.max(sizes.tileHeight * 0.85, 118);
-  const tileWidth = `${Math.floor(100 / sizes.gridColumns) - 2}%` as const;
+  /**
+   * Decorative world art and the invite title both scale with the window, so a 320pt phone gets
+   * smaller prizes and a smaller (still readable) title rather than an overlap. Nothing here is a
+   * fixed pixel position.
+   */
+  const worldArtSize = width < 360 ? 24 : width < 400 ? 27 : 30;
 
-  return (
-    <ScreenContainer>
-      <ScrollView contentContainerStyle={[styles.content, { paddingHorizontal: sizes.horizontalPadding }]}>
-        {/* Greeting */}
-        <Pressable
-          onPress={() => speakFeedback(`${greeting.text}, ${displayName}! Today is ${dayName}. ${status.replace(/[^\w\s'!.,]/g, '')}`)}
-          accessibilityRole="button"
-          accessibilityLabel={`${greeting.text} ${displayName}. Today is ${dayName}. ${status}. Tap to hear.`}
-        >
-          <Card color={theme.colors.primarySoft} style={styles.greeting}>
-            <Avatar avatar={profile.avatar} photoUri={profile.photoUri} size={Math.max(72, sizes.iconSize + 24)} />
-            <View style={styles.greetingText}>
-              <Text style={[styles.hello, { fontSize: sizes.heading + 2, color: theme.colors.text }]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={2} adjustsFontSizeToFit>
-                {greeting.text}, {displayName}!
-              </Text>
-              <Text style={[styles.sub, { fontSize: sizes.body, color: theme.colors.textMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
-                Today is {dayName}.
-              </Text>
-              <Text style={[styles.status, { fontSize: sizes.body, color: theme.colors.text }]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={2}>
-                {status}
-              </Text>
-            </View>
-          </Card>
-        </Pressable>
+  /**
+   * Avatar, name and three capsules share one line only while the capsules still leave the child's
+   * name a readable strip. The cost is MEASURED rather than guessed from a width breakpoint,
+   * because the capsules grow on their own: 9 stars becomes 10 becomes 100, and the OS font scale
+   * grows every digit again. Below NAME_MIN the capsules drop to their own centred row — same
+   * capsules, same order, nothing hidden.
+   */
+  const capsulesWidth =
+    [adventure.totalStars, adventure.streak, adventure.level].reduce(
+      (w, n) => w + CAPSULE_FIXED + textWidth(String(n), 14),
+      0,
+    ) + HUD_GAP * 2;
+  const hudStacked = contentWidth - (MIN_CHILD_TARGET - 8) - HUD_GAP * 2 - 6 - capsulesWidth < NAME_MIN;
+  const inviteTitleSize = fitFontSize(t('advChooseCta'), contentWidth - SPACING.md * 2 - 34, 15, 'line', 12);
 
-        {/* Today's plan */}
-        {routine.length > 0 ? (
-          <PressableScale onPress={() => navigation.navigate('MyDay')} accessibilityRole="button" accessibilityLabel={`Today's plan, ${done} of ${routine.length} done. ${current ? `Now: ${current.label}.` : ''} ${next ? `Next: ${next.label}.` : ''}`}>
-            <Card>
-              <View style={styles.planHeader}>
-                <Text style={[styles.planTitle, { fontSize: sizes.body + 2, color: theme.colors.text }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
-                  {SECTION_EMOJI.myday} Today's plan
-                </Text>
-                <Icon name="chevron-right" size={26} color={theme.colors.textMuted} />
-              </View>
-              <ProgressBar value={routine.length ? done / routine.length : 0} label={`${done} / ${routine.length}`} color={theme.colors.success} />
-              <View style={styles.planRows}>
-                {current ? (
-                  <View style={[styles.planRow, { backgroundColor: theme.tint(theme.colors.primarySoft), borderColor: theme.colors.primary }]}>
-                    <Text style={[styles.planMark, { color: theme.colors.primaryDark }]} allowFontScaling={false}>→</Text>
-                    <IconTile name={current.icon} size={40} tint={ROUTINE_SEGMENT_TINT[current.segment]} />
-                    <Text style={[styles.planLabel, { fontSize: sizes.body + 1, color: theme.colors.text }]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={1}>
-                      {current.label}
-                    </Text>
-                    {current.startTime ? <Text style={[styles.planTime, { color: theme.colors.textMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>{formatTime(current.startTime)}</Text> : null}
-                  </View>
-                ) : null}
-                {next ? (
-                  <View style={[styles.planRow, { backgroundColor: theme.colors.surface, borderColor: theme.colors.borderSoft }]}>
-                    <Text style={[styles.planMark, { color: theme.colors.textMuted }]} allowFontScaling={false}>○</Text>
-                    <IconTile name={next.icon} size={40} tint={ROUTINE_SEGMENT_TINT[next.segment]} muted />
-                    <Text style={[styles.planLabel, { fontSize: sizes.body + 1, color: theme.colors.textMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={1}>
-                      {next.label}
-                    </Text>
-                    {next.startTime ? <Text style={[styles.planTime, { color: theme.colors.textMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>{formatTime(next.startTime)}</Text> : null}
-                  </View>
-                ) : null}
-              </View>
-            </Card>
-          </PressableScale>
-        ) : null}
+  /**
+   * The hero is a two-column row, and the columns have to be told where to stop.
+   *
+   * Pip's speech bubble is wider than Pip: at the largest font scale "Let's speak!" made the art
+   * column ~154pt, which on a 320pt phone left LET'S GO! and the tagline about 90pt to share and
+   * they ran straight over the mascot. The art column now takes a SHARE of the row (never more
+   * than the mascot needs), the bubble is clipped to it, and all three strings are measured into
+   * the room that remains rather than trusting adjustsFontSizeToFit, which Android ignores here.
+   */
+  const heroInner = contentWidth - SPACING.lg * 2 - 3;
+  const heroArtW = Math.round(Math.min(122, Math.max(84, heroInner * 0.36)));
+  const heroTextW = heroInner - heroArtW - SPACING.sm - SPACING.xs;
+  const headlineSize = fitFontSize(t('advLetsGo'), heroTextW, sizes.heading + 8, 'line', 18);
+  // Two lines, so the fitter is given two lines' worth of room.
+  const taglineSize = fitFontSize(t('advTagline'), heroTextW * 2, 15, 'line', 12);
+  const bubbleSize = fitFontSize(t('advPipLine'), heroArtW - SPACING.md * 2, 13, 'line', 9);
 
-        {/* Today's schoolwork (Adaptive Learning) */}
-        {todayLessons.length > 0 ? (
-          <PressableScale onPress={() => navigation.navigate('AdaptiveHome')} accessibilityRole="button" accessibilityLabel={`Today's schoolwork, ${todayLessons.filter((l) => l.activityCount > 0 && l.completedCount >= l.activityCount).length} of ${todayLessons.length} lessons done`}>
-            <Card color="#FFF1C2">
-              <View style={styles.planHeader}>
-                <Text style={[styles.planTitle, { fontSize: sizes.body + 2, color: theme.colors.text }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
-                  Today's schoolwork
-                </Text>
-                <Icon name="chevron-right" size={26} color={theme.colors.textMuted} />
-              </View>
-              <View style={styles.planRows}>
-                {todayLessons.slice(0, 3).map((l) => {
-                  const complete = l.activityCount > 0 && l.completedCount >= l.activityCount;
-                  return (
-                    <View key={l.id} style={[styles.planRow, { backgroundColor: theme.colors.surface, borderColor: complete ? theme.colors.success : theme.colors.borderSoft }]}>
-                      <Text style={[styles.planMark, { color: complete ? theme.colors.success : theme.colors.textMuted }]} allowFontScaling={false}>{complete ? '✓' : '○'}</Text>
-                      <Glyph value={l.subjectIcon} size={40} />
-                      <Text style={[styles.planLabel, { fontSize: sizes.body + 1, color: theme.colors.text }]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={1}>
-                        {l.subjectName} – {l.title}
-                      </Text>
-                    </View>
-                  );
-                })}
-              </View>
-            </Card>
-          </PressableScale>
-        ) : null}
+  const unfinished = todayLessons.filter((l) => l.activityCount > 0 && l.completedCount < l.activityCount);
+  const startScreen: Destination = unfinished.length > 0 ? 'AdaptiveHome' : 'SpeechPractice';
+  const dailyDone = Math.min(soundToday.soundsPracticed, DAILY_TARGET);
 
-        {/* Sections */}
-        <Text style={[styles.question, { fontSize: sizes.body + 2, color: theme.colors.textMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
-          What would you like to do?
+  const go = (screen: Destination) => () => navigation.navigate(screen);
+
+  /**
+   * Cards are SOLID, not glass. A saturated fill separates a destination from the sky far more
+   * clearly than a translucent panel, which is what a child needs to see at a glance — and it is
+   * what makes the screen read as a game rather than a dashboard over a wallpaper.
+   */
+  const cardStyle = (c: AdventureKey) =>
+    night
+      ? {
+          backgroundColor: Adventure[c].to,
+          // A lit rim on top and sides, a darker "lip" underneath: the card reads as a raised,
+          // pressable game button rather than a flat panel.
+          borderColor: shade(Adventure[c].from, 1.35),
+          borderBottomColor: shade(Adventure[c].to, 0.68),
+        }
+      : { backgroundColor: Adventure[c].tint, borderColor: theme.colors.borderSoft };
+
+  /**
+   * A destination console. Narrow (half-width) cards stack: icon and arrow on top, the words
+   * underneath at full width, so a subtitle like "Trace letters, numbers and words" never has to
+   * squeeze beside the icon.
+   */
+  const Console = ({
+    title, subtitle, art, worldArt, color, width: w, onPress, badge, children, featured, decor,
+  }: {
+    /** The destination's illustrated game icon (components/adventure/GameIcon). */
+    title: string; subtitle: string; art: GameIconName; color: AdventureKey; width: number;
+    /** World artwork drawn instead of `art` (the Daily Mission follows the child's world). */
+    worldArt?: WorldArtName;
+    onPress: () => void; badge?: string; children?: React.ReactNode;
+    /** The core feature: a brighter rim, a stronger glow and a bigger icon, so it outranks its neighbours. */
+    featured?: boolean;
+    /** Two or three tiny themed marks (stars, letters, sound waves) in a free corner — never behind text. */
+    decor?: string[];
+  }) => {
+    const c = Adventure[color];
+    const stacked = w < 260;
+    // The illustration is a focal point of the card, so it is drawn larger than the old glyph plate.
+    const disc = featured ? 76 : stacked ? 62 : 68;
+    const textWidth = stacked ? w - SPACING.lg * 2 : w - SPACING.lg * 2 - disc - SPACING.md * 2 - 40;
+    // A narrow card keeps its title on ONE line ("Learn & Trace"), so it is fitted as a whole line.
+    const titleSize = fitFontSize(title, textWidth, featured ? sizes.tileLabel + 2 : sizes.tileLabel, stacked ? 'line' : 'word', 14);
+
+    // An illustrated game icon placed straight on the card — the object itself is colourful, so it
+    // needs no container.
+    const iconPlate = (
+      <View style={[styles.art, { width: disc, height: disc }]}>
+        {worldArt ? <WorldArt name={worldArt} size={disc} /> : <GameIcon name={art} size={disc} />}
+      </View>
+    );
+
+    const trailing = badge ? (
+      <View style={[styles.badge, night ? styles.badgeSolid : { backgroundColor: `${c.from}33`, borderColor: `${c.from}88` }]}>
+        <Text style={[styles.badgeText, { color: c.ink }]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={1}>
+          {badge}
         </Text>
-        <View style={[styles.grid, { gap: sizes.gap }]}>
-          {SECTIONS.map((s) => (
-            <PressableScale
-              key={s.screen}
-              onPress={() => navigation.navigate(s.screen)}
-              accessibilityRole="button"
-              accessibilityLabel={t(s.labelKey)}
-              hitSlop={4}
-              style={{ width: tileWidth }}
-            >
-              <View style={[styles.tile, theme.shadow, { height: tileHeight, backgroundColor: theme.colors.surface, borderColor: theme.highContrast ? theme.colors.border : theme.colors.borderSoft, borderWidth: theme.highContrast ? theme.borderWidth : 1 }]}>
-                <IconTile name={s.icon} size={Math.round(Math.min(sizes.iconSize + 12, tileHeight * 0.5))} tint={s.color} />
-                <Text style={[styles.tileLabel, { fontSize: sizes.tileLabel, color: theme.colors.text }]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={1} adjustsFontSizeToFit>
-                  {t(s.labelKey)}
-                </Text>
-              </View>
-            </PressableScale>
+      </View>
+    ) : (
+      <View
+        style={[
+          styles.arrow,
+          night ? [styles.gameArrow, { backgroundColor: shade(c.to, 0.78), shadowColor: shade(c.to, 0.45) }] : { backgroundColor: c.tint },
+        ]}
+      >
+        <Icon name="chevron-right" size={24} color={night ? '#FFFFFF' : c.ink} />
+      </View>
+    );
+
+    // A badge already occupies the top-right of a wide card, so a corner decoration there would
+    // eventually sit on top of it once the badge grows (a longer count, a larger font scale).
+    // Stacked cards put their decoration inline, so they are unaffected.
+    const decoration =
+      night && decor?.length && (stacked || !badge) ? (
+        <View style={stacked ? styles.decorInline : styles.decorCorner} pointerEvents="none">
+          {decor.map((d, i) => (
+            <Icon key={`${d}-${i}`} name={d} size={i === 0 ? 18 : 13} color="#FFFFFF" />
           ))}
         </View>
-        <PressableScale
-          onPress={() => navigation.navigate('SpeechPractice')}
-          accessibilityRole="button"
-          accessibilityLabel={`${t('spTitle')}. ${t('spSubtitle')}`}
+      ) : null;
+
+    const words = (
+      <View style={stacked ? styles.consoleTextStacked : styles.consoleText}>
+        <Text
+          style={[styles.consoleTitle, { fontSize: titleSize, color: night ? '#FFFFFF' : ink }]}
+          maxFontSizeMultiplier={MAX_FONT_SCALE}
+          numberOfLines={stacked ? 1 : 2}
+          textBreakStrategy="simple"
         >
-          <View style={[styles.schoolMode, theme.shadow, { backgroundColor: theme.colors.surface, borderColor: theme.highContrast ? theme.colors.border : theme.colors.borderSoft }]}>
-            <IconTile name="microphone-outline" size={44} tint="#FFD9D3" />
-            <View style={styles.soundText}>
-              <Text style={[styles.schoolModeText, { fontSize: sizes.body + 2, color: theme.colors.text }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
-                {t('spTitle')}
-              </Text>
-              <Text style={[styles.soundSubtitle, { color: theme.colors.textMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={2}>
-                {t('spSubtitle')}
-              </Text>
-            </View>
-            <Icon name="chevron-right" size={26} color={theme.colors.textMuted} />
-          </View>
-        </PressableScale>
+          {title}
+        </Text>
+        <Text style={[styles.consoleSub, { color: night ? 'rgba(255,255,255,0.94)' : inkMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={2}>
+          {subtitle}
+        </Text>
+      </View>
+    );
 
-        <PressableScale onPress={() => navigation.navigate('SchoolMode')} accessibilityRole="button" accessibilityLabel="School Mode">
-          <View style={[styles.schoolMode, theme.shadow, { backgroundColor: theme.colors.surface, borderColor: theme.highContrast ? theme.colors.border : theme.colors.borderSoft }]}>
-            <IconTile name="google-classroom" size={44} tint="#DDF5E3" />
-            <Text style={[styles.schoolModeText, { fontSize: sizes.body + 2, color: theme.colors.text }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>School Mode</Text>
-            <Icon name="chevron-right" size={26} color={theme.colors.textMuted} />
-          </View>
-        </PressableScale>
-
-        {/* Favourite phrases */}
-        {favorites.length > 0 ? (
-          <>
-            <SectionTitle title={`${displayName}'s favorites`} emoji={SECTION_EMOJI.favorites} />
-            <View style={[styles.favRow, { gap: sizes.gap }]}>
-              {favorites.slice(0, 3).map((b) => (
-                <CommunicationTile key={b.id} button={b} selected={b.id === lastButtonId} onPress={speakButton} width={(sizes.tileWidth * sizes.columns + sizes.gap * (sizes.columns - 1) - sizes.gap * 2) / 3} compact />
-              ))}
-            </View>
-          </>
-        ) : null}
-
-        {/* Continue learning */}
-        <SectionTitle title={t('continueLearning')} emoji={SECTION_EMOJI.learn} />
-        <PressableScale onPress={() => navigation.navigate('LearnActivity', { activityKey: suggestion.activity.key })} accessibilityRole="button" accessibilityLabel={`${suggestion.label} ${suggestion.activity.title}, ${suggestionSubject?.name ?? ''}`}>
-          <Card color={suggestionSubject?.color}>
-            <View style={styles.learnRow}>
-              <Glyph value={suggestion.activity.emoji} size={56} />
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.learnTitle, { fontSize: sizes.body + 3, color: theme.colors.text }]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={1}>
-                  {suggestion.activity.title}
-                </Text>
-                <Text style={[styles.sub, { fontSize: sizes.body - 2, color: theme.colors.textMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
-                  {suggestionSubject?.name} · {suggestion.label}
-                </Text>
-              </View>
-              <View style={[styles.playBtn, { backgroundColor: theme.colors.primary }]}>
-                <Icon name="play" size={30} color="#FFFFFF" />
-              </View>
-            </View>
-          </Card>
-        </PressableScale>
-
-        {/* Stars */}
-        <SectionTitle title={`${displayName}'s stars`} emoji="⭐" trailing={`${stars.total} ⭐`} />
-        <Card>
-          {nextReward ? (
+    return (
+      <PressableScale onPress={onPress} accessibilityRole="button" accessibilityLabel={`${title}. ${subtitle}${badge ? `. ${badge}` : ''}`} hitSlop={4} style={{ width: w }}>
+        <View
+          style={[
+            styles.console,
+            cardStyle(color),
+            night && [styles.solidLift, { shadowColor: c.from }],
+            featured && night && styles.featuredLift,
+          ]}
+        >
+          {night ? (
             <>
-              <Text style={[styles.rewardLine, { fontSize: sizes.body, color: theme.colors.text }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
-                {stars.total >= nextReward.starsRequired ? `You can get: ${nextReward.icon} ${tContent(nextReward.title)}!` : `${nextReward.starsRequired - stars.total} more for ${nextReward.icon} ${tContent(nextReward.title)}`}
-              </Text>
-              <ProgressBar value={rewardProgress} label={`${Math.min(stars.total, nextReward.starsRequired)} / ${nextReward.starsRequired}`} color={theme.colors.selected} />
+              <GradientSurface from={c.from} to={c.to} direction="vertical" />
+              {/* Gloss that FADES out, instead of a hard-edged band across the middle. */}
+              <View style={styles.gloss} pointerEvents="none">
+                <GradientSurface from="#FFFFFF" to="#FFFFFF" direction="vertical" fromOpacity={0.34} toOpacity={0} />
+              </View>
             </>
-          ) : (
-            <Text style={[styles.rewardLine, { fontSize: sizes.body, color: theme.colors.text }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
-              {stars.total} stars so far. Keep going!
-            </Text>
-          )}
-          {stars.earnedToday > 0 ? (
-            <Text style={[styles.sub, { fontSize: sizes.body - 2, color: theme.colors.textMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
-              +{stars.earnedToday} today
-            </Text>
           ) : null}
-        </Card>
-      </ScrollView>
-    </ScreenContainer>
+          {stacked ? (
+            <View style={styles.stackTop}>
+              {iconPlate}
+              {decoration ?? <View style={styles.flex} />}
+              {trailing}
+            </View>
+          ) : null}
+          {stacked ? (
+            words
+          ) : (
+            <View style={styles.consoleHead}>
+              {iconPlate}
+              {words}
+              {trailing}
+            </View>
+          )}
+          {stacked ? null : decoration}
+          {children}
+        </View>
+      </PressableScale>
+    );
+  };
+
+  return (
+    <AdventureZone>
+      <ScreenContainer background={night ? AdventureNight.bottom : undefined}>
+        {night ? <WorldBackground world={world.id} width={width} height={height} /> : null}
+
+        <ScrollView
+          style={styles.flex}
+          contentContainerStyle={[styles.content, { paddingHorizontal: sizes.horizontalPadding }]}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Flight HUD: who is flying, and what they have collected. */}
+          <View style={hudStacked ? styles.hudStacked : styles.hud}>
+            <View style={[styles.hudWho, !hudStacked && styles.hudWhoFill]}>
+              <Avatar avatar={profile.avatar} photoUri={profile.photoUri} size={MIN_CHILD_TARGET - 8} />
+              <View style={styles.hudName}>
+                <Text style={[styles.greeting, { color: inkMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={1}>
+                  {t(greetingKey(now.getHours()))}
+                </Text>
+                <Text
+                  style={[styles.name, { fontSize: sizes.heading - 4, color: ink }]}
+                  maxFontSizeMultiplier={MAX_FONT_SCALE}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.7}
+                >
+                  {displayName}
+                </Text>
+              </View>
+            </View>
+            <View style={hudStacked ? styles.hudStatsRow : styles.hudStats}>
+              <Capsule icon="star" tone={Adventure.sun.from} value={adventure.totalStars} label={t('advStars', { n: adventure.totalStars })} night={night} ink={ink} />
+              <Capsule icon="fire" tone={Adventure.coral.from} value={adventure.streak} label={t('advStreak', { n: adventure.streak })} night={night} ink={ink} />
+              <Capsule icon="shield-star" tone={Adventure.grape.from} value={adventure.level} label={t('advLevel', { n: adventure.level })} night={night} ink={ink} />
+            </View>
+          </View>
+
+          <TalkEasyLogo size={Math.min(42, sizes.heading + 8)} tagline={t('advTaglineWorld')} />
+
+          {/* Hero: Pip in the helmet, the call to fly, and the mission meter. */}
+          <View style={[styles.hero, night ? styles.heroSolid : { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+            <View style={styles.heroTop}>
+              <View style={[styles.mascotWrap, { width: heroArtW }]}>
+                {night ? <HeroSparkles size={Math.min(heroArtW + 28, sizes.iconSize + 92)} /> : null}
+                <Mascot size={Math.min(heroArtW, sizes.iconSize + 64)} mood="cheer" space={night && world.id === 'space'} />
+                {/* Pip speaks first — the app's whole point, said by the character. */}
+                <View style={[styles.bubble, night ? { backgroundColor: '#FFFFFF' } : { backgroundColor: theme.colors.surface, borderWidth: 1.5, borderColor: theme.colors.border }]}>
+                  <Text style={[styles.bubbleText, { fontSize: bubbleSize }]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={1}>
+                    {t('advPipLine')}
+                  </Text>
+                  <View style={styles.bubbleTail} />
+                </View>
+              </View>
+              <View style={styles.heroText}>
+                <Text
+                  style={[styles.headline, { fontSize: headlineSize, color: night ? Adventure.sun.from : theme.colors.text }]}
+                  maxFontSizeMultiplier={MAX_FONT_SCALE}
+                  numberOfLines={1}
+                >
+                  {t('advLetsGo')}
+                </Text>
+                <Text
+                  style={[styles.tagline, { fontSize: taglineSize, lineHeight: Math.round(taglineSize * 1.35), color: ink }]}
+                  maxFontSizeMultiplier={MAX_FONT_SCALE}
+                  numberOfLines={2}
+                >
+                  {t('advTagline')}
+                </Text>
+              </View>
+            </View>
+
+            <View
+              accessibilityRole="progressbar"
+              accessibilityLabel={`${t('advLevel', { n: adventure.level })}, ${adventure.title}. ${t('advStarsOf', { done: adventure.starsIntoLevel, total: adventure.starsPerLevel })}`}
+              accessibilityValue={{ now: Math.round(adventure.progress * 100), min: 0, max: 100 }}
+              style={[styles.meter, night && { backgroundColor: 'rgba(8,11,38,0.55)', borderColor: AdventureNight.border }]}
+            >
+              <View style={styles.meterTop}>
+                <Text style={[styles.level, { color: night ? Adventure.sun.from : theme.colors.text }]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={1}>
+                  {t('advLevel', { n: adventure.level })} · {adventure.title}
+                </Text>
+                <Text style={[styles.meterValue, { color: ink }]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={1}>
+                  {t('advStarsOf', { done: adventure.starsIntoLevel, total: adventure.starsPerLevel })}
+                </Text>
+              </View>
+              <View style={[styles.track, { backgroundColor: night ? 'rgba(255,255,255,0.16)' : theme.colors.surfaceAlt }]}>
+                <View style={[styles.fill, { width: `${Math.round(adventure.progress * 100)}%` }]}>
+                  <GradientSurface from={Adventure.sun.from} to={Adventure.sun.to} direction="vertical" />
+                </View>
+              </View>
+            </View>
+
+            {/* The child's world: a first-time invitation to choose one, then their collection. */}
+            {night ? (
+              unchosen ? (
+                <PressableScale onPress={go('ChooseAdventure')} accessibilityRole="button" accessibilityLabel={t('advChooseCta')} hitSlop={4}>
+                  {/* Two rows on purpose. Side by side, the four worlds and this title fought for
+                      the same strip and the text spilled straight over the art on a narrow phone. */}
+                  <View style={[styles.strip, styles.stripInvite, styles.stripStacked]}>
+                    <View style={styles.stripTitleRow}>
+                      <Text
+                        style={[styles.stripText, { fontSize: inviteTitleSize, color: '#5A3A00' }]}
+                        maxFontSizeMultiplier={MAX_FONT_SCALE}
+                        numberOfLines={1}
+                      >
+                        {t('advChooseCta')}
+                      </Text>
+                      <Icon name="chevron-right" size={22} color="#5A3A00" />
+                    </View>
+                    <View style={styles.stripArtRow}>
+                      {(['world-space', 'world-dinosaurs', 'world-animals', 'world-vehicles'] as const).map((e) => (
+                        <WorldArt key={e} name={e} size={worldArtSize} />
+                      ))}
+                    </View>
+                  </View>
+                </PressableScale>
+              ) : (
+                <PressableScale
+                  onPress={go('Collection')}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${t('advMyCollection')}. ${t('advFoundOf', { n: collection.found, total: collection.items.length })}`}
+                  hitSlop={4}
+                >
+                  <View style={styles.strip}>
+                    <View style={styles.stripArt}>
+                      {collection.items.map((item) => (
+                        <WorldArt key={item.id} name={item.art} size={worldArtSize} locked={!item.found} />
+                      ))}
+                    </View>
+                    <Text style={[styles.stripText, { color: ink }]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={1}>
+                      {`${collection.found} / ${collection.items.length}`}
+                    </Text>
+                    <Icon name="chevron-right" size={22} color={inkMuted} />
+                  </View>
+                </PressableScale>
+              )
+            ) : null}
+          </View>
+
+          <AdventureButton
+            label={t('advStart')}
+            sublabel={t('advContinue')}
+            icon="rocket-launch-outline"
+            art="mission"
+            color="sun"
+            onPress={go(startScreen)}
+          />
+
+          {/* Speech Practice is the core feature, so it gets the full width and the syllables. */}
+          <Console
+            title={t('questSpeech')}
+            subtitle={t('questSpeechSub')}
+            art="speech"
+            color="lagoon"
+            width={contentWidth}
+            featured
+            decor={['waveform', 'star-four-points', 'message-outline']}
+            onPress={go('SpeechPractice')}
+          >
+            <SyllableChips />
+          </Console>
+
+          <View style={styles.pair}>
+            <Console title={t('questTrace')} subtitle={t('questTraceSub')} art="trace" color="grape" width={half} decor={['alpha-a', 'alpha-b', 'star-four-points']} onPress={go('WritingPractice')} />
+            <Console title={t('questTalk')} subtitle={t('questTalkSub')} art="talk" color="sky" width={half} decor={['waveform', 'star-four-points']} onPress={go('Communicate')} />
+          </View>
+          <View style={styles.pair}>
+            <Console title={t('questWords')} subtitle={t('questWordsSub')} art="words" color="magenta" width={half} decor={['star-four-points', 'cards-outline']} onPress={go('Favorites')} />
+            <Console title={t('questPlay')} subtitle={t('questPlaySub')} art="play" color="coral" width={half} decor={['star-four-points', 'gamepad-variant-outline']} onPress={go('Learn')} />
+          </View>
+
+          <Console title={t('questLessons')} subtitle={t('questLessonsSub')} art="lessons" color="grass" width={contentWidth} decor={['book-open-variant', 'star-four-points']} onPress={go('AdaptiveHome')} />
+          <Console
+            title={t('advDaily')}
+            subtitle={t('advDailySub')}
+            art="mission"
+            worldArt={world.id === 'space' ? undefined : world.missionArt}
+            color="sun"
+            width={contentWidth}
+            badge={`${dailyDone} / ${DAILY_TARGET}`}
+            decor={['orbit', 'star-four-points', 'star-four-points']}
+            onPress={go('SoundPractice')}
+          >
+            <View style={styles.missionFoot}>
+              {dailyDone >= DAILY_TARGET ? (
+                <View style={[styles.reward, night ? styles.chipOnSolid : { borderColor: `${Adventure.grass.from}AA`, backgroundColor: `${Adventure.grass.from}22` }]}>
+                  <Icon name="check-decagram" size={15} color={night ? '#FFFFFF' : Adventure.grass.from} />
+                  <Text style={[styles.rewardText, { color: night ? '#FFFFFF' : Adventure.grass.ink }]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={1}>
+                    {t('advMissionDone')}
+                  </Text>
+                </View>
+              ) : (
+                <View style={[styles.reward, night ? styles.rewardSolid : { borderColor: `${Adventure.sun.from}88` }]}>
+                  <Icon name="star" size={16} color={Adventure.sun.to} />
+                  <Text style={[styles.rewardText, { color: Adventure.sun.ink }]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={1}>
+                    {t('advDailyReward')}
+                  </Text>
+                </View>
+              )}
+              <View style={styles.missionBar}>
+                <View style={[styles.missionTrack, { backgroundColor: night ? 'rgba(0,0,0,0.22)' : theme.colors.surfaceAlt }]}>
+                  <View style={[styles.missionFill, { width: `${Math.max(6, Math.round((dailyDone / DAILY_TARGET) * 100))}%`, backgroundColor: '#FFFFFF' }]} />
+                </View>
+                {/* The rocket rides the bar: progress a child can see, not just a number. */}
+                <View style={[styles.missionRocket, { left: `${Math.round((dailyDone / DAILY_TARGET) * 100)}%` }]} pointerEvents="none">
+                  {world.id === 'space' ? <GameIcon name="mission" size={30} /> : <WorldArt name={world.missionArt} size={30} />}
+                </View>
+              </View>
+            </View>
+          </Console>
+
+          <Text style={[styles.sectionTitle, { color: ink }]} maxFontSizeMultiplier={MAX_FONT_SCALE} accessibilityRole="header">
+            {t('advMore')}
+          </Text>
+          <View style={[styles.exploreGrid, { gap: SPACING.sm }]}>
+            {([
+              { screen: 'MyDay', labelKey: 'sectionMyDay', subKey: 'exploreMyDaySub', art: 'myday', tone: EXPLORE_TONES.myday },
+              { screen: 'School', labelKey: 'sectionSchool', subKey: 'exploreSchoolSub', art: 'school', tone: EXPLORE_TONES.school },
+              { screen: 'Activities', labelKey: 'sectionActivities', subKey: 'exploreActivitiesSub', art: 'activities', tone: EXPLORE_TONES.activities },
+              { screen: 'Feelings', labelKey: 'sectionFeelings', subKey: 'exploreFeelingsSub', art: 'feelings', tone: EXPLORE_TONES.feelings },
+            ] as const).map((m) => {
+              const c = m.tone;
+              return (
+                <PressableScale
+                  key={m.screen}
+                  onPress={go(m.screen)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${t(m.labelKey)}. ${t(m.subKey)}`}
+                  hitSlop={4}
+                  style={{ width: exploreWidth }}
+                >
+                  <View
+                    style={[
+                      styles.explore,
+                      night
+                        ? { backgroundColor: c.to, borderColor: c.rim, borderBottomColor: shade(c.to, 0.72) }
+                        : { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, borderBottomColor: theme.colors.border },
+                    ]}
+                  >
+                    {night ? (
+                      <>
+                        <GradientSurface from={c.from} to={c.to} direction="vertical" />
+                        <View style={styles.exploreGloss} pointerEvents="none">
+                          <GradientSurface from="#FFFFFF" to="#FFFFFF" direction="vertical" fromOpacity={0.35} toOpacity={0} />
+                        </View>
+                      </>
+                    ) : null}
+                    <GameIcon name={m.art} size={exploreArt} />
+                    <Text
+                      style={[styles.exploreTitle, { fontSize: exploreLabelSize, color: night ? c.ink : theme.colors.text }]}
+                      maxFontSizeMultiplier={1.15}
+                      numberOfLines={1}
+                      // Safety net for an unusually wide font: shrink a little rather than truncate.
+                      adjustsFontSizeToFit
+                      minimumFontScale={0.85}
+                    >
+                      {t(m.labelKey)}
+                    </Text>
+                  </View>
+                </PressableScale>
+              );
+            })}
+          </View>
+
+          {/* School Mode stays quiet so it is never tapped by accident. */}
+          <PressableScale onPress={go('SchoolMode')} accessibilityRole="button" accessibilityLabel="School Mode" hitSlop={4}>
+            <View style={[styles.quiet, night ? { backgroundColor: AdventureNight.card, borderColor: AdventureNight.border } : { backgroundColor: theme.colors.surfaceAlt, borderColor: theme.colors.borderSoft }]}>
+              <GameIcon name="school" size={30} />
+              <Text style={[styles.quietText, { color: ink }]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={1}>School Mode</Text>
+              <Icon name="chevron-right" size={22} color={inkMuted} />
+            </View>
+          </PressableScale>
+
+          {night ? (
+            <SpaceNav
+              width={contentWidth}
+              items={[
+                { key: 'home', label: t('navHome'), icon: 'home', art: 'home', onPress: () => {}, active: true },
+                { key: 'practice', label: t('navPractice'), icon: 'microphone-outline', art: 'practice', onPress: go('SpeechPractice') },
+                { key: 'play', label: t('navPlay'), icon: 'puzzle-outline', art: 'controller', onPress: go('Learn') },
+                { key: 'progress', label: t('navProgress'), icon: 'star-outline', art: 'progress', onPress: go('MyProgress') },
+                { key: 'parent', label: t('navParent'), icon: 'shield-account-outline', art: 'parent', onPress: go('ParentPin') },
+              ]}
+            />
+          ) : (
+            <PressableScale onPress={go('ParentPin')} accessibilityRole="button" accessibilityLabel={t('sectionParent')} hitSlop={4}>
+              <View style={[styles.quiet, { backgroundColor: theme.colors.surfaceAlt, borderColor: theme.colors.borderSoft }]}>
+                <Icon name="shield-account-outline" size={22} color={inkMuted} />
+                <Text style={[styles.quietText, { color: inkMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={1}>{t('sectionParent')}</Text>
+                <Icon name="chevron-right" size={22} color={inkMuted} />
+              </View>
+            </PressableScale>
+          )}
+        </ScrollView>
+      </ScreenContainer>
+    </AdventureZone>
+  );
+}
+
+function Capsule({ icon, tone, value, label, night, ink }: { icon: string; tone: string; value: number; label: string; night: boolean; ink: string }) {
+  return (
+    <View
+      style={[styles.capsule, night ? { backgroundColor: '#141B44', borderColor: tone } : { backgroundColor: '#FFFFFF', borderColor: '#D8DEEA' }]}
+      accessibilityRole="text"
+      accessibilityLabel={label}
+    >
+      <Icon name={icon} size={15} color={tone} />
+      <Text style={[styles.capsuleValue, { color: ink }]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={1}>
+        {value}
+      </Text>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  content: { paddingVertical: SPACING.md, paddingBottom: SPACING.xl * 2, gap: SPACING.md },
-  greeting: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md },
-  greetingText: { flex: 1, gap: 2 },
-  hello: { fontFamily: Fonts.black },
-  sub: { fontFamily: Fonts.semibold },
-  status: { fontFamily: Fonts.bold },
-  planHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: SPACING.sm },
-  planTitle: { fontFamily: Fonts.extrabold },
-  planRows: { gap: SPACING.sm, marginTop: SPACING.sm },
-  planRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, minHeight: 56, paddingHorizontal: SPACING.md, borderRadius: Radius.md, borderWidth: 1.5 },
-  planMark: { fontSize: 22, fontFamily: Fonts.black, width: 22, textAlign: 'center' },
-  planLabel: { flex: 1, fontFamily: Fonts.extrabold },
-  planTime: { fontFamily: Fonts.bold, fontSize: 15 },
-  planEmoji: { fontSize: 22, lineHeight: 28 },
-  question: { fontFamily: Fonts.bold, textAlign: 'center', marginTop: SPACING.xs },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-start' },
-  tile: { borderRadius: Radius.lg, alignItems: 'center', justifyContent: 'center', gap: SPACING.sm, padding: SPACING.sm },
-  tileLabel: { fontFamily: Fonts.extrabold, textAlign: 'center', alignSelf: 'stretch' },
-  schoolMode: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, minHeight: 72, paddingHorizontal: SPACING.md, borderRadius: Radius.lg, borderWidth: 1 },
-  schoolModeText: { flex: 1, fontFamily: Fonts.extrabold },
-  soundText: { flex: 1, gap: 2, paddingVertical: SPACING.sm },
-  soundSubtitle: { fontFamily: Fonts.semibold, fontSize: 13, lineHeight: 18 },
-  favRow: { flexDirection: 'row' },
-  learnRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md },
-  learnEmoji: { fontSize: 40, lineHeight: 50 },
-  learnTitle: { fontFamily: Fonts.extrabold },
-  playBtn: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center' },
-  rewardLine: { fontFamily: Fonts.bold, marginBottom: SPACING.sm },
+  flex: { flex: 1 },
+  // lg between blocks: at md the hero, the CTA and the Speech card read as one crowded stack.
+  content: { paddingVertical: SPACING.md, gap: SPACING.lg, paddingBottom: SPACING.xl * 2 },
+  hud: { flexDirection: 'row', alignItems: 'center', gap: HUD_GAP },
+  // The narrow variant: who is flying on one line, what they have collected on the next.
+  hudStacked: { gap: SPACING.sm },
+  hudWho: { flexDirection: 'row', alignItems: 'center', minWidth: 0 },
+  // Claim the room the capsules leave, and only on one line: flexBasis 0 inside the STACKED
+  // (column) variant would resolve against a parent with no free height and collapse the row.
+  hudWhoFill: { flexGrow: 1, flexBasis: 0, flexShrink: 1 },
+  hudStats: { flexDirection: 'row', alignItems: 'center', gap: HUD_GAP },
+  hudStatsRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap', gap: HUD_GAP },
+  hudName: { flex: 1, marginLeft: 4, marginRight: 2, minWidth: 0 },
+  greeting: { fontFamily: Fonts.bold, fontSize: 13 },
+  name: { fontFamily: Fonts.black, alignSelf: 'stretch' },
+  capsule: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 9, paddingVertical: 5, borderRadius: AdventureRadius.pill, borderWidth: 1.5 },
+  capsuleValue: { fontFamily: Fonts.black, fontSize: 14 },
+  hero: { borderRadius: AdventureRadius.hero, borderWidth: 1.5, paddingHorizontal: SPACING.lg, paddingTop: SPACING.md, paddingBottom: SPACING.lg, gap: SPACING.sm },
+  heroTop: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
+  heroText: { flex: 1, minWidth: 0, gap: 4, justifyContent: 'center', paddingRight: SPACING.xs },
+  headline: { fontFamily: Fonts.black, letterSpacing: 1, alignSelf: 'stretch' },
+  tagline: { fontFamily: Fonts.bold, alignSelf: 'stretch', opacity: 0.92 },
+  meter: { borderRadius: AdventureRadius.card, borderWidth: 1.5, borderColor: 'transparent', paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm + 2, gap: 6 },
+  meterTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: SPACING.sm },
+  level: { fontFamily: Fonts.black, fontSize: 13, flexShrink: 1 },
+  meterValue: { fontFamily: Fonts.bold, fontSize: 13 },
+  track: { height: 12, borderRadius: 999, overflow: 'hidden' },
+  fill: { height: '100%', borderRadius: 999, overflow: 'hidden' },
+  console: {
+    flexGrow: 1,
+    overflow: 'hidden',
+    borderRadius: AdventureRadius.card,
+    borderWidth: 1.5,
+    borderBottomWidth: 5,
+    padding: SPACING.lg,
+    gap: SPACING.md,
+    minHeight: 104,
+    shadowOpacity: 0.28,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 4,
+  },
+  consoleHead: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md },
+  // The illustration stands on the card; a soft drop shadow lifts it off the colour.
+  art: { alignItems: 'center', justifyContent: 'center', shadowColor: '#0B1030', shadowOpacity: 0.28, shadowRadius: 6, shadowOffset: { width: 0, height: 4 } },
+  gloss: { position: 'absolute', top: 0, left: 0, right: 0, height: '60%' },
+  arrow: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
+  // A small game control: darker plate, white rim, white chevron, a drop shadow.
+  gameArrow: { borderWidth: 2, borderColor: 'rgba(255,255,255,0.75)', shadowOpacity: 0.5, shadowRadius: 5, shadowOffset: { width: 0, height: 3 }, elevation: 4 },
+  badgeSolid: { backgroundColor: '#FFFFFF', borderColor: '#FFFFFF' },
+  chipOnSolid: { backgroundColor: 'rgba(255,255,255,0.24)', borderColor: 'rgba(255,255,255,0.5)' },
+  heroSolid: { backgroundColor: '#1E2A63', borderColor: '#4E63C8' },
+  decorCorner: { position: 'absolute', top: 10, right: 18, flexDirection: 'row', alignItems: 'center', gap: 6, opacity: 0.55 },
+  decorInline: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, opacity: 0.55 },
+  stackTop: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
+  mascotWrap: { alignItems: 'center', justifyContent: 'center' },
+  bubble: {
+    maxWidth: '100%',
+    marginTop: -6,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: 5,
+    borderRadius: AdventureRadius.pill,
+    shadowColor: '#0A0E2C',
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 5,
+  },
+  bubbleText: { fontFamily: Fonts.black, fontSize: 13, color: '#13233F' },
+  bubbleTail: {
+    position: 'absolute',
+    top: -5,
+    left: '46%',
+    width: 10,
+    height: 10,
+    backgroundColor: '#FFFFFF',
+    transform: [{ rotate: '45deg' }],
+  },
+  missionFoot: { gap: 8 },
+  // Collection strip inside the hero: five small prizes and a count; quiet, so it never outranks LET'S GO.
+  strip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+    minHeight: MIN_CHILD_TARGET - 8,
+    paddingHorizontal: SPACING.md,
+    borderRadius: AdventureRadius.card,
+    backgroundColor: 'rgba(8,11,38,0.45)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.14)',
+  },
+  stripInvite: { backgroundColor: '#FFD84D', borderColor: '#FFF0B8' },
+  // flexShrink, never flex:1. Growing to fill the strip is what let the art run under the title.
+  stripArt: { flexShrink: 1, flexDirection: 'row', alignItems: 'center', gap: 4, minWidth: 0 },
+  // The stacked variant: title row above, art row below, each with the full width to itself.
+  stripStacked: { flexDirection: 'column', alignItems: 'stretch', gap: 6, paddingVertical: SPACING.sm },
+  stripTitleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4 },
+  stripArtRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap', gap: SPACING.sm },
+  stripText: { fontFamily: Fonts.black, fontSize: 15, flexShrink: 1, minWidth: 0, textAlign: 'center' },
+  // Room on the right so the rocket never pokes past the card at 5 / 5.
+  missionBar: { justifyContent: 'center', height: 30, marginRight: 14 },
+  missionRocket: { position: 'absolute', marginLeft: -15, top: 0 },
+  rewardSolid: { backgroundColor: '#FFFFFF', borderColor: '#FFFFFF' },
+  reward: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 5, paddingHorizontal: SPACING.sm, paddingVertical: 4, borderRadius: AdventureRadius.pill, borderWidth: 1.5 },
+  rewardText: { fontFamily: Fonts.black, fontSize: 13 },
+  missionTrack: { height: 12, borderRadius: 999, overflow: 'hidden', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.5)' },
+  missionFill: { height: '100%', borderRadius: 999, overflow: 'hidden' },
+  consoleText: { flex: 1, gap: 2 },
+  consoleTextStacked: { gap: 2 },
+  consoleTitle: { fontFamily: Fonts.black, alignSelf: 'stretch', textShadowColor: 'rgba(0,0,0,0.22)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3 },
+  consoleSub: { fontFamily: Fonts.bold, fontSize: 13, lineHeight: 18, alignSelf: 'stretch' },
+  badge: { paddingHorizontal: SPACING.sm, paddingVertical: 4, borderRadius: AdventureRadius.pill, borderWidth: 1.5 },
+  // Deeper lift on a solid card, so it sits above the sky rather than in it.
+  solidLift: { shadowOpacity: 0.38, shadowRadius: 14, shadowOffset: { width: 0, height: 8 }, elevation: 8 },
+  // Speech Practice: the strongest glow on the screen (glow is used selectively, not everywhere).
+  featuredLift: { borderWidth: 2.5, borderBottomWidth: 6, shadowOpacity: 0.7, shadowRadius: 22, elevation: 12 },
+  badgeText: { fontFamily: Fonts.black, fontSize: 13 },
+  pair: { flexDirection: 'row', gap: SPACING.md },
+  sectionTitle: { fontFamily: Fonts.black, fontSize: 17, marginTop: SPACING.xs, marginBottom: -SPACING.xs },
+  exploreGrid: { flexDirection: 'row', flexWrap: 'wrap' },
+  // Secondary navigation: compact, one consistent height, a thin rim and a quiet shadow, so the row
+  // never competes with the quest cards above it.
+  explore: {
+    height: MIN_CHILD_TARGET + 26,
+    borderRadius: 18,
+    borderWidth: 1.5,
+    borderBottomWidth: 3.5,
+    paddingHorizontal: SPACING.xs,
+    paddingVertical: SPACING.sm,
+    gap: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+    shadowColor: '#0A0E2C',
+    shadowOpacity: 0.28,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
+  },
+  exploreGloss: { position: 'absolute', top: 0, left: 0, right: 0, height: '55%' },
+  exploreTitle: { fontFamily: Fonts.black, textAlign: 'center', alignSelf: 'stretch' },
+  quiet: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, minHeight: MIN_CHILD_TARGET - 8, paddingHorizontal: SPACING.lg, borderRadius: AdventureRadius.card, borderWidth: 1.5 },
+  quietText: { flex: 1, fontFamily: Fonts.extrabold, fontSize: 15 },
 });

@@ -43,7 +43,8 @@
     "check:learning": "tsx --tsconfig tsconfig.json scripts/check-learning.ts",
     "check:adaptive": "tsx --tsconfig tsconfig.json scripts/check-adaptive.ts",
     "check:i18n": "tsx --tsconfig tsconfig.json scripts/check-i18n.ts",
-    "check:speech": "tsx --tsconfig tsconfig.json scripts/check-speech.ts"
+    "check:speech": "tsx --tsconfig tsconfig.json scripts/check-speech.ts",
+    "check:layout": "tsx --tsconfig tsconfig.json scripts/check-home-layout.ts"
   },
   "private": true
 }

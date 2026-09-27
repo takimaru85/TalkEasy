@@ -22,3 +22,16 @@ export function fitFontSize(text: string, width: number, base: number, mode: 'li
   const fits = width / (Math.max(chars, 1) * CHAR_EM * scale);
   return Math.max(min, Math.min(base, Math.floor(fits)));
 }
+
+/**
+ * Estimated width of `text` at `fontSize`, using the same glyph model as `fitFontSize` and the
+ * same capped OS font scale.
+ *
+ * For deciding LAYOUT, not for drawing: a row that has to choose between one line and two needs to
+ * know what its fixed contents cost before Yoga measures them, and onLayout comes too late to
+ * choose without a visible reflow. Slightly generous, so the decision errs towards more room.
+ */
+export function textWidth(text: string, fontSize: number): number {
+  const scale = Math.min(PixelRatio.getFontScale(), MAX_FONT_SCALE);
+  return text.length * CHAR_EM * fontSize * scale;
+}

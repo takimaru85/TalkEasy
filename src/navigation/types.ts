@@ -20,13 +20,14 @@ export type ParentStackParamList = {
   ManageRoutine: undefined;
   ManageTherapy: undefined;
   EditTherapy: { activityId?: number };
-  CareNotes: undefined;
-  EditNote: { noteId?: number };
+  CareNotes: { filter?: import('@/types/models').NoteType } | undefined;
+  EditNote: { noteId?: number; noteType?: import('@/types/models').NoteType };
   Progress: undefined;
   Settings: undefined;
   ManageLessons: undefined;
   EditLesson: { lessonId?: number };
   AdaptiveProgress: undefined;
+  WeeklyProgress: undefined;
   SpeechPracticeSettings: undefined;
   PronunciationTest: undefined;
 };
@@ -57,7 +58,11 @@ export type RootStackParamList = {
   SoundPractice: undefined;
   SoundPracticeDetail: { soundId: string };
   SpeechPractice: undefined;
+  MyProgress: undefined;
+  Achievements: undefined;
   SpeechActivity: { activityId: string; category?: string };
+  ChooseAdventure: undefined;
+  Collection: undefined;
   ParentPin: undefined;
   Parent: NavigatorScreenParams<ParentStackParamList>;
 };

@@ -380,13 +380,21 @@ export interface StarSummary {
 // Notes & settings
 // ---------------------------------------------------------------------------
 
-export type NoteType = 'activity' | 'observation' | 'general';
+/**
+ * Note categories. 'observation' and 'general' are from earlier versions and stay readable;
+ * new notes use the others. 'teacher' and 'reminder' power Care → Teacher notes / Reminders.
+ */
+export type NoteType = 'speech' | 'school' | 'behavior' | 'activity' | 'teacher' | 'reminder' | 'other' | 'observation' | 'general';
 
 export interface CaregiverNote {
   id: number;
   noteType: NoteType;
   title: string;
   body: string;
+  /** A copy in the app's private storage (services/files), or null. */
+  photoUri: string | null;
+  /** The day the note is about, YYYY-MM-DD (defaults to the day it was written). */
+  noteDate: string;
   createdAt: string;
 }
 
@@ -394,6 +402,8 @@ export interface CaregiverNoteInput {
   noteType: NoteType;
   title: string;
   body: string;
+  photoUri?: string | null;
+  noteDate?: string | null;
 }
 
 export type SizeOption = 'medium' | 'large' | 'xlarge';
@@ -436,6 +446,13 @@ export interface AppSettings {
    * JSON { "en|syllable:bo": { text, locale } }. Defaults live in speechpractice/pronunciationDictionary.ts.
    */
   speechPronunciationOverrides: string;
+  /**
+   * Choose Your Adventure (src/adventure/worlds.ts): a fixed world picked by the grown-up, or
+   * 'child' to let the child choose.
+   */
+  adventureTheme: 'child' | 'space' | 'dinosaurs' | 'animals' | 'vehicles';
+  /** The world the child picked ('' = not chosen yet, which shows Space). */
+  adventureWorld: '' | 'space' | 'dinosaurs' | 'animals' | 'vehicles';
 }
 
 export type RotationMode = 'auto' | 'always' | 'portrait';

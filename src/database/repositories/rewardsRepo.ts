@@ -114,6 +114,28 @@ export const rewardsRepo = {
     return { total: balance, earnedToday: today?.t ?? 0, nextReward };
   },
 
+  /**
+   * The local dates (YYYY-MM-DD) on which the child earned a star, newest first. The daily
+   * streak is counted from these, so it reflects real practice rather than a stored number that
+   * could drift. Converted to LOCAL dates in JS because created_at is UTC and a streak is about
+   * the child's day, not the clock in Greenwich.
+   */
+  async getEarnedDates(days = 90): Promise<string[]> {
+    const db = await getDb();
+    const since = new Date();
+    since.setDate(since.getDate() - days);
+    const rows = await db.getAllAsync<{ created_at: string }>(
+      'SELECT created_at FROM star_events WHERE amount > 0 AND created_at >= ? ORDER BY created_at DESC',
+      since.toISOString(),
+    );
+    const seen = new Set<string>();
+    for (const r of rows) {
+      const d = new Date(r.created_at);
+      seen.add(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`);
+    }
+    return [...seen].sort().reverse();
+  },
+
   async getHistory(limit = 30): Promise<StarEvent[]> {
     const db = await getDb();
     const rows = await db.getAllAsync<StarRow>('SELECT * FROM star_events ORDER BY created_at DESC, id DESC LIMIT ?', limit);

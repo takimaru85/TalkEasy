@@ -331,4 +331,6 @@ export const DEFAULT_SETTINGS: AppSettings = {
   speechPracticeHidden: '',
   speechPronunciationSet: 'fil',
   speechPronunciationOverrides: '{}',
+  adventureTheme: 'child',
+  adventureWorld: '',
 };

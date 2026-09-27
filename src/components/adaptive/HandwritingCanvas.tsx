@@ -1,9 +1,13 @@
 import React, { useMemo, useRef, useState } from 'react';
-import { PanResponder, StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
+import { PanResponder, Pressable, StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
 import Svg, { Circle, G, Line, Path, Polygon, Rect } from 'react-native-svg';
 import { BigButton } from '@/components/common';
 import { MAX_FONT_SCALE, MIN_CHILD_TARGET, SPACING } from '@/constants/sizes';
 import { Fonts, Radius, useTheme } from '@/theme';
+import { AdventureRadius } from '@/theme/adventure';
+// From the files, not the adventure barrel (which reaches back into components/common).
+import { GameButton } from '@/components/adventure/GameButton';
+import { GradientSurface } from '@/components/adventure/GradientSurface';
 import { layoutSchoolText } from '@/adaptive/schoolText';
 import { CAP_HEIGHT, strokesFor } from '@/adaptive/strokeOrder';
 import { StrokeArrows, type Point } from './StrokeArrows';
@@ -76,7 +80,11 @@ export function HandwritingCanvas({ guide, onDone, strokeWidth = 14, onStrokeWid
   const undo = () => setStrokes((s) => s.slice(0, -1));
   const done = () => onDone({ strokes: strokes.length, durationMs: startedAt.current ? Date.now() - startedAt.current : 0 });
 
-  const guideColor = theme.highContrast ? '#555555' : '#B9C2D1';
+  // On the night sky the guide is a soft periwinkle and the stroke-order marks a friendly orange:
+  // clear on white, warmer than the old warning red, and still quiet next to the child's own ink.
+  const night = theme.night;
+  const guideColor = theme.highContrast ? '#555555' : night ? '#C3CCEB' : '#B9C2D1';
+  const arrowColor = night ? '#FF7043' : theme.colors.danger;
   // Which lowercase "a" to trace is a property of the language, not of the app (src/i18n).
   const { letterStyle } = useI18n();
   const ink = theme.colors.primaryDark;
@@ -85,13 +93,19 @@ export function HandwritingCanvas({ guide, onDone, strokeWidth = 14, onStrokeWid
     <View style={styles.wrap}>
       <View
         onLayout={onLayout}
-        style={[styles.canvas, theme.shadow, { height, backgroundColor: '#FFFFFF', borderColor: theme.highContrast ? theme.colors.border : theme.colors.borderSoft, borderWidth: theme.highContrast ? theme.borderWidth : 2 }]}
+        style={[
+          styles.canvas,
+          theme.shadow,
+          { height, backgroundColor: '#FFFFFF', borderColor: theme.highContrast ? theme.colors.border : theme.colors.borderSoft, borderWidth: theme.highContrast ? theme.borderWidth : 2 },
+          // The cleanest thing on the screen: plain white, a soft light rim and a gentle shadow.
+          night && styles.canvasNight,
+        ]}
         accessibilityLabel="Writing area. Draw with your finger."
         {...pan.panHandlers}
       >
         {size.w > 0 ? (
           <Svg width={size.w} height={size.h}>
-            {renderGuide(guide, size.w, size.h, guideColor, letterStyle, theme.colors.danger)}
+            {renderGuide(guide, size.w, size.h, guideColor, letterStyle, arrowColor)}
             {strokes.map((d, i) => (
               <Path key={i} d={d} stroke={ink} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" fill="none" />
             ))}
@@ -100,13 +114,48 @@ export function HandwritingCanvas({ guide, onDone, strokeWidth = 14, onStrokeWid
         ) : null}
       </View>
 
+      {night ? (
+        <View style={styles.toolbar}>
+          <GameButton label="Undo" icon="undo" tone="grape" onPress={undo} disabled={strokes.length === 0} style={styles.tool} />
+          <GameButton label="Clear" icon="eraser" tone="slate" onPress={clear} disabled={strokes.length === 0} style={styles.tool} />
+          <GameButton label="Done" icon="check-bold" tone="grass" primary onPress={done} style={[styles.tool, styles.toolWide]} />
+        </View>
+      ) : (
       <View style={styles.toolbar}>
         <BigButton label="Undo" icon="undo" variant="outline" minHeight={MIN_CHILD_TARGET} compact onPress={undo} disabled={strokes.length === 0} style={styles.tool} />
         <BigButton label="Clear" icon="eraser" variant="outline" minHeight={MIN_CHILD_TARGET} compact onPress={clear} disabled={strokes.length === 0} style={styles.tool} />
         <BigButton label="Done" icon="check-bold" variant="success" minHeight={MIN_CHILD_TARGET} compact onPress={done} style={[styles.tool, styles.toolWide]} />
       </View>
+      )}
 
-      {onStrokeWidthChange ? (
+      {onStrokeWidthChange && night ? (
+        <View style={styles.penRow}>
+          <Text style={styles.penLabel} maxFontSizeMultiplier={MAX_FONT_SCALE}>Pen size</Text>
+          <View style={styles.penChips}>
+            {PENS.map((pen) => {
+              const selected = strokeWidth === pen.width;
+              return (
+                <Pressable
+                  key={pen.width}
+                  onPress={() => onStrokeWidthChange(pen.width)}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected }}
+                  accessibilityLabel={`${pen.label} pen`}
+                  hitSlop={4}
+                  style={({ pressed }) => [styles.pen, selected ? styles.penSelected : styles.penIdle, pressed && styles.penPressed]}
+                >
+                  {selected ? <GradientSurface from="#6FC0FF" to="#2A7BE8" direction="vertical" /> : null}
+                  {/* A dot the size of the pen: the choice is shown, not only named. */}
+                  <View style={[styles.penDot, { width: pen.dot, height: pen.dot, borderRadius: pen.dot / 2, backgroundColor: selected ? '#FFFFFF' : '#9FB0E8' }]} />
+                  <Text style={[styles.penText, { color: selected ? '#FFFFFF' : '#C9D3F5' }]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={1}>
+                    {pen.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
+      ) : onStrokeWidthChange ? (
         <View style={styles.sizeRow}>
           <Text style={[styles.sizeLabel, { color: theme.colors.textMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>Pen size</Text>
           {[8, 14, 22].map((w) => (
@@ -117,6 +166,13 @@ export function HandwritingCanvas({ guide, onDone, strokeWidth = 14, onStrokeWid
     </View>
   );
 }
+
+/** The three pen sizes (unchanged widths), with a dot size for the chip. */
+const PENS = [
+  { width: 8, label: 'Thin', dot: 6 },
+  { width: 14, label: 'Medium', dot: 10 },
+  { width: 22, label: 'Thick', dot: 15 },
+] as const;
 
 /** Samples a circle anticlockwise from the top — the direction "o" and "0" are taught. */
 function circlePoints(cx: number, cy: number, r: number, steps = 12): Point[] {
@@ -234,6 +290,43 @@ function renderGuide(guide: Guide, w: number, h: number, color: string, letterSt
 const styles = StyleSheet.create({
   wrap: { gap: SPACING.md },
   canvas: { borderRadius: Radius.lg, overflow: 'hidden' },
+  canvasNight: {
+    borderRadius: AdventureRadius.card,
+    borderWidth: 3,
+    borderColor: '#DCE3FF',
+    shadowColor: '#050823',
+    shadowOpacity: 0.45,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 8,
+  },
+  penRow: { gap: 6 },
+  penLabel: { fontFamily: Fonts.bold, fontSize: 14, color: '#B8C3EA', letterSpacing: 0.5 },
+  penChips: { flexDirection: 'row', gap: SPACING.sm },
+  pen: {
+    flex: 1,
+    height: MIN_CHILD_TARGET - 4,
+    borderRadius: 999,
+    overflow: 'hidden',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingHorizontal: 6,
+  },
+  penIdle: { backgroundColor: '#16204F', borderWidth: 2, borderColor: '#4E63C8' },
+  penSelected: {
+    borderWidth: 2.5,
+    borderColor: '#BFE3FF',
+    shadowColor: '#4FA8FF',
+    shadowOpacity: 0.8,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 8,
+  },
+  penPressed: { opacity: 0.85 },
+  penDot: {},
+  penText: { fontFamily: Fonts.black, fontSize: 16, flexShrink: 1 },
   toolbar: { flexDirection: 'row', gap: SPACING.sm },
   tool: { flex: 1 },
   toolWide: { flex: 1.4 },

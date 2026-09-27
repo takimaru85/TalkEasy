@@ -5,6 +5,7 @@ import { LOCALES } from '@/i18n/registry';
 import type { LocaleCode } from '@/i18n/types';
 import { isPronunciationSet } from '@/speechpractice/pronunciation';
 import type { AppSettings, Difficulty, RotationMode, SizeOption } from '@/types/models';
+import { isWorldId } from '@/adventure/worlds';
 
 const SIZE_OPTIONS: SizeOption[] = ['medium', 'large', 'xlarge'];
 const DIFFICULTIES: Difficulty[] = ['easy', 'medium', 'hard'];
@@ -58,6 +59,15 @@ export const settingsRepo = {
       language: LOCALE_CODES.includes(map.get('language') as LocaleCode) ? (map.get('language') as LocaleCode) : DEFAULT_SETTINGS.language,
       speechPracticeHidden: map.get('speechPracticeHidden') ?? DEFAULT_SETTINGS.speechPracticeHidden,
       speechPronunciationOverrides: map.get('speechPronunciationOverrides') || DEFAULT_SETTINGS.speechPronunciationOverrides,
+      // Unknown values (e.g. a world removed in a later version) fall back safely.
+      adventureTheme: (() => {
+        const v = map.get('adventureTheme');
+        return v === 'child' || isWorldId(v) ? v : DEFAULT_SETTINGS.adventureTheme;
+      })(),
+      adventureWorld: (() => {
+        const v = map.get('adventureWorld');
+        return isWorldId(v) ? v : DEFAULT_SETTINGS.adventureWorld;
+      })(),
       speechPronunciationSet: isPronunciationSet(map.get('speechPronunciationSet')) ? (map.get('speechPronunciationSet') as AppSettings['speechPronunciationSet']) : DEFAULT_SETTINGS.speechPronunciationSet,
     };
   },

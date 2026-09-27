@@ -3,7 +3,7 @@ import { DefaultTheme, NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Colors } from '@/constants/colors';
 import { useSettings } from '@/context/SettingsContext';
-import { useTheme } from '@/theme';
+import { AdventureZone, useTheme } from '@/theme';
 import { ChildHomeScreen } from '@/screens/child/ChildHomeScreen';
 import { CommunicateScreen } from '@/screens/child/CommunicateScreen';
 import { FeelingsScreen } from '@/screens/child/FeelingsScreen';
@@ -28,12 +28,23 @@ import { SpeakPracticeScreen } from '@/screens/child/adaptive/SpeakPracticeScree
 import { SoundPracticeScreen } from '@/screens/child/sound/SoundPracticeScreen';
 import { SoundPracticeDetailScreen } from '@/screens/child/sound/SoundPracticeDetailScreen';
 import { SpeechPracticeScreen } from '@/screens/child/speech/SpeechPracticeScreen';
+import { MyProgressScreen } from '@/screens/child/MyProgressScreen';
+import { AchievementsScreen } from '@/screens/child/AchievementsScreen';
 import { SpeechActivityScreen } from '@/screens/child/speech/SpeechActivityScreen';
+import { ChooseAdventureScreen } from '@/screens/child/ChooseAdventureScreen';
+import { CollectionScreen } from '@/screens/child/CollectionScreen';
 import { ParentPinScreen } from '@/screens/parent/ParentPinScreen';
 import { ParentStack } from './ParentStack';
 import type { RootStackParamList } from './types';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
+
+/**
+ * Every child screen lives in the adventure zone — the space-adventure theme — from the navigator
+ * down, so a screen's OWN colours (read in its body with useTheme) are the night ones too, not only
+ * the shared components it renders. Parent Mode and the PIN screen are outside it on purpose.
+ */
+const childZone = ({ children }: { children: React.ReactNode }) => <AdventureZone>{children}</AdventureZone>;
 
 const theme = {
   ...DefaultTheme,
@@ -61,6 +72,7 @@ export function RootNavigator() {
         screenOptions={{ headerShown: false, animation: t.reducedMotion ? 'none' : 'slide_from_right', animationDuration: 220 }}
         initialRouteName={settings.schoolModeAtStart ? 'SchoolMode' : 'ChildHome'}
       >
+        <Stack.Group screenLayout={childZone}>
         <Stack.Screen name="ChildHome" component={ChildHomeScreen} />
         <Stack.Screen name="Communicate" component={CommunicateScreen} />
         <Stack.Screen name="Feelings" component={FeelingsScreen} />
@@ -85,7 +97,12 @@ export function RootNavigator() {
         <Stack.Screen name="SoundPractice" component={SoundPracticeScreen} />
         <Stack.Screen name="SoundPracticeDetail" component={SoundPracticeDetailScreen} />
         <Stack.Screen name="SpeechPractice" component={SpeechPracticeScreen} />
+        <Stack.Screen name="MyProgress" component={MyProgressScreen} />
+        <Stack.Screen name="Achievements" component={AchievementsScreen} />
         <Stack.Screen name="SpeechActivity" component={SpeechActivityScreen} />
+        <Stack.Screen name="ChooseAdventure" component={ChooseAdventureScreen} />
+        <Stack.Screen name="Collection" component={CollectionScreen} />
+        </Stack.Group>
         <Stack.Screen
           name="ParentPin"
           component={ParentPinScreen}

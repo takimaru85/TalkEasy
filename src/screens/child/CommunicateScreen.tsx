@@ -1,13 +1,12 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
-import { ChildScreen, EmptyState } from '@/components/common';
+import { StyleSheet, View } from 'react-native';
+import { ChildScreen, EmptyState, SectionLabel } from '@/components/common';
 import { CategoryBar, CommunicationTile, PhraseBanner, TileGrid } from '@/components/communication';
 import { SECTION_EMOJI } from '@/constants/school';
-import { MAX_FONT_SCALE, SPACING } from '@/constants/sizes';
+import { SPACING } from '@/constants/sizes';
 import { useProfile } from '@/context/ProfileContext';
 import { useHomeCategories, useRecentButtons, useSizes, useSpeak, useVisibleButtons } from '@/hooks';
 import type { RootScreenProps } from '@/navigation/types';
-import { Fonts, useTheme } from '@/theme';
 import { useI18n } from '@/i18n';
 
 /**
@@ -18,7 +17,6 @@ import { useI18n } from '@/i18n';
 export function CommunicateScreen(_props: RootScreenProps<'Communicate'>) {
   const sizes = useSizes();
   const { t } = useI18n();
-  const theme = useTheme();
   const { profile } = useProfile();
   const [categoryId, setCategoryId] = useState<number | null>(null);
   const { data: categories } = useHomeCategories();
@@ -31,9 +29,7 @@ export function CommunicateScreen(_props: RootScreenProps<'Communicate'>) {
 
   const header = showRecent ? (
     <View style={styles.recent}>
-      <Text style={[styles.recentTitle, { fontSize: sizes.body - 2, color: theme.colors.textMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
-        RECENT
-      </Text>
+      <SectionLabel icon="history" text={t('talkRecent')} />
       <View style={[styles.recentRow, { gap: sizes.gap }]}>
         {recent.map((b) => (
           <CommunicationTile key={`r${b.id}`} button={b} selected={b.id === lastButtonId} onPress={speakButton} width={stripWidth} compact />
@@ -43,7 +39,7 @@ export function CommunicateScreen(_props: RootScreenProps<'Communicate'>) {
   ) : null;
 
   return (
-    <ChildScreen title={t('sectionTalk')} emoji={SECTION_EMOJI.communicate}>
+    <ChildScreen title={t('sectionTalk')} emoji={SECTION_EMOJI.communicate} art="talk" subtitle={t('talkSub')}>
       <PhraseBanner phrase={lastPhrase} onRepeat={repeat} pending={pendingStarter} onClear={cancelStarter} />
       <CategoryBar categories={categories} selectedId={categoryId} onSelect={setCategoryId} />
       {!loading && buttons.length === 0 ? (
@@ -57,6 +53,5 @@ export function CommunicateScreen(_props: RootScreenProps<'Communicate'>) {
 
 const styles = StyleSheet.create({
   recent: { marginBottom: SPACING.md, gap: SPACING.xs },
-  recentTitle: { fontFamily: Fonts.extrabold, letterSpacing: 1 },
   recentRow: { flexDirection: 'row' },
 });

@@ -8,7 +8,8 @@ import { useSettings } from '@/context/SettingsContext';
 import { therapyRepo } from '@/database';
 import { useAwardStars, useSizes, useSpeak, useTherapyActivities } from '@/hooks';
 import type { RootScreenProps } from '@/navigation/types';
-import { Fonts, Radius, useTheme } from '@/theme';
+import { Fonts, Radius, shade, useTheme } from '@/theme';
+import { tileInk } from '@/constants/colors';
 import type { ActivityCategory, TherapyActivity } from '@/types/models';
 import { confirm } from '@/utils/confirm';
 import { useI18n } from '@/i18n';
@@ -91,7 +92,7 @@ export function ActivitiesScreen(_props: RootScreenProps<'Activities'>) {
   }
 
   return (
-    <ChildScreen title={t('sectionActivities')} emoji={SECTION_EMOJI.activities}>
+    <ChildScreen title={t('sectionActivities')} emoji={SECTION_EMOJI.activities} art="activities">
       {!loading && activities.length === 0 ? (
         <EmptyState icon="puzzle" title="No activities yet" message="A parent can add activities in Parent Mode." />
       ) : (
@@ -106,6 +107,9 @@ export function ActivitiesScreen(_props: RootScreenProps<'Activities'>) {
           ) : null}
           {visible.map((ex) => {
             const meta = ACTIVITY_CATEGORY_META[ex.category];
+            // On the night sky: a solid game card in the category colour, white words.
+            const deep = tileInk(meta.color);
+            const night = theme.night;
             return (
               <Pressable
                 key={ex.id}
@@ -117,21 +121,22 @@ export function ActivitiesScreen(_props: RootScreenProps<'Activities'>) {
                   styles.card,
                   theme.shadow,
                   { minHeight: Math.max(sizes.tileHeight * 0.7, 96), backgroundColor: ex.isCompleted ? theme.colors.surfaceAlt : theme.colors.surface, borderColor: theme.highContrast ? theme.colors.border : theme.colors.borderSoft, borderWidth: theme.highContrast ? theme.borderWidth : 1 },
+                  night && { backgroundColor: ex.isCompleted ? theme.colors.surfaceAlt : deep, borderColor: shade(ex.isCompleted ? theme.colors.surfaceAlt : deep, 1.4), borderWidth: 1.5, borderBottomWidth: 5, borderBottomColor: shade(ex.isCompleted ? theme.colors.surfaceAlt : deep, 0.64) },
                   pressed && { opacity: 0.85 },
                 ]}
               >
-                <View style={[styles.disc, { backgroundColor: theme.tint(meta.color) }]}>
-                  {ex.imageUri ? <Image source={{ uri: ex.imageUri }} style={styles.thumb} accessibilityIgnoresInvertColors /> : <Icon name={ex.icon} size={sizes.iconSize - 8} color={theme.colors.text} />}
+                <View style={[styles.disc, { backgroundColor: theme.tint(meta.color) }, night && { backgroundColor: shade(deep, 0.8), borderWidth: 2.5, borderColor: 'rgba(255,255,255,0.9)' }]}>
+                  {ex.imageUri ? <Image source={{ uri: ex.imageUri }} style={styles.thumb} accessibilityIgnoresInvertColors /> : <Icon name={ex.icon} size={sizes.iconSize - 8} color={night ? '#FFFFFF' : theme.colors.text} />}
                 </View>
                 <View style={styles.cardText}>
-                  <Text style={[styles.cardTitle, { fontSize: sizes.tileLabel + 1, color: ex.isCompleted ? theme.colors.textMuted : theme.colors.text }]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={2}>
+                  <Text style={[styles.cardTitle, { fontSize: sizes.tileLabel + 1, color: ex.isCompleted ? theme.colors.textMuted : theme.colors.text }, night && !ex.isCompleted && styles.shadowText]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={2}>
                     {tContent(ex.name)}
                   </Text>
-                  <Text style={[styles.cardMeta, { fontSize: sizes.body - 3, color: theme.colors.textMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
+                  <Text style={[styles.cardMeta, { fontSize: sizes.body - 3, color: night && !ex.isCompleted ? 'rgba(255,255,255,0.88)' : theme.colors.textMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
                     {meta.label}{ex.durationMinutes > 0 ? ` · ${ex.durationMinutes} min` : ''} · {ex.isCompleted ? 'Done' : 'Not done'}
                   </Text>
                 </View>
-                <View style={[styles.check, { borderColor: ex.isCompleted ? theme.colors.success : theme.colors.borderSoft, backgroundColor: ex.isCompleted ? theme.colors.success : theme.colors.surface }]}>
+                <View style={[styles.check, { borderColor: ex.isCompleted ? theme.colors.success : theme.colors.borderSoft, backgroundColor: ex.isCompleted ? theme.colors.success : theme.colors.surface }, night && !ex.isCompleted && { backgroundColor: shade(deep, 0.78), borderColor: 'rgba(255,255,255,0.9)' }]}>
                   {ex.isCompleted ? <Icon name="check-bold" size={26} color="#FFFFFF" /> : null}
                 </View>
               </Pressable>
@@ -151,9 +156,14 @@ function FilterPill({ label, emoji, selected, onPress }: { label: string; emoji:
       accessibilityRole="tab"
       accessibilityState={{ selected }}
       accessibilityLabel={label}
-      style={[styles.pill, { backgroundColor: selected ? theme.colors.primary : theme.colors.surface, borderColor: selected ? theme.colors.primaryDark : theme.colors.borderSoft }]}
+      style={[
+        styles.pill,
+        { backgroundColor: selected ? theme.colors.primary : theme.colors.surface, borderColor: selected ? theme.colors.primaryDark : theme.colors.borderSoft },
+        // Night: a solid tab with a darker base; the chosen one gets the gold rim.
+        theme.night && { backgroundColor: selected ? theme.colors.primary : theme.colors.surfaceAlt, borderColor: selected ? theme.colors.selected : shade(theme.colors.surfaceAlt, 1.5), borderWidth: selected ? 3 : 1.5, borderBottomWidth: 4, borderBottomColor: selected ? theme.colors.selected : shade(theme.colors.surfaceAlt, 0.6) },
+      ]}
     >
-      <Icon name={selected ? 'check-bold' : emoji} size={20} color={selected ? '#FFFFFF' : theme.colors.textMuted} />
+      <Icon name={selected ? 'check-bold' : emoji} size={20} color={selected || theme.night ? '#FFFFFF' : theme.colors.textMuted} />
       <Text style={[styles.pillText, { color: selected ? '#FFFFFF' : theme.colors.text }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
         {label}
       </Text>
@@ -172,6 +182,7 @@ const styles = StyleSheet.create({
   cardText: { flex: 1, gap: 2 },
   cardTitle: { fontFamily: Fonts.extrabold },
   cardMeta: { fontFamily: Fonts.bold },
+  shadowText: { textShadowColor: 'rgba(0,0,0,0.25)', textShadowOffset: { width: 0, height: 1.5 }, textShadowRadius: 2 },
   check: { width: 48, height: 48, borderRadius: 14, borderWidth: 2.5, alignItems: 'center', justifyContent: 'center' },
   detail: { paddingVertical: SPACING.md, gap: SPACING.lg, paddingBottom: SPACING.xl },
   hero: { alignItems: 'center', gap: SPACING.md },

@@ -2,7 +2,7 @@ import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { MAX_FONT_SCALE, MIN_CHILD_TARGET, SPACING } from '@/constants/sizes';
 import { useSizes } from '@/hooks/useSizes';
-import { Fonts, Radius, useTheme } from '@/theme';
+import { Fonts, Radius, shade, useTheme } from '@/theme';
 import { Icon } from '@/components/common/Icon';
 import { IconTile } from '@/components/common/IconTile';
 import { useI18n } from '@/i18n';
@@ -66,7 +66,7 @@ export function PhraseBanner({ phrase, onRepeat, placeholder, pending, onClear }
       </View>
 
       {pending && onClear ? (
-        <Pressable onPress={onClear} accessibilityRole="button" accessibilityLabel={t('actionCancel')} hitSlop={6} style={[styles.side, { backgroundColor: theme.colors.surface, borderColor: theme.colors.borderSoft }]}>
+        <Pressable onPress={onClear} accessibilityRole="button" accessibilityLabel={t('actionCancel')} hitSlop={6} style={[styles.side, { backgroundColor: theme.night ? theme.colors.surfaceAlt : theme.colors.surface, borderColor: theme.colors.borderSoft }, theme.night && { borderBottomWidth: 5, borderBottomColor: shade(theme.colors.surfaceAlt, 0.6) }]}>
           <Icon name="close" size={30} color={theme.colors.text} />
           <Text style={[styles.sideLabel, { color: theme.colors.text }]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={1}>{t('actionCancel')}</Text>
         </Pressable>
@@ -81,6 +81,8 @@ export function PhraseBanner({ phrase, onRepeat, placeholder, pending, onClear }
           style={({ pressed }) => [
             styles.side,
             { backgroundColor: hasPhrase ? theme.colors.primary : theme.colors.surfaceAlt, borderColor: hasPhrase ? theme.colors.primaryDark : 'transparent' },
+            // On the night sky: a solid game button with a darker base.
+            theme.night && { borderColor: shade(hasPhrase ? theme.colors.primary : theme.colors.surfaceAlt, 1.4), borderBottomWidth: 5, borderBottomColor: shade(hasPhrase ? theme.colors.primary : theme.colors.surfaceAlt, 0.62) },
             pressed && styles.pressed,
           ]}
         >

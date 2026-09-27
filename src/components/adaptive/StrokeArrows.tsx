@@ -52,6 +52,8 @@ export function StrokeArrows({ strokes, color, size }: Props) {
 
         return (
           <G key={i}>
+            {/* A soft halo under the dashes: the path reads as a friendly glowing trail. */}
+            <Path d={d} stroke={color} strokeWidth={line * 4} strokeLinecap="round" strokeLinejoin="round" fill="none" opacity={0.14} />
             <Path
               d={d}
               stroke={color}
@@ -74,7 +76,7 @@ export function StrokeArrows({ strokes, color, size }: Props) {
                 />
               );
             })}
-            <Circle cx={round(sx)} cy={round(sy)} r={badge} fill={color} />
+            <Circle cx={round(sx)} cy={round(sy)} r={badge} fill={color} stroke="#FFFFFF" strokeWidth={clamp(badge * 0.18, 1.5, 2.5)} />
             <SvgText
               x={round(sx)}
               y={round(sy + badge * 0.36)}

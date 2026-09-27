@@ -51,7 +51,34 @@ export const speechPracticeRepo = {
     notify('speechPractice');
   },
 
+  /** How many of `items` have been practised in an activity (e.g. BA..BU in Syllables), all time. */
+  async distinctItems(activityId: string, items: readonly string[]): Promise<number> {
+    if (items.length === 0) return 0;
+    const db = await getDb();
+    const row = await db.getFirstAsync<{ n: number }>(
+      `SELECT COUNT(DISTINCT UPPER(item)) AS n FROM speech_practice_events
+        WHERE activity_id = ? AND kind IN ('attempt', 'exercise') AND UPPER(item) IN (${items.map(() => '?').join(', ')})`,
+      activityId, ...items.map((i) => i.toUpperCase()),
+    );
+    return row?.n ?? 0;
+  },
+
   /** "Today's practice", including Sound Practice attempts. */
+  /**
+   * All-time counts, for badges and the progress screen: exercises done, activities touched and
+   * how many different words/items have been practised.
+   */
+  async lifetime(): Promise<{ exercises: number; activities: number; words: number }> {
+    const db = await getDb();
+    const row = await db.getFirstAsync<{ exercises: number; activities: number; words: number }>(
+      `SELECT COUNT(*) AS exercises,
+              COUNT(DISTINCT activity_id) AS activities,
+              COUNT(DISTINCT CASE WHEN item <> '' THEN item END) AS words
+         FROM speech_practice_events`,
+    );
+    return { exercises: row?.exercises ?? 0, activities: row?.activities ?? 0, words: row?.words ?? 0 };
+  },
+
   async todayStats(): Promise<SpeechPracticeStats> {
     const db = await getDb();
     const since = startOfDay();

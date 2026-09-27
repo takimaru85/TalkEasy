@@ -7,6 +7,7 @@ import { useSizes } from '@/hooks/useSizes';
 import type { AssignmentWithSubject } from '@/types/models';
 import { describeDueDate, isPast } from '@/utils/date';
 import { Icon } from '@/components/common/Icon';
+import { useCardPalette } from '@/components/common/cardPalette';
 import { Fonts } from '@/theme';
 
 interface Props {
@@ -28,6 +29,8 @@ export function AssignmentCard({ assignment: a, today, onPress, onToggleDone, co
   const overdue = !done && isPast(a.dueDate, today);
   const subjectName = a.subject?.name ?? KIND_META[a.kind].label;
   const status = STATUS_META[a.status];
+  // Solid colour with white text in the child zone; the original pale card in Parent Mode.
+  const pal = useCardPalette(done ? '#ECEEF2' : a.subject?.color ?? '#FFF3A8');
 
   return (
     <Pressable
@@ -37,23 +40,24 @@ export function AssignmentCard({ assignment: a, today, onPress, onToggleDone, co
       accessibilityLabel={`${subjectName} ${KIND_META[a.kind].label}: ${a.title}. ${a.dueDate ? `Due ${describeDueDate(a.dueDate, today)}.` : ''} ${status.childLabel}`}
       style={({ pressed }) => [
         styles.card,
-        { backgroundColor: done ? '#E8E8E8' : a.subject?.color ?? '#FFF3A8', minHeight: compact ? 84 : Math.max(sizes.tileHeight * 0.7, 96) },
+        pal.night ? pal.cardStyle : { backgroundColor: done ? '#E8E8E8' : a.subject?.color ?? '#FFF3A8' },
+        { minHeight: compact ? 84 : Math.max(sizes.tileHeight * 0.7, 96) },
         done && styles.cardDone,
         overdue && styles.cardOverdue,
         pressed && onPress && styles.pressed,
       ]}
     >
       <View style={styles.iconBox}>
-        <Icon name={done ? 'check-circle' : (a.subject?.icon ?? KIND_META[a.kind].icon)} size={compact ? 36 : 44} color={done ? Colors.success : Colors.text} />
+        <Icon name={done ? 'check-circle' : (a.subject?.icon ?? KIND_META[a.kind].icon)} size={compact ? 36 : 44} color={pal.night ? '#FFFFFF' : done ? Colors.success : Colors.text} />
       </View>
       <View style={styles.text}>
-        <Text style={[styles.subject, { fontSize: sizes.body - 2 }]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={1}>
+        <Text style={[styles.subject, { fontSize: sizes.body - 2 }, pal.night && { color: pal.inkMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={1}>
           {subjectName} {a.kind !== 'assignment' ? `· ${KIND_META[a.kind].label}` : ''}
         </Text>
-        <Text style={[styles.title, { fontSize: compact ? sizes.body + 2 : sizes.tileLabel }, done && styles.titleDone]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={2}>
+        <Text style={[styles.title, { fontSize: compact ? sizes.body + 2 : sizes.tileLabel }, pal.night && { color: pal.ink }, done && styles.titleDone, done && pal.night && { color: pal.inkMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={2}>
           {a.title}
         </Text>
-        <Text style={[styles.meta, { fontSize: sizes.body - 2 }, overdue && styles.metaOverdue]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={1}>
+        <Text style={[styles.meta, { fontSize: sizes.body - 2 }, pal.night && { color: pal.ink }, overdue && (pal.night ? styles.metaOverdueNight : styles.metaOverdue)]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={1}>
           {done ? 'Completed' : `Due ${describeDueDate(a.dueDate, today)} · ${status.childLabel}`}
         </Text>
       </View>
@@ -64,7 +68,7 @@ export function AssignmentCard({ assignment: a, today, onPress, onToggleDone, co
           accessibilityLabel={done ? `Mark ${a.title} not finished` : `Mark ${a.title} finished`}
           accessibilityState={{ checked: done }}
           hitSlop={6}
-          style={({ pressed }) => [styles.check, done && styles.checkDone, pressed && styles.pressed]}
+          style={({ pressed }) => [styles.check, pal.night && styles.checkNight, done && styles.checkDone, pressed && styles.pressed]}
         >
           {done ? <Icon name="check-bold" size={30} color={Colors.textOnDark} /> : null}
         </Pressable>
@@ -93,6 +97,9 @@ const styles = StyleSheet.create({
   titleDone: { textDecorationLine: 'line-through', color: Colors.textMuted },
   meta: { fontFamily: Fonts.bold, color: Colors.text },
   metaOverdue: { color: Colors.danger },
+  // Red would vanish on a solid card; overdue reads as bright yellow there.
+  metaOverdueNight: { color: '#FFE08A' },
+  checkNight: { backgroundColor: 'rgba(255,255,255,0.18)', borderColor: '#FFFFFF' },
   check: {
     width: 56,
     height: 56,

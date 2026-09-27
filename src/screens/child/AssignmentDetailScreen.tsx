@@ -1,5 +1,7 @@
 import React from 'react';
 import { Image, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useCardPalette } from '@/components/common/cardPalette';
+import { useTheme } from '@/theme';
 import { BigButton, ChildScreen, Icon } from '@/components/common';
 import { Colors } from '@/constants/colors';
 import { KIND_META, STATUS_META } from '@/constants/school';
@@ -23,6 +25,9 @@ export function AssignmentDetailScreen({ navigation, route }: RootScreenProps<'A
   const { displayName } = useProfile();
   const award = useAwardStars();
 
+  const theme = useTheme();
+  const pal = useCardPalette(a?.status === 'done' ? '#ECEEF2' : a?.subject?.color ?? '#FFF3A8');
+
   if (!a) return <ChildScreen title="Assignment" back />;
 
   const done = a.status === 'done';
@@ -45,21 +50,21 @@ export function AssignmentDetailScreen({ navigation, route }: RootScreenProps<'A
   return (
     <ChildScreen title={subjectName} back>
       <ScrollView contentContainerStyle={[styles.content, { paddingHorizontal: sizes.horizontalPadding }]}>
-        <View style={[styles.hero, { backgroundColor: done ? '#E8E8E8' : a.subject?.color ?? '#FFF3A8' }]}>
-          <Icon name={done ? 'check-circle' : (a.subject?.icon ?? KIND_META[a.kind].icon)} size={sizes.iconSize + 16} color={done ? Colors.success : Colors.text} />
-          <Text style={[styles.title, { fontSize: sizes.phrase - 6 }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
+        <View style={[styles.hero, pal.night ? pal.cardStyle : { backgroundColor: done ? '#E8E8E8' : a.subject?.color ?? '#FFF3A8' }]}>
+          <Icon name={done ? 'check-circle' : (a.subject?.icon ?? KIND_META[a.kind].icon)} size={sizes.iconSize + 16} color={pal.night ? '#FFFFFF' : done ? Colors.success : Colors.text} />
+          <Text style={[styles.title, { fontSize: sizes.phrase - 6, color: pal.ink }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
             {a.title}
           </Text>
-          <Text style={[styles.line, { fontSize: sizes.body + 2 }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
+          <Text style={[styles.line, { fontSize: sizes.body + 2, color: pal.ink }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
             {KIND_META[a.kind].label} · {a.dueDate ? `Due ${describeDueDate(a.dueDate, isoDate)} (${formatShortDate(a.dueDate)})` : 'No due date'}
           </Text>
-          <Text style={[styles.line, styles.status, { fontSize: sizes.body + 2 }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
+          <Text style={[styles.line, styles.status, { fontSize: sizes.body + 2, color: pal.inkMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
             {done ? 'Completed' : STATUS_META[a.status].childLabel}
           </Text>
         </View>
 
         {a.description ? (
-          <Text style={[styles.description, { fontSize: sizes.body + 4 }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>{a.description}</Text>
+          <Text style={[styles.description, { fontSize: sizes.body + 4, color: theme.colors.text }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>{a.description}</Text>
         ) : null}
 
         {a.photoUri ? (
