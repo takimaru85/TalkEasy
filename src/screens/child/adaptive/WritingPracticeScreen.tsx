@@ -1,14 +1,21 @@
 import React from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Card, ChildScreen, Glyph, Icon as LineIcon, PressableScale, ProgressBar } from '@/components/common';
+import { Card, ChildScreen, ProgressBar } from '@/components/common';
+import { MissionCard } from '@/components/adventure/MissionCard';
 import { WRITING_LEVELS } from '@/adaptive/handwriting';
 import { MAX_FONT_SCALE, SPACING } from '@/constants/sizes';
 import { useAdaptiveProgress, useSizes, useSpeak } from '@/hooks';
 import type { RootScreenProps } from '@/navigation/types';
-import { Fonts, Radius, useTheme } from '@/theme';
+import { Fonts, useTheme, type AdventureKey } from '@/theme';
 import { useI18n } from '@/i18n';
 
-/** Writing practice: seven levels as big cards. Levels already tried show a ⭐. */
+/** One colour per level, so neighbouring missions never share a hue. */
+const LEVEL_COLORS: AdventureKey[] = ['grape', 'sky', 'magenta', 'grass', 'coral', 'lagoon', 'sun'];
+
+/**
+ * Writing practice ("Learn & Trace"): seven levels as mission cards. Levels already tried show a
+ * gold star medal. Every level stays open — nothing is locked, as before.
+ */
 export function WritingPracticeScreen({ navigation }: RootScreenProps<'WritingPractice'>) {
   const sizes = useSizes();
   const { t } = useI18n();
@@ -16,28 +23,34 @@ export function WritingPracticeScreen({ navigation }: RootScreenProps<'WritingPr
   const { data: progress } = useAdaptiveProgress();
   const { speakFeedback } = useSpeak();
   const tried = new Set(progress.handwritingLevelsPractised);
+  // The level to do next: the first one not tried yet. Every level stays open; this only points.
+  const nextLevel = WRITING_LEVELS.find((l) => !tried.has(l.level))?.level;
 
   return (
-    <ChildScreen title={t('titleWritingPractice')} emoji="✏️" back>
+    <ChildScreen title={theme.night ? t('traceTitle') : t('titleWritingPractice')} emoji="✏️" art="trace" subtitle={theme.night ? t('traceSub') : undefined} back>
       <ScrollView contentContainerStyle={[styles.content, { paddingHorizontal: sizes.horizontalPadding }]}>
-        <Card>
-          <Text style={[styles.intro, { fontSize: sizes.body + 1, color: theme.colors.text }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
-            Practice with your finger. Any size is fine — this is just for fun and to get stronger.
+        <Card padding={SPACING.md}>
+          <Text style={[styles.intro, { fontSize: sizes.body, color: theme.colors.text }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
+            {t('traceIntro')}
           </Text>
           <ProgressBar value={tried.size / WRITING_LEVELS.length} label={`${tried.size} / ${WRITING_LEVELS.length}`} color={theme.colors.selected} accessibilityLabel={`${tried.size} of ${WRITING_LEVELS.length} levels tried`} />
         </Card>
-        {WRITING_LEVELS.map((l) => (
-          <PressableScale key={l.level} onPress={() => { speakFeedback(l.title); navigation.navigate('WritingCanvas', { level: l.level }); }} accessibilityRole="button" accessibilityLabel={`Level ${l.level}, ${l.title}. ${l.description}${tried.has(l.level) ? '. Practised' : ''}`}>
-            <Card style={styles.row} padding={SPACING.md}>
-              <Glyph value={l.emoji} size={60} />
-              <View style={styles.text}>
-                <Text style={[styles.level, { color: theme.colors.textMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>LEVEL {l.level}</Text>
-                <Text style={[styles.title, { fontSize: sizes.tileLabel + 1, color: theme.colors.text }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>{l.title}</Text>
-                <Text style={[styles.desc, { color: theme.colors.textMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={2}>{l.description}</Text>
-              </View>
-              <LineIcon name={tried.has(l.level) ? 'star' : 'play-circle-outline'} size={32} color={tried.has(l.level) ? '#E0A800' : theme.colors.primary} />
-            </Card>
-          </PressableScale>
+        {WRITING_LEVELS.map((l, i) => (
+          <MissionCard
+            key={l.level}
+            eyebrow={`LEVEL ${l.level}`}
+            title={l.title}
+            subtitle={l.description}
+            glyph={l.emoji}
+            color={LEVEL_COLORS[i % LEVEL_COLORS.length]}
+            done={tried.has(l.level)}
+            doneLabel={t('traceDone')}
+            compact={tried.has(l.level)}
+            current={l.level === nextLevel}
+            currentLabel={t('traceUpNext')}
+            onPress={() => { speakFeedback(l.title); navigation.navigate('WritingCanvas', { level: l.level }); }}
+            accessibilityLabel={`Level ${l.level}, ${l.title}. ${l.description}${tried.has(l.level) ? '. Practised' : l.level === nextLevel ? '. Up next' : ''}`}
+          />
         ))}
       </ScrollView>
     </ChildScreen>
@@ -45,14 +58,6 @@ export function WritingPracticeScreen({ navigation }: RootScreenProps<'WritingPr
 }
 
 const styles = StyleSheet.create({
-  content: { paddingVertical: SPACING.sm, gap: SPACING.md, paddingBottom: SPACING.xl },
-  intro: { fontFamily: Fonts.semibold, marginBottom: SPACING.sm, lineHeight: 28 },
-  row: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md },
-  badge: { width: 64, height: 64, borderRadius: Radius.md, alignItems: 'center', justifyContent: 'center' },
-  badgeEmoji: { fontSize: 32, lineHeight: 40 },
-  text: { flex: 1, gap: 2 },
-  level: { fontFamily: Fonts.black, fontSize: 13, letterSpacing: 1 },
-  title: { fontFamily: Fonts.extrabold },
-  desc: { fontFamily: Fonts.semibold, fontSize: 15 },
-  star: { fontSize: 26 },
+  content: { paddingVertical: SPACING.sm, gap: SPACING.sm + 2, paddingBottom: SPACING.xl },
+  intro: { fontFamily: Fonts.bold, marginBottom: SPACING.sm, textAlign: 'center' },
 });

@@ -71,7 +71,7 @@ export function SoundPracticeDetailScreen({ route, navigation }: RootScreenProps
   const micBlocked = recorder.phase === 'denied' || recorder.phase === 'unsupported' || recorder.phase === 'error';
 
   return (
-    <ChildScreen title={t('sectionSoundPractice')} emoji="🎯" back>
+    <ChildScreen title={t('sectionSoundPractice')} emoji="🎯" art="mission" back>
       <ScrollView style={styles.flex} contentContainerStyle={[styles.content, { paddingHorizontal: sizes.horizontalPadding }]}>
         {/* The sound itself — the one thing the child must see. */}
         <Card color={theme.colors.primarySoft} style={styles.letterCard}>

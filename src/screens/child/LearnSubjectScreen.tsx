@@ -1,11 +1,14 @@
 import React from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { ChildScreen, EmptyState, Glyph, Icon, PressableScale } from '@/components/common';
+import { MissionCard } from '@/components/adventure/MissionCard';
 import { MAX_FONT_SCALE, SPACING } from '@/constants/sizes';
 import { useLearningBest, useLearningConfigs, useSizes, useSpeak } from '@/hooks';
 import { getSubject } from '@/learning';
 import type { RootScreenProps } from '@/navigation/types';
-import { Fonts, Radius, useTheme } from '@/theme';
+import { Fonts, Radius, useTheme, type AdventureKey } from '@/theme';
+
+const COLORS: AdventureKey[] = ['coral', 'sky', 'grape', 'grass', 'magenta', 'lagoon', 'sun'];
 
 function stars(best: number | undefined): string {
   if (best === undefined) return '';
@@ -33,7 +36,21 @@ export function LearnSubjectScreen({ navigation, route }: RootScreenProps<'Learn
         <EmptyState icon="book-open-variant" title="Nothing to practise yet" message="A parent can turn activities on in Parent Mode." />
       ) : (
         <ScrollView contentContainerStyle={[styles.content, { paddingHorizontal: sizes.horizontalPadding }]}>
-          {activities.map((a) => (
+          {activities.map((a, i) => theme.night ? (
+            <MissionCard
+              key={a.key}
+              eyebrow={stars(best.get(a.key)) || undefined}
+              title={a.title}
+              subtitle={a.description}
+              glyph={a.emoji}
+              color={COLORS[i % COLORS.length]}
+              onPress={() => {
+                speakFeedback(a.title);
+                navigation.navigate('LearnActivity', { activityKey: a.key });
+              }}
+              accessibilityLabel={`${a.title}. ${a.description}${best.get(a.key) !== undefined ? `. Best ${Math.round((best.get(a.key) ?? 0) * 100)} percent` : ''}`}
+            />
+          ) : (
             <PressableScale
               key={a.key}
               onPress={() => {

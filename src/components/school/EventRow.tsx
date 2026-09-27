@@ -7,6 +7,7 @@ import { useSizes } from '@/hooks/useSizes';
 import type { CalendarEntry } from '@/types/models';
 import { describeDueDate, formatTime } from '@/utils/date';
 import { Icon } from '@/components/common/Icon';
+import { useCardPalette } from '@/components/common/cardPalette';
 import { Fonts } from '@/theme';
 
 interface Props {
@@ -30,6 +31,7 @@ export function EventRow({ entry, today, onPress, hideDate }: Props) {
     .filter(Boolean)
     .join(' · ');
   const done = entry.assignment?.status === 'done';
+  const pal = useCardPalette(entry.color);
 
   return (
     <Pressable
@@ -37,18 +39,18 @@ export function EventRow({ entry, today, onPress, hideDate }: Props) {
       disabled={!onPress}
       accessibilityRole={onPress ? 'button' : undefined}
       accessibilityLabel={`${typeLabel}: ${entry.title}. ${when}`}
-      style={({ pressed }) => [styles.row, { backgroundColor: entry.color }, done && styles.done, pressed && onPress && styles.pressed]}
+      style={({ pressed }) => [styles.row, pal.night ? pal.cardStyle : { backgroundColor: entry.color }, done && styles.done, pressed && onPress && styles.pressed]}
     >
-      <Icon name={entry.icon} size={34} color={Colors.text} />
+      <Icon name={entry.icon} size={34} color={pal.ink} />
       <View style={styles.text}>
-        <Text style={[styles.title, { fontSize: sizes.body + 1 }, done && styles.titleDone]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={2}>
+        <Text style={[styles.title, { fontSize: sizes.body + 1, color: pal.ink }, done && styles.titleDone]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={2}>
           {entry.title}
         </Text>
-        <Text style={[styles.meta, { fontSize: sizes.body - 3 }]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={1}>
+        <Text style={[styles.meta, { fontSize: sizes.body - 3, color: pal.inkMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={1}>
           {[typeLabel, when].filter(Boolean).join(' · ')}
         </Text>
       </View>
-      {onPress ? <Icon name="chevron-right" size={26} color={Colors.textMuted} /> : null}
+      {onPress ? <Icon name="chevron-right" size={26} color={pal.inkMuted} /> : null}
     </Pressable>
   );
 }

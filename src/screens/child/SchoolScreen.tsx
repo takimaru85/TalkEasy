@@ -8,7 +8,7 @@ import { MAX_FONT_SCALE, SPACING } from '@/constants/sizes';
 import { useOpenAssignments, useScheduleForDay, useSizes, useSubjects, useToday } from '@/hooks';
 import type { RootScreenProps } from '@/navigation/types';
 import { formatTime } from '@/utils/date';
-import { Fonts } from '@/theme';
+import { Fonts, useTheme } from '@/theme';
 
 /**
  * School dashboard for the child: today's classes in order, then every subject as a big tile.
@@ -16,6 +16,7 @@ import { Fonts } from '@/theme';
  */
 export function SchoolScreen({ navigation }: RootScreenProps<'School'>) {
   const sizes = useSizes();
+  const theme = useTheme();
   const { dayOfWeek, time } = useToday();
   const { data: subjects, loading } = useSubjects();
   const { data: schedule } = useScheduleForDay(dayOfWeek);
@@ -25,11 +26,11 @@ export function SchoolScreen({ navigation }: RootScreenProps<'School'>) {
   const current = schedule.find((s) => s.startTime <= time && (!s.endTime || s.endTime >= time));
 
   return (
-    <ChildScreen title="School" emoji={SECTION_EMOJI.school}>
+    <ChildScreen title="School" emoji={SECTION_EMOJI.school} art="school">
       <ScrollView contentContainerStyle={[styles.content, { paddingHorizontal: sizes.horizontalPadding }]}>
         <SectionTitle title={`Today · ${DAY_NAMES[dayOfWeek].long}`} emoji="📆" />
         {schedule.length === 0 ? (
-          <Text style={[styles.empty, { fontSize: sizes.body }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
+          <Text style={[styles.empty, { fontSize: sizes.body, color: theme.colors.textMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
             No classes today.
           </Text>
         ) : (
@@ -66,5 +67,5 @@ export function SchoolScreen({ navigation }: RootScreenProps<'School'>) {
 
 const styles = StyleSheet.create({
   content: { paddingVertical: SPACING.sm, gap: SPACING.md, paddingBottom: SPACING.xl },
-  empty: { color: Colors.textMuted, fontFamily: Fonts.semibold },
+  empty: { fontFamily: Fonts.semibold },
 });

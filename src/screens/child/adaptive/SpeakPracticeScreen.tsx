@@ -52,7 +52,7 @@ export function SpeakPracticeScreen({ navigation }: RootScreenProps<'SpeakPracti
   };
 
   return (
-    <ChildScreen title={t('titleSpeakAnswer')} emoji="🎤" back>
+    <ChildScreen title={t('titleSpeakAnswer')} emoji="🎤" art="speech" back>
       <Celebration trigger={burst} />
       <View style={[styles.questionWrap, { paddingHorizontal: sizes.horizontalPadding }]}>
         <Card color={theme.colors.primarySoft} style={styles.qCard}>

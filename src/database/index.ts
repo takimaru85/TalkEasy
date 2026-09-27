@@ -18,3 +18,5 @@ export { lessonsRepo } from './repositories/lessonsRepo';
 export { adaptiveProgressRepo, HANDWRITING_LEVEL_COUNT } from './repositories/adaptiveProgressRepo';
 export { soundPracticeRepo } from './repositories/soundPracticeRepo';
 export { speechPracticeRepo } from './repositories/speechPracticeRepo';
+export { summaryRepo, weekRange, localDay } from './repositories/summaryRepo';
+export type { WeekRange, WeeklySummary } from './repositories/summaryRepo';

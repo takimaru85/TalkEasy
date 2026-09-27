@@ -1,15 +1,16 @@
 import React from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Card, ChildScreen, EmptyState, Glyph, Icon as LineIcon, IconTile, PressableScale, ProgressBar, SectionTitle } from '@/components/common';
+import { GameTile, HeroPanel, MissionCard, type GameIconName } from '@/components/adventure';
 import { MAX_FONT_SCALE, SPACING } from '@/constants/sizes';
 import { useProfile } from '@/context/ProfileContext';
 import { useAdaptiveProgress, useSizes, useSpeak, useToday, useTodayLessons } from '@/hooks';
 import type { RootScreenProps } from '@/navigation/types';
 import { Fonts, Radius, useTheme } from '@/theme';
 
-const PRACTICE: { screen: 'WritingPractice' | 'SpeakPractice'; label: string; icon: string; tint: string }[] = [
-  { screen: 'WritingPractice', label: 'Writing practice', icon: 'draw', tint: '#FFE3C7' },
-  { screen: 'SpeakPractice', label: 'Speak your answer', icon: 'microphone-outline', tint: '#FFD9D3' },
+const PRACTICE: { screen: 'WritingPractice' | 'SpeakPractice'; label: string; icon: string; tint: string; art: GameIconName }[] = [
+  { screen: 'WritingPractice', label: 'Writing practice', icon: 'draw', tint: '#FFE3C7', art: 'trace' },
+  { screen: 'SpeakPractice', label: 'Speak your answer', icon: 'microphone-outline', tint: '#FFD9D3', art: 'speech' },
 ];
 
 /**
@@ -31,11 +32,16 @@ export function AdaptiveHomeScreen({ navigation }: RootScreenProps<'AdaptiveHome
     progress.learningPercent >= 80 ? 'Great job! 🌟' : progress.learningPercent >= 50 ? "You're making progress! 👏" : progress.questionsAnswered > 0 ? 'Keep going! 💪' : "Let's start! 🚀";
 
   return (
-    <ChildScreen title="Lessons" emoji="🎓">
+    <ChildScreen title="Lessons" emoji="🎓" art="lessons">
       <ScrollView contentContainerStyle={[styles.content, { paddingHorizontal: sizes.horizontalPadding }]}>
-        <Text style={[styles.hi, { fontSize: sizes.heading + 2, color: theme.colors.text }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
-          Hi, {displayName}!
-        </Text>
+        <HeroPanel color="grass" art="lessons" title={`Hi, ${displayName}!`} subtitle={encouragement} mascot>
+          <ProgressBar value={progress.learningPercent / 100} label={`${progress.learningPercent}%`} color="#FFD84D" accessibilityLabel={`Learning progress ${progress.learningPercent} percent`} />
+        </HeroPanel>
+        {theme.night ? null : (
+          <Text style={[styles.hi, { fontSize: sizes.heading + 2, color: theme.colors.text }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
+            Hi, {displayName}!
+          </Text>
+        )}
 
         <SectionTitle title="Today's schoolwork" emoji="📝" trailing={lessons.length ? `${doneToday} / ${lessons.length}` : undefined} />
         {!loading && lessons.length === 0 ? (
@@ -44,6 +50,27 @@ export function AdaptiveHomeScreen({ navigation }: RootScreenProps<'AdaptiveHome
         {lessons.map((l) => {
           const complete = l.activityCount > 0 && l.completedCount >= l.activityCount;
           const started = l.completedCount > 0 && !complete;
+          const open = () => {
+            speakFeedback(`${l.subjectName}. ${l.title}`);
+            navigation.navigate('AdaptiveLesson', { lessonId: l.id });
+          };
+          const a11y = `${l.subjectName}: ${l.title}. ${complete ? 'Completed' : started ? `Continue, ${l.completedCount} of ${l.activityCount} done` : 'Start'}`;
+          if (theme.night) {
+            return (
+              <MissionCard
+                key={l.id}
+                eyebrow={l.subjectName.toUpperCase()}
+                title={l.title}
+                glyph={l.subjectIcon}
+                tint={l.subjectColor}
+                done={complete}
+                doneLabel="Done"
+                progress={l.activityCount > 0 && !complete ? { value: l.completedCount / l.activityCount, label: `${l.completedCount} / ${l.activityCount}` } : undefined}
+                onPress={open}
+                accessibilityLabel={a11y}
+              />
+            );
+          }
           return (
             <PressableScale
               key={l.id}
@@ -72,7 +99,11 @@ export function AdaptiveHomeScreen({ navigation }: RootScreenProps<'AdaptiveHome
         <SectionTitle title="Practice" emoji="✨" />
         {/* Icon above the label, so a two-word label always has the full card width to wrap in. */}
         <View style={[styles.row, { gap: sizes.gap }]}>
-          {PRACTICE.map((p) => (
+          {PRACTICE.map((p) => theme.night ? (
+            <View key={p.screen} style={styles.half}>
+              <GameTile label={p.label} tint={p.tint} art={p.art} onPress={() => navigation.navigate(p.screen)} accessibilityLabel={p.label} minHeight={Math.max(sizes.tileHeight * 0.85, 128)} />
+            </View>
+          ) : (
             <PressableScale key={p.screen} onPress={() => navigation.navigate(p.screen)} accessibilityRole="button" accessibilityLabel={p.label} hitSlop={4} style={styles.half}>
               <Card style={[styles.practiceCard, { minHeight: Math.max(sizes.tileHeight * 0.85, 128) }]} padding={SPACING.md}>
                 <IconTile name={p.icon} size={Math.round(sizes.iconSize + 4)} tint={p.tint} />

@@ -9,6 +9,7 @@ import type { ParentScreenProps } from '@/navigation/types';
 import { listVoices, onSpeechStatus, speakWithSettings, speechStatus, type SpeechStatus, type VoiceOption } from '@/services/speech';
 import { LOCALES } from '@/i18n';
 import type { LocaleCode } from '@/i18n/types';
+import { WORLDS, WORLD_IDS, type AdventureThemeSetting } from '@/adventure/worlds';
 import type { RotationMode, SizeOption } from '@/types/models';
 import { alertMessage } from '@/utils/confirm';
 import { BRAND } from '@/constants/brand';
@@ -187,6 +188,22 @@ export function SettingsScreen({ navigation }: ParentScreenProps<'Settings'>) {
             />
             <Text style={styles.hint} maxFontSizeMultiplier={MAX_FONT_SCALE}>
               On a tablet the app can be used sideways; grids show more cards per row. Takes effect immediately.
+            </Text>
+          </Section>
+
+          <Section title="Adventure Theme">
+            <ChoiceRow<AdventureThemeSetting>
+              label="Adventure world"
+              value={settings.adventureTheme}
+              onChange={(v) => updateSetting('adventureTheme', v)}
+              choices={[{ value: 'child', label: 'Let child choose' }, ...WORLD_IDS.map((id) => ({ value: id, label: WORLDS[id].name }))]}
+            />
+            <Text style={styles.hint} maxFontSizeMultiplier={MAX_FONT_SCALE}>
+              {settings.adventureTheme === 'child'
+                ? `The child picks their world from Home (now: ${settings.adventureWorld ? WORLDS[settings.adventureWorld].name : 'not chosen yet, showing Space'}). `
+                : `Your choice is used; the child cannot change it. `}
+              A world changes the scenery and the collectibles the child earns by practising — never where the
+              activities are. Pick what your child enjoys; any child can like any world.
             </Text>
           </Section>
 

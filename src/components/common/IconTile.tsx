@@ -21,7 +21,7 @@ interface Props {
 export function IconTile({ name, size, tint, muted }: Props) {
   const theme = useTheme();
   const bg = muted ? theme.colors.surfaceAlt : theme.tint(tint);
-  const ink = muted ? theme.colors.textMuted : theme.highContrast ? theme.colors.text : tileInk(tint);
+  const ink = muted ? theme.colors.textMuted : theme.highContrast ? theme.colors.text : theme.night ? '#FFFFFF' : tileInk(tint);
   return (
     <View
       style={[

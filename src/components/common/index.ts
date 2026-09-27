@@ -1,6 +1,8 @@
 export { Icon, isValidIcon, isEmoji } from './Icon';
 export { IconTile } from './IconTile';
 export { Glyph } from './Glyph';
+export { useCardPalette } from './cardPalette';
+export type { CardPalette } from './cardPalette';
 export { BigButton } from './BigButton';
 export { ScreenContainer } from './ScreenContainer';
 export { ScreenHeader } from './ScreenHeader';
@@ -16,6 +18,7 @@ export { EmptyState } from './EmptyState';
 export { DateField } from './DateField';
 export { TimeField } from './TimeField';
 export { SectionTitle } from './SectionTitle';
+export { SectionLabel } from './SectionLabel';
 export { StatTile } from './StatTile';
 export { ChildScreen } from './ChildScreen';
 export { PressableScale } from './PressableScale';

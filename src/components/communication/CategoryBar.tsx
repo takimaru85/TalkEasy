@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { MAX_FONT_SCALE, MIN_CHILD_TARGET, SPACING } from '@/constants/sizes';
-import { Fonts, Radius, useTheme } from '@/theme';
+import { Fonts, Radius, shade, useTheme } from '@/theme';
 import { Icon } from '@/components/common/Icon';
 import { tileInk } from '@/constants/colors';
 import { fitFontSize } from '@/utils/fitText';
@@ -31,6 +31,9 @@ const BASE_LABEL = 16;
  * the icon and its gap ate ~28 of ~99dp and long names either truncated ("Emerge…") or spilled
  * out of the chip entirely. One shared label size — the largest that fits every visible chip —
  * keeps "Food" and "Activities" reading at the same size instead of each chip shrinking alone.
+ *
+ * On the night sky every chip is a solid tab in its category's colour ("All" in the accent) with a
+ * white label; the chosen one gets a thick gold rim and the check, so it never relies on colour.
  */
 export function CategoryBar({ categories, selectedId, onSelect, visibleCount = 4 }: Props) {
   const { t, tContent } = useI18n();
@@ -56,13 +59,21 @@ export function CategoryBar({ categories, selectedId, onSelect, visibleCount = 4
     [items.map((i) => i.name).join('|'), innerWidth],
   );
 
-  const chipStyle = (selected: boolean) => [
+  const chipStyle = (selected: boolean, solid?: string) => [
     styles.chip,
-    {
+    theme.night
+      ? {
+          backgroundColor: solid ?? theme.colors.surfaceAlt,
+          borderColor: selected ? theme.colors.selected : shade(solid ?? theme.colors.surfaceAlt, 1.4),
+          borderWidth: selected ? 3.5 : 1.5,
+          borderBottomColor: selected ? theme.colors.selected : shade(solid ?? theme.colors.surfaceAlt, 0.66),
+          borderBottomWidth: selected ? 5 : 4.5,
+        }
+      : {
       backgroundColor: selected ? theme.colors.primary : theme.colors.surface,
       borderColor: selected ? theme.colors.primaryDark : theme.highContrast ? theme.colors.border : theme.colors.borderSoft,
       borderWidth: theme.highContrast ? theme.borderWidth : 1.5,
-    },
+        },
   ];
 
   const labelStyle = (color: string) => [styles.label, { fontSize: labelSize, lineHeight: Math.round(labelSize * 1.18), color }];
@@ -71,7 +82,8 @@ export function CategoryBar({ categories, selectedId, onSelect, visibleCount = 4
     <View style={styles.row} accessibilityRole="tablist">
       {items.map((item) => {
         const selected = item.id === selectedId;
-        const ink = selected
+        const solid = item.id === null ? theme.colors.primary : tileInk(item.color);
+        const ink = selected || theme.night
           ? '#FFFFFF'
           : theme.highContrast ? theme.colors.text
           : item.id === null ? theme.colors.primary
@@ -84,11 +96,11 @@ export function CategoryBar({ categories, selectedId, onSelect, visibleCount = 4
             accessibilityLabel={`${item.name} category`}
             accessibilityState={{ selected }}
             hitSlop={4}
-            style={({ pressed }) => [...chipStyle(selected), pressed && styles.pressed]}
+            style={({ pressed }) => [...chipStyle(selected, solid), pressed && styles.pressed]}
           >
             <Icon name={selected ? 'check-bold' : item.icon} size={22} color={ink} />
             <Text
-              style={labelStyle(selected ? '#FFFFFF' : theme.colors.text)}
+              style={labelStyle(selected || theme.night ? '#FFFFFF' : theme.colors.text)}
               maxFontSizeMultiplier={MAX_FONT_SCALE}
               numberOfLines={2}
               textBreakStrategy="simple"

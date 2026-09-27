@@ -104,6 +104,13 @@ export const buttonsRepo = {
     return rows.map(toModel);
   },
 
+  /** Talk cards spoken, all time (the sum of every card's tap count). */
+  async totalTaps(): Promise<number> {
+    const db = await getDb();
+    const row = await db.getFirstAsync<{ n: number | null }>('SELECT SUM(tap_count) AS n FROM communication_buttons');
+    return row?.n ?? 0;
+  },
+
   async getMostUsed(limit = 6): Promise<CommunicationButton[]> {
     const db = await getDb();
     const rows = await db.getAllAsync<ButtonRow>(

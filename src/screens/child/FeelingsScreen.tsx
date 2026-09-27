@@ -42,7 +42,7 @@ export function FeelingsScreen(_props: RootScreenProps<'Feelings'>) {
   };
 
   return (
-    <ChildScreen title={t('sectionFeelings')} emoji="😊">
+    <ChildScreen title={t('sectionFeelings')} emoji="😊" art="feelings">
       <PhraseBanner phrase={lastPhrase} onRepeat={repeat} placeholder={`How do you feel, ${displayName}?`} />
       {follow ? (
         <View style={[styles.follow, { marginHorizontal: sizes.horizontalPadding }]}>

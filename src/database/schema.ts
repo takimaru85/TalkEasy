@@ -373,6 +373,27 @@ export const MIGRATIONS: Migration[] = [
       UPDATE child_profile SET favorites_json = REPLACE(favorites_json, '"Ate"', '"Sister"');
     `,
   },
+  {
+    version: 8,
+    // Parent Mode, weekly view. routine_log remembers WHICH day a My Day step was ticked (the
+    // routine itself only knows "done now"), so a week's routine completion can be shown truthfully.
+    // One row per step per day. Caregiver notes gain an optional photo and a date the parent can
+    // choose (NULL = the day it was written).
+    sql: `
+      CREATE TABLE IF NOT EXISTS routine_log (
+        id               INTEGER PRIMARY KEY AUTOINCREMENT,
+        routine_item_id  INTEGER NOT NULL,
+        label            TEXT    NOT NULL,
+        day              TEXT    NOT NULL,
+        created_at       TEXT    NOT NULL,
+        UNIQUE (routine_item_id, day)
+      );
+      CREATE INDEX IF NOT EXISTS idx_routine_log_day ON routine_log(day);
+
+      ALTER TABLE caregiver_notes ADD COLUMN photo_uri TEXT;
+      ALTER TABLE caregiver_notes ADD COLUMN note_date TEXT;
+    `,
+  },
 ];
 
 export const CURRENT_SCHEMA_VERSION = MIGRATIONS[MIGRATIONS.length - 1].version;

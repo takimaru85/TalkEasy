@@ -11,7 +11,7 @@ import { useAssignments, useAwardStars, useSizes, useSpeak, useToday } from '@/h
 import type { RootScreenProps } from '@/navigation/types';
 import type { AssignmentWithSubject } from '@/types/models';
 import { confirm } from '@/utils/confirm';
-import { Fonts } from '@/theme';
+import { Fonts, useTheme } from '@/theme';
 
 /**
  * The child's assignment list: what is not finished (soonest first), then what is done.
@@ -19,6 +19,7 @@ import { Fonts } from '@/theme';
  */
 export function AssignmentsScreen({ navigation }: RootScreenProps<'Assignments'>) {
   const sizes = useSizes();
+  const theme = useTheme();
   const { settings } = useSettings();
   const { isoDate } = useToday();
   const { data: assignments, loading } = useAssignments();
@@ -43,14 +44,14 @@ export function AssignmentsScreen({ navigation }: RootScreenProps<'Assignments'>
   };
 
   return (
-    <ChildScreen title="Assignments" emoji="📝">
+    <ChildScreen title="Assignments" emoji="📝" art="school">
       {!loading && assignments.length === 0 ? (
         <EmptyState icon="pencil" title="No assignments" message="A parent can add assignments in Parent Mode." />
       ) : (
         <ScrollView contentContainerStyle={[styles.content, { paddingHorizontal: sizes.horizontalPadding }]}>
           <SectionTitle title="To do" emoji="📝" trailing={open.length ? String(open.length) : undefined} />
           {open.length === 0 ? (
-            <Text style={[styles.empty, { fontSize: sizes.body }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>All finished! 🎉</Text>
+            <Text style={[styles.empty, { fontSize: sizes.body, color: theme.colors.textMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>All finished! 🎉</Text>
           ) : null}
           {open.map((a) => (
             <AssignmentCard
@@ -80,5 +81,5 @@ export function AssignmentsScreen({ navigation }: RootScreenProps<'Assignments'>
 
 const styles = StyleSheet.create({
   content: { paddingVertical: SPACING.sm, gap: SPACING.md, paddingBottom: SPACING.xl },
-  empty: { color: Colors.textMuted, fontFamily: Fonts.semibold },
+  empty: { fontFamily: Fonts.semibold },
 });

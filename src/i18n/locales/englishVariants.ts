@@ -14,6 +14,9 @@ import { en } from './en';
  */
 const COMMONWEALTH_STRINGS: Partial<Strings> = {
   sectionFavorites: 'Favourites',
+  favTitle: "{name}'s Favourites",
+  traceSub: 'Practise your skills and explore new worlds.',
+  advChooseSub: 'Choose your favourite adventure.',
   soundPracticeSubtitle: 'Practise sounds, syllables and simple words',
   soundChooseSound: 'Choose a sound to practise',
   soundPracticeCta: 'Practise',
@@ -23,6 +26,9 @@ const COMMONWEALTH_STRINGS: Partial<Strings> = {
     'TalkEasy needs access to the microphone so you can practise speaking. Your recording stays on this device and is deleted right after you hear it.',
   soundGrownUpNote: 'TalkEasy Sound Practice provides simple activities for practising sounds, syllables and words at home.',
   spSubtitle: 'Practise sounds, words, language and communication',
+  questSpeechSub: 'Practise sounds and pronunciation',
+  advStatSounds: 'Sounds practised',
+  advStatWords: 'Words practised',
   spPracticeAgain: 'Practise again',
   spStatWords: 'Words practised',
   spNoWords: 'Nothing to practise here yet. A grown-up can add words in Parent Mode.',

@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Card, ChildScreen, IconTile, PressableScale, SectionTitle } from '@/components/common';
+import { Card, ChildScreen, SectionTitle } from '@/components/common';
+import { GameTile, HeroPanel, StatPill, SyllableChips } from '@/components/adventure';
 import { MAX_FONT_SCALE, SPACING } from '@/constants/sizes';
 import { useSettings } from '@/context/SettingsContext';
 import { useSizes, useTodaySpeechPractice } from '@/hooks';
@@ -34,11 +35,21 @@ export function SpeechPracticeScreen({ navigation }: RootScreenProps<'SpeechPrac
   const visible = ACTIVITIES.filter((a) => !hidden.has(a.id));
 
   return (
-    <ChildScreen title={t('spTitle')} emoji="microphone-outline" emojiTint="#FFD9D3">
+    <ChildScreen title={t('spTitle')} emoji="microphone-outline" emojiTint="#FFD9D3" art="speech">
       <ScrollView style={styles.flex} contentContainerStyle={[styles.content, { paddingHorizontal: sizes.horizontalPadding }]}>
-        <Text style={[styles.subtitle, { fontSize: sizes.body + 1, color: theme.colors.textMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
-          {t('spSubtitle')}
-        </Text>
+        {/* On the night sky: the section's own banner — Pip, the mic, and BA-BU to tap and hear. */}
+        <HeroPanel color="lagoon" art="speech" title={t('advPipLine')} subtitle={t('spSubtitle')} mascot>
+          <SyllableChips />
+          <View style={styles.pills}>
+            <StatPill icon="star" value={String(stats.activitiesCompleted)} label={`${t('spStatActivities')}: ${stats.activitiesCompleted}`} color="sun" />
+            <StatPill icon="microphone" value={String(stats.attempts)} label={`${t('soundStatAttempts')}: ${stats.attempts}`} color="lagoon" />
+          </View>
+        </HeroPanel>
+        {theme.night ? null : (
+          <Text style={[styles.subtitle, { fontSize: sizes.body + 1, color: theme.colors.textMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
+            {t('spSubtitle')}
+          </Text>
+        )}
 
         {visible.length === 0 ? (
           <Card>
@@ -56,26 +67,16 @@ export function SpeechPracticeScreen({ navigation }: RootScreenProps<'SpeechPrac
               <SectionTitle title={t(titleKey)} emoji={emoji} />
               <View style={[styles.grid, { gap: sizes.gap }]}>
                 {items.map((a) => (
-                  <PressableScale
+                  <GameTile
                     key={a.id}
+                    label={t(a.titleKey)}
+                    tint={a.tint}
+                    glyph={a.icon}
                     onPress={() => open(a)}
-                    accessibilityRole="button"
                     accessibilityLabel={`${t(a.titleKey)}, ${t(titleKey)}`}
-                    hitSlop={4}
-                    style={{ width: tileWidth }}
-                  >
-                    <Card style={[styles.tile, { minHeight: Math.max(sizes.tileHeight * 0.8, 112) }]}>
-                      <IconTile name={a.icon} size={Math.round(sizes.iconSize + 4)} tint={a.tint} />
-                      <Text
-                        style={[styles.tileLabel, { fontSize: sizes.tileLabel - 4, color: theme.colors.text }]}
-                        maxFontSizeMultiplier={MAX_FONT_SCALE}
-                        numberOfLines={2}
-                        adjustsFontSizeToFit
-                      >
-                        {t(a.titleKey)}
-                      </Text>
-                    </Card>
-                  </PressableScale>
+                    width={tileWidth}
+                    minHeight={Math.max(sizes.tileHeight * 0.8, 112)}
+                  />
                 ))}
               </View>
             </View>
@@ -120,9 +121,7 @@ const styles = StyleSheet.create({
   subtitle: { fontFamily: Fonts.semibold, textAlign: 'center' },
   level: { gap: SPACING.sm },
   grid: { flexDirection: 'row', flexWrap: 'wrap' },
-  tile: { alignItems: 'center', justifyContent: 'center', gap: 4, paddingHorizontal: SPACING.sm },
-  tileEmoji: { textAlign: 'center' },
-  tileLabel: { fontFamily: Fonts.extrabold, textAlign: 'center' },
+  pills: { flexDirection: 'row', justifyContent: 'center', gap: SPACING.sm, marginTop: SPACING.sm },
   statRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 6 },
   statLabel: { fontFamily: Fonts.semibold, flexShrink: 1 },
   statValue: { fontFamily: Fonts.black },

@@ -2,12 +2,14 @@ import React, { useRef } from 'react';
 import { Animated, Image, PixelRatio, Pressable, StyleSheet, Text, View } from 'react-native';
 import { MAX_FONT_SCALE, SPACING, TAP_GUARD_MS } from '@/constants/sizes';
 import { useSizes } from '@/hooks/useSizes';
-import { Fonts, Radius, useTheme } from '@/theme';
+import { Fonts, Radius, shade, useTheme } from '@/theme';
 import { Motion } from '@/theme/tokens';
 import { Icon } from '@/components/common/Icon';
 import type { CommunicationButton } from '@/types/models';
 import { tileInk } from '@/constants/colors';
 import { useI18n } from '@/i18n';
+import { GradientSurface } from '@/components/adventure/GradientSurface';
+import { ART_FOR_ICON, GameIcon } from '@/components/adventure/GameIcon';
 
 /** Line box as a multiple of font size, for Nunito ExtraBold. */
 const LINE_HEIGHT = 1.18;
@@ -102,6 +104,10 @@ interface Props {
  * - Selected: accent ring + speaker badge, so selection is not shown by colour alone.
  * - A second tap within TAP_GUARD_MS is ignored so a tremor does not double-speak.
  * - Tap only: no long-press, no gestures.
+ *
+ * On the night sky (the child zone) the card is a SOLID game button in its category colour: a
+ * light-to-deep gradient, a lighter rim, a darker base underneath, a white label, and the
+ * illustrated art for the core words (a white glyph for everything else). Photos stay photos.
  */
 export const CommunicationTile = React.memo(function CommunicationTile({ button, selected, onPress, width, compact, labelSize: sharedLabelSize }: Props) {
   const sizes = useSizes();
@@ -126,6 +132,9 @@ export const CommunicationTile = React.memo(function CommunicationTile({ button,
   // A soft rounded square rather than a circle; the glyph in the deep tone of its own tint.
   const discRadius = Math.round(discSize * 0.3);
   const ink = theme.highContrast ? theme.colors.text : tileInk(button.color);
+  const night = theme.night;
+  const deep = tileInk(button.color);
+  const art = night && !button.imageUri ? ART_FOR_ICON[button.icon] : undefined;
   const { tContent } = useI18n();
   const isStarter = button.phrase.trim().endsWith('...');
   const label = tContent(button.label);
@@ -143,24 +152,56 @@ export const CommunicationTile = React.memo(function CommunicationTile({ button,
         style={({ pressed }) => [
           styles.tile,
           theme.shadow,
-          {
-            height,
-            backgroundColor: theme.colors.surface,
-            borderColor: selected ? theme.colors.primary : theme.highContrast ? theme.colors.border : theme.colors.borderSoft,
-            borderWidth: selected ? 4 : theme.highContrast ? theme.borderWidth : 1.5,
-          },
-          pressed && { backgroundColor: theme.tint(button.color) },
+          night
+            ? {
+                height,
+                backgroundColor: deep,
+                borderColor: selected ? theme.colors.selected : shade(deep, 1.4),
+                borderWidth: selected ? 4 : 1.5,
+                borderBottomColor: selected ? theme.colors.selected : shade(deep, 0.66),
+                borderBottomWidth: selected ? 5 : 5,
+              }
+            : {
+                height,
+                backgroundColor: theme.colors.surface,
+                borderColor: selected ? theme.colors.primary : theme.highContrast ? theme.colors.border : theme.colors.borderSoft,
+                borderWidth: selected ? 4 : theme.highContrast ? theme.borderWidth : 1.5,
+              },
+          pressed && !night && { backgroundColor: theme.tint(button.color) },
         ]}
       >
-        <View style={[styles.disc, { width: discSize, height: discSize, borderRadius: discRadius, backgroundColor: theme.tint(button.color), borderColor: theme.highContrast ? theme.colors.border : 'transparent', borderWidth: theme.highContrast ? 2 : 0 }]}>
-          {button.imageUri ? (
-            <Image source={{ uri: button.imageUri }} style={{ width: discSize, height: discSize, borderRadius: discRadius }} accessibilityIgnoresInvertColors />
-          ) : (
-            <Icon name={button.icon} size={iconSize} color={ink} />
-          )}
-        </View>
-        <Text
-          style={[styles.label, { fontSize: labelSize, lineHeight: Math.round(labelSize * LINE_HEIGHT), color: theme.colors.text }]}
+        {({ pressed }) => (
+          <>
+            {night ? (
+              <>
+                <GradientSurface from={shade(deep, pressed ? 1.15 : 1.32)} to={deep} direction="vertical" />
+                <View style={styles.gloss} pointerEvents="none">
+                  <GradientSurface from="#FFFFFF" to="#FFFFFF" direction="vertical" fromOpacity={0.32} toOpacity={0} />
+                </View>
+              </>
+            ) : null}
+            {art ? (
+              <View style={{ width: discSize, height: discSize, alignItems: 'center', justifyContent: 'center' }}>
+                <GameIcon name={art} size={discSize} />
+              </View>
+            ) : (
+              <View
+                style={[
+                  styles.disc,
+                  night
+                    ? { width: discSize, height: discSize, borderRadius: discRadius, borderColor: button.imageUri ? '#FFFFFF' : 'transparent', borderWidth: button.imageUri ? 2 : 0 }
+                    : { width: discSize, height: discSize, borderRadius: discRadius, backgroundColor: theme.tint(button.color), borderColor: theme.highContrast ? theme.colors.border : 'transparent', borderWidth: theme.highContrast ? 2 : 0 },
+                ]}
+              >
+                {button.imageUri ? (
+                  <Image source={{ uri: button.imageUri }} style={{ width: discSize, height: discSize, borderRadius: discRadius }} accessibilityIgnoresInvertColors />
+                ) : (
+                  <Icon name={button.icon} size={night ? Math.round(iconSize * 1.12) : iconSize} color={night ? '#FFFFFF' : ink} />
+                )}
+              </View>
+            )}
+            <Text
+          style={[styles.label, { fontSize: labelSize, lineHeight: Math.round(labelSize * LINE_HEIGHT), color: night ? '#FFFFFF' : theme.colors.text }, night && styles.labelNight]}
           maxFontSizeMultiplier={MAX_FONT_SCALE}
           numberOfLines={2}
           // Android splits long words across lines by default ("Bathroo / m"); keep them whole.
@@ -170,15 +211,17 @@ export const CommunicationTile = React.memo(function CommunicationTile({ button,
           {label}
         </Text>
         {selected ? (
-          <View style={[styles.badge, { backgroundColor: theme.colors.primary }]} accessibilityElementsHidden>
-            <Icon name="volume-high" size={18} color="#FFFFFF" />
+          <View style={[styles.badge, { backgroundColor: night ? theme.colors.selected : theme.colors.primary }]} accessibilityElementsHidden>
+            <Icon name="volume-high" size={18} color={night ? '#27325F' : '#FFFFFF'} />
           </View>
         ) : null}
         {isStarter && !selected ? (
-          <View style={[styles.badge, { backgroundColor: theme.tint(button.color), borderWidth: 1, borderColor: theme.colors.borderSoft }]} accessibilityElementsHidden>
-            <Icon name="dots-horizontal" size={18} color={ink} />
+          <View style={[styles.badge, night ? { backgroundColor: '#FFFFFF' } : { backgroundColor: theme.tint(button.color), borderWidth: 1, borderColor: theme.colors.borderSoft }]} accessibilityElementsHidden>
+            <Icon name="dots-horizontal" size={18} color={night ? deep : ink} />
           </View>
         ) : null}
+          </>
+        )}
       </Pressable>
     </Animated.View>
   );
@@ -196,6 +239,8 @@ const styles = StyleSheet.create({
   },
   disc: { alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   label: { fontFamily: Fonts.extrabold, textAlign: 'center' },
+  labelNight: { textShadowColor: 'rgba(0,0,0,0.28)', textShadowOffset: { width: 0, height: 1.5 }, textShadowRadius: 2 },
+  gloss: { position: 'absolute', top: 0, left: 0, right: 0, height: '55%' },
   badge: {
     position: 'absolute',
     top: 8,

@@ -5,6 +5,8 @@ import type { RootStackParamList } from '@/navigation/types';
 import { ScreenContainer } from './ScreenContainer';
 import { ScreenHeader } from './ScreenHeader';
 import { useI18n } from '@/i18n';
+import { AdventureZone } from '@/theme';
+import type { GameIconName } from '@/components/adventure/GameIcon';
 
 interface Props {
   title: string;
@@ -16,6 +18,9 @@ interface Props {
   onRightPress?: () => void;
   emoji?: string;
   emojiTint?: string;
+  /** Illustrated game icon beside the title (shown on the night sky; `emoji` elsewhere). */
+  art?: GameIconName;
+  subtitle?: string;
 }
 
 /**
@@ -23,12 +28,13 @@ interface Props {
  * (or a back arrow on nested screens). Same layout on every section so the child always
  * knows where the way back is.
  */
-export function ChildScreen({ title, children, back = false, rightIcon, rightLabel, onRightPress, emoji, emojiTint }: Props) {
+export function ChildScreen({ title, children, back = false, rightIcon, rightLabel, onRightPress, emoji, emojiTint, art, subtitle }: Props) {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const goHome = () => navigation.navigate('ChildHome');
   const { t } = useI18n();
   return (
-    <ScreenContainer>
+    <AdventureZone>
+      <ScreenContainer>
       <ScreenHeader
         title={title}
         onBack={back ? () => navigation.goBack() : goHome}
@@ -39,8 +45,11 @@ export function ChildScreen({ title, children, back = false, rightIcon, rightLab
         onRightPress={onRightPress}
         emoji={emoji}
         emojiTint={emojiTint}
+        art={art}
+        subtitle={subtitle}
       />
-      {children}
-    </ScreenContainer>
+        {children}
+      </ScreenContainer>
+    </AdventureZone>
   );
 }

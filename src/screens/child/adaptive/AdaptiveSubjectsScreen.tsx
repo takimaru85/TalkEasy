@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Card, ChildScreen, EmptyState, Icon as LineIcon, PressableScale, ProgressBar, SectionTitle } from '@/components/common';
+import { MissionCard } from '@/components/adventure/MissionCard';
 import { MAX_FONT_SCALE, SPACING } from '@/constants/sizes';
 import { useLessons, useSizes, useSpeak } from '@/hooks';
 import type { RootScreenProps } from '@/navigation/types';
@@ -25,7 +26,7 @@ export function AdaptiveSubjectsScreen({ navigation }: RootScreenProps<'Adaptive
   }, [lessons]);
 
   return (
-    <ChildScreen title="Subjects" emoji="📚" back>
+    <ChildScreen title="Subjects" emoji="📚" art="lessons" back>
       <ScrollView contentContainerStyle={[styles.content, { paddingHorizontal: sizes.horizontalPadding }]}>
         {!loading && lessons.length === 0 ? <EmptyState icon="school-outline" title="No lessons yet" message="A parent or teacher can add lessons in Parent Mode." /> : null}
         {groups.map((g) => {
@@ -34,9 +35,25 @@ export function AdaptiveSubjectsScreen({ navigation }: RootScreenProps<'Adaptive
           return (
             <View key={g.name} style={styles.group}>
               <SectionTitle title={g.name} emoji={g.icon} trailing={total ? `${done} / ${total}` : undefined} />
-              {total > 0 ? <ProgressBar value={done / total} color={theme.colors.success} height={12} /> : null}
+              {total > 0 ? <ProgressBar value={done / total} color={theme.night ? '#FFD84D' : theme.colors.success} height={12} /> : null}
               {g.items.map((l) => {
                 const complete = l.activityCount > 0 && l.completedCount >= l.activityCount;
+                if (theme.night) {
+                  return (
+                    <MissionCard
+                      key={l.id}
+                      title={l.title}
+                      subtitle={`${l.activityCount} question${l.activityCount === 1 ? '' : 's'}${l.gradeLevel ? ` · ${l.gradeLevel}` : ''}`}
+                      glyph={g.icon}
+                      tint={g.color}
+                      done={complete}
+                      doneLabel="Done"
+                      progress={l.activityCount > 0 && !complete && l.completedCount > 0 ? { value: l.completedCount / l.activityCount, label: `${l.completedCount} / ${l.activityCount}` } : undefined}
+                      onPress={() => { speakFeedback(l.title); navigation.navigate('AdaptiveLesson', { lessonId: l.id }); }}
+                      accessibilityLabel={`${l.title}. ${complete ? 'Completed' : `${l.completedCount} of ${l.activityCount} done`}`}
+                    />
+                  );
+                }
                 return (
                   <PressableScale key={l.id} onPress={() => { speakFeedback(l.title); navigation.navigate('AdaptiveLesson', { lessonId: l.id }); }} accessibilityRole="button" accessibilityLabel={`${l.title}. ${complete ? 'Completed' : `${l.completedCount} of ${l.activityCount} done`}`}>
                     <Card color={complete ? theme.colors.surfaceAlt : g.color} style={styles.row} padding={SPACING.md}>

@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { MAX_FONT_SCALE, MIN_CHILD_TARGET, SPACING } from '@/constants/sizes';
 import { useSizes } from '@/hooks/useSizes';
-import { Fonts, Radius, useTheme } from '@/theme';
+import { Fonts, Radius, useTheme , AdventureInk, AdventureRadius, shade, useIsAdventure } from '@/theme';
+import { GameIcon, type GameIconName } from '@/components/adventure/GameIcon';
 import { fitFontSize } from '@/utils/fitText';
 import { Icon } from './Icon';
 import { Glyph } from './Glyph';
@@ -21,22 +22,33 @@ interface Props {
   emoji?: string;
   /** Tint for `emoji` when it is a plain icon name. */
   emojiTint?: string;
+  /** Illustrated game icon before the title, used instead of `emoji` on the night sky. */
+  art?: GameIconName;
+  /** One short line under the title ("Tap a card to talk"). */
+  subtitle?: string;
 }
 
 /**
  * Header with optional back button (left) and one optional action (right).
  * Both controls are pill-shaped, at least 64pt, and always in the same position.
  */
-export function ScreenHeader({ title, onBack, backIcon = 'arrow-left', backLabel, rightIcon, rightLabel, onRightPress, emoji, emojiTint }: Props) {
+export function ScreenHeader({ title, onBack, backIcon = 'arrow-left', backLabel, rightIcon, rightLabel, onRightPress, emoji, emojiTint, art, subtitle }: Props) {
   const sizes = useSizes();
   const theme = useTheme();
+  const adventure = useIsAdventure();
+  const ink = adventure && !theme.highContrast && !theme.night ? AdventureInk : theme.colors.text;
   // Room left for the title between the two buttons; the title is sized to fit it on one line.
   const [titleWidth, setTitleWidth] = useState(0);
-  const titleSize = fitFontSize(title, titleWidth - (emoji ? 42 : 0), sizes.heading, 'line', 18);
+  const showArt = !!art && theme.night;
+  const titleSize = fitFontSize(title, titleWidth - (showArt ? 48 : emoji ? 42 : 0), sizes.heading, 'line', 18);
   const buttonStyle = [
     styles.iconButton,
     theme.shadow,
-    { backgroundColor: theme.colors.surface, borderColor: theme.highContrast ? theme.colors.border : theme.colors.borderSoft, borderWidth: theme.highContrast ? theme.borderWidth : 1 },
+    adventure ? { borderRadius: AdventureRadius.disc } : null,
+    theme.night
+      ? // A solid game button: lighter rim, darker base underneath.
+        { backgroundColor: theme.colors.surfaceAlt, borderColor: shade(theme.colors.surfaceAlt, 1.5), borderWidth: 1.5, borderBottomColor: shade(theme.colors.surfaceAlt, 0.6), borderBottomWidth: 4 }
+      : { backgroundColor: theme.colors.surface, borderColor: theme.highContrast ? theme.colors.border : theme.colors.borderSoft, borderWidth: theme.highContrast ? theme.borderWidth : 1 },
   ];
 
   return (
@@ -61,9 +73,10 @@ export function ScreenHeader({ title, onBack, backIcon = 'arrow-left', backLabel
       </View>
 
       <View style={styles.titleWrap} onLayout={(e) => setTitleWidth(e.nativeEvent.layout.width)}>
-        {emoji ? <Glyph value={emoji} size={34} tint={emojiTint} /> : null}
+        {showArt && art ? <GameIcon name={art} size={42} /> : emoji ? <Glyph value={emoji} size={34} tint={emojiTint} /> : null}
+        <View style={styles.titleCol}>
         <Text
-          style={[styles.title, { fontSize: titleSize, color: theme.colors.text }]}
+          style={[styles.title, { fontSize: titleSize, color: ink }, theme.night && styles.titleNight]}
           maxFontSizeMultiplier={MAX_FONT_SCALE}
           numberOfLines={1}
           adjustsFontSizeToFit
@@ -72,6 +85,12 @@ export function ScreenHeader({ title, onBack, backIcon = 'arrow-left', backLabel
         >
           {title}
         </Text>
+        {subtitle ? (
+          <Text style={[styles.subtitle, { color: theme.colors.textMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={2}>
+            {subtitle}
+          </Text>
+        ) : null}
+        </View>
       </View>
 
       <View style={[styles.side, styles.sideRight]}>
@@ -108,7 +127,10 @@ const styles = StyleSheet.create({
   sideRight: { alignItems: 'flex-end' },
   titleWrap: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginHorizontal: SPACING.sm },
   emoji: { fontSize: 24, lineHeight: 30 },
+  titleCol: { flexShrink: 1, alignItems: 'center' },
   title: { fontFamily: Fonts.black, textAlign: 'center', flexShrink: 1 },
+  titleNight: { textShadowColor: 'rgba(80,150,255,0.55)', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 10 },
+  subtitle: { fontFamily: Fonts.bold, fontSize: 14, textAlign: 'center', marginTop: 1 },
   iconButton: {
     width: MIN_CHILD_TARGET + 12,
     height: MIN_CHILD_TARGET,
