@@ -1,4 +1,5 @@
 // Checks the Adaptive Learning answer engine and demo content. Run: npm run check:adaptive
+import { readdirSync, readFileSync } from 'node:fs';
 import { acceptedAnswers, choicesForLevel, matchesFreeAnswer, normalizeAnswer, orderedMethods } from '../src/adaptive/answers';
 import { DEMO_LESSONS } from '../src/adaptive/demoLessons';
 import { WRITING_LEVELS } from '../src/adaptive/handwriting';
@@ -102,6 +103,57 @@ ok(layoutSchoolText('cat', 500, 200).glyphs[1].d === enCat.glyphs[1].d, 'default
 
 ok(WRITING_LEVELS.length === 7 && WRITING_LEVELS.every((l, i) => l.level === i + 1 && l.items.length > 0), 'seven writing levels with items');
 
+// ---- Tracing must not scroll the page --------------------------------------------------------------------------
+// The writing canvas sits inside a ScrollView. Without these, a finger dragged down the canvas scrolls the PAGE
+// instead of drawing. The root cause was a responder that would hand the gesture back to the ScrollView and a
+// ScrollView that stayed enabled; each of the three fixes below is asserted, because each can be removed alone
+// without anything failing to compile.
+const canvasSrc = readFileSync('src/components/adaptive/HandwritingCanvas.tsx', 'utf8');
+ok(canvasSrc.includes('onPanResponderTerminationRequest: () => false'), 'the canvas refuses to hand a stroke back to a parent scroller');
+ok(canvasSrc.includes('onShouldBlockNativeResponder: () => true'), 'the canvas blocks the native responder under a stroke');
+ok(canvasSrc.includes('drawingCb.current?.(true)'), 'touch-down tells the screen a stroke has begun, before the finger has moved');
+ok((canvasSrc.match(/drawingCb\.current\?\.\(false\)/g) ?? []).length >= 3, 'release, cancel AND unmount all tell the screen the stroke is over, so the page can never stay locked');
+ok(/Platform\.OS === 'web' \? styles\.webNoScroll/.test(canvasSrc) && canvasSrc.includes("touchAction: 'none'"), 'on the web the canvas alone gets touch-action: none');
+ok(canvasSrc.includes('<Svg width={size.w} height={size.h} pointerEvents="none">'), 'the drawing never takes a touch, so coordinates stay relative to the canvas');
+const screens = (dir: string): string[] => readdirSync(dir, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? screens(`${dir}/${e.name}`) : e.name.endsWith('.tsx') ? [`${dir}/${e.name}`] : []));
+let canvasScreens = 0;
+for (const f of screens('src/screens')) {
+  const src = readFileSync(f, 'utf8');
+  if (!src.includes('<HandwritingCanvas')) continue;
+  canvasScreens++;
+  ok(src.includes('onDrawingChange={lock.onDrawingChange}'), `${f}: listens for the stroke starting and ending`);
+  ok(src.includes('<TracingLockBar'), `${f}: shows the lock control outside the canvas`);
+  ok(src.includes('scrollEnabled={lock.scrollEnabled}'), `${f}: its ScrollView is off while locked or a finger is down`);
+}
+ok(canvasScreens >= 2, `every screen that hosts a writing canvas is covered (${canvasScreens} found)`);
+ok(readFileSync('src/screens/child/adaptive/WritingPracticeScreen.tsx', 'utf8').includes("navigate('WritingCanvas'"), 'every Learn & Trace level opens the one canvas screen, so the fix covers them all');
 console.log(`demo lessons ${DEMO_LESSONS.length}, activities ${DEMO_LESSONS.reduce((n, d) => n + d.activities.length, 0)}, writing items ${WRITING_LEVELS.reduce((n, l) => n + l.items.length, 0)}, problems ${problems}`);
 if (problems) process.exit(1);
 console.log('ALL OK');
+
+// A stroke must never slide the screen: the native stack's swipe-back is off on every canvas screen.
+{
+  const nav = readFileSync('src/navigation/RootNavigator.tsx', 'utf8');
+  const off = /NO_SWIPE_BACK\s*=\s*\{\s*gestureEnabled:\s*false/.test(nav);
+  const used = (n: string) => new RegExp(`name="${n}"[^>]*options=\{NO_SWIPE_BACK\}`).test(nav);
+  if (!off || !used('WritingCanvas') || !used('AdaptiveLesson')) {
+    console.log('FAIL swipe-back must be disabled on WritingCanvas and AdaptiveLesson');
+    process.exit(1);
+  }
+  console.log('ok  swipe-back disabled on canvas screens');
+}
+
+// Lock mode: touching the canvas locks, only the control outside it unlocks, and it lives in screen state.
+{
+  const hook = readFileSync('src/components/adaptive/useTracingLock.ts', 'utf8');
+  const bar = readFileSync('src/components/adaptive/TracingLockBar.tsx', 'utf8');
+  const canvas = readFileSync('src/components/adaptive/HandwritingCanvas.tsx', 'utf8');
+  const bad: string[] = [];
+  if (!/if \(d\) setLocked\(true\)/.test(hook)) bad.push('touching the canvas must lock');
+  if (!/scrollEnabled: !locked && !drawing/.test(hook)) bad.push('scroll must be off while locked');
+  if (!/onPress=\{onToggle\}/.test(bar)) bad.push('the control must toggle');
+  if (/TracingLockBar/.test(canvas)) bad.push('the control must stay OUTSIDE the canvas');
+  if (!/tracingLocked/.test(bar)) bad.push('label must come from i18n');
+  if (bad.length) { console.log('FAIL lock mode: ' + bad.join('; ')); process.exit(1); }
+  console.log('ok  tracing lock mode');
+}

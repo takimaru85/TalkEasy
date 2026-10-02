@@ -24,6 +24,9 @@ interface AssignmentRow {
   photo_uri: string | null;
   attachment_uri: string | null;
   attachment_name: string | null;
+  scan_text: string;
+  scan_language: string;
+  scan_type: string;
   completed_at: string | null;
   created_at: string;
   updated_at: string;
@@ -55,6 +58,11 @@ const toModel = (r: AssignmentRow): Assignment => ({
   photoUri: r.photo_uri,
   attachmentUri: r.attachment_uri,
   attachmentName: r.attachment_name,
+  // Scan Assignment. Older rows predate these columns, so a missing value reads as empty rather
+  // than as undefined leaking into the UI.
+  scanText: r.scan_text ?? '',
+  scanLanguage: r.scan_language ?? '',
+  scanType: r.scan_type ?? '',
   completedAt: r.completed_at,
   createdAt: r.created_at,
   updatedAt: r.updated_at,
@@ -150,11 +158,16 @@ export const assignmentsRepo = {
     const res = await db.runAsync(
       `INSERT INTO assignments
          (subject_id, title, description, kind, date_assigned, due_date, priority, status, notes,
-          photo_uri, attachment_uri, attachment_name, completed_at, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          photo_uri, attachment_uri, attachment_name, scan_text, scan_language, scan_type,
+          completed_at, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       input.subjectId, input.title.trim(), input.description.trim(), input.kind, input.dateAssigned,
       input.dueDate, input.priority, input.status, input.notes.trim(), input.photoUri,
-      input.attachmentUri, input.attachmentName, input.status === 'done' ? now : null, now, now,
+      input.attachmentUri, input.attachmentName,
+      // NOT trimmed and never rewritten: this is what the engine read, kept verbatim so the
+      // original is recoverable after any edit.
+      input.scanText ?? '', input.scanLanguage ?? '', input.scanType ?? '',
+      input.status === 'done' ? now : null, now, now,
     );
     notify('assignments');
     return res.lastInsertRowId;
@@ -169,13 +182,17 @@ export const assignmentsRepo = {
     const completedAt =
       input.status === 'done' ? (existing?.status === 'done' ? existing.completed_at : now) : null;
     await db.runAsync(
+      // scan_text is deliberately ABSENT from this statement. Editing an assignment changes the
+      // description; the text the engine read is a record of what was on the page and is never
+      // overwritten by an edit (see src/scan/types.ts).
       `UPDATE assignments SET subject_id = ?, title = ?, description = ?, kind = ?, date_assigned = ?,
          due_date = ?, priority = ?, status = ?, notes = ?, photo_uri = ?, attachment_uri = ?,
-         attachment_name = ?, completed_at = ?, updated_at = ?
+         attachment_name = ?, scan_language = ?, scan_type = ?, completed_at = ?, updated_at = ?
        WHERE id = ?`,
       input.subjectId, input.title.trim(), input.description.trim(), input.kind, input.dateAssigned,
       input.dueDate, input.priority, input.status, input.notes.trim(), input.photoUri,
-      input.attachmentUri, input.attachmentName, completedAt, now, id,
+      input.attachmentUri, input.attachmentName, input.scanLanguage ?? '', input.scanType ?? '',
+      completedAt, now, id,
     );
     notify('assignments');
   },

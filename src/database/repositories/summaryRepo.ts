@@ -96,8 +96,8 @@ export const summaryRepo = {
       db.getFirstAsync<{ n: number }>('SELECT COUNT(*) AS n FROM learning_progress WHERE played_at >= ? AND played_at < ?', s, e),
       db.getFirstAsync<{ n: number }>('SELECT COUNT(*) AS n FROM handwriting_sessions WHERE child_id = ? AND completed_at >= ? AND completed_at < ?', childId, s, e),
       db.getFirstAsync<{ n: number | null }>('SELECT SUM(amount) AS n FROM star_events WHERE amount > 0 AND created_at >= ? AND created_at < ?', s, e),
-      db.getFirstAsync<{ n: number }>('SELECT COUNT(*) AS n FROM routine_log WHERE day >= ? AND day <= ?', range.days[0], range.days[6]),
-      db.getFirstAsync<{ n: number }>('SELECT COUNT(DISTINCT day) AS n FROM routine_log WHERE day >= ? AND day <= ?', range.days[0], range.days[6]),
+      db.getFirstAsync<{ n: number }>("SELECT COUNT(*) AS n FROM routine_log WHERE status = 'done' AND day >= ? AND day <= ?", range.days[0], range.days[6]),
+      db.getFirstAsync<{ n: number }>("SELECT COUNT(DISTINCT day) AS n FROM routine_log WHERE status = 'done' AND day >= ? AND day <= ?", range.days[0], range.days[6]),
       db.getFirstAsync<{ n: number }>(
         `SELECT COUNT(*) AS n FROM routine_items WHERE routine_id =
            COALESCE((SELECT id FROM routines WHERE is_active = 1 ORDER BY id LIMIT 1), (SELECT id FROM routines ORDER BY id LIMIT 1))`,

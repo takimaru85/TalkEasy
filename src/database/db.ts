@@ -1,8 +1,10 @@
 import * as SQLite from 'expo-sqlite';
+import { inTransaction } from './transaction';
 import { MIGRATIONS } from './schema';
 import { seedIfNeeded } from './seed';
 
 export const DATABASE_NAME = 'talkeasy.db';
+
 
 let dbPromise: Promise<SQLite.SQLiteDatabase> | null = null;
 
@@ -35,7 +37,7 @@ async function runMigrations(db: SQLite.SQLiteDatabase): Promise<void> {
 
   for (const migration of MIGRATIONS) {
     if (migration.version <= version) continue;
-    await db.withExclusiveTransactionAsync(async (txn) => {
+    await inTransaction(db, async (txn) => {
       await txn.execAsync(migration.sql);
       await txn.execAsync(`PRAGMA user_version = ${migration.version}`);
     });

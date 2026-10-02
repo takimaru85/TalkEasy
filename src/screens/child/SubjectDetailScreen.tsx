@@ -1,4 +1,5 @@
 import React from 'react';
+import { SubjectIcon } from '@/components/school/SubjectIcon';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useCardPalette } from '@/components/common/cardPalette';
 import { useTheme } from '@/theme';
@@ -36,7 +37,7 @@ export function SubjectDetailScreen({ navigation, route }: RootScreenProps<'Subj
     <ChildScreen title={subject.name} back>
       <ScrollView contentContainerStyle={[styles.content, { paddingHorizontal: sizes.horizontalPadding }]}>
         <View style={[styles.hero, pal.night ? pal.cardStyle : { backgroundColor: subject.color }]}>
-          <Icon name={subject.icon} size={sizes.iconSize + 20} color={pal.ink} />
+          <SubjectIcon icon={subject.icon} size={sizes.iconSize + 20} color={pal.ink} />
           <View style={styles.heroText}>
             <Text style={[styles.heroName, { fontSize: sizes.tileLabel + 4, color: pal.ink }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>{subject.name}</Text>
             {subject.teacherName ? (

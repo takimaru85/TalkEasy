@@ -1,6 +1,18 @@
 import type { SizeOption } from '@/types/models';
 
 /** Absolute minimums — nothing the child can tap is ever smaller than this. */
+/**
+ * The narrowest screen TalkEasy lays out for, and the FLOOR for any width-derived maths.
+ *
+ * `useWindowDimensions().width` is not always a real number yet: on the first frame, and on the web
+ * before the pane has been given a size, it can report 0. Subtracting padding from that yields a
+ * NEGATIVE width, which then flows into every size derived from it — and a negative size handed to
+ * an <svg> is invalid, so the element silently draws nothing while the text beside it looks fine.
+ * Flooring at the smallest supported screen makes a degenerate first frame lay out as a small phone
+ * instead of as an impossible one; the next real measurement corrects it.
+ */
+export const MIN_SUPPORTED_WIDTH = 320;
+
 export const MIN_CHILD_TARGET = 64;
 export const MIN_PARENT_TARGET = 56;
 

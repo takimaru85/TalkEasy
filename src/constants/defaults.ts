@@ -247,8 +247,6 @@ export const DEFAULT_THERAPY: {
   frequency: ActivityFrequency;
   category: ActivityCategory;
 }[] = [
-  { name: 'Stretching', icon: 'human-handsup', instructions: 'Slowly stretch arms and legs the way your therapist showed you. Take your time.', durationMinutes: 10, frequency: 'daily', category: 'therapy' },
-  { name: 'Reach and grab', icon: 'hand-wave', instructions: 'Put a favourite toy in front. Reach, grab, and bring it close.', durationMinutes: 5, frequency: 'daily', category: 'therapy' },
   { name: 'Drawing time', icon: 'palette', instructions: 'Draw anything you like with big crayons. Show someone when you finish!', durationMinutes: 15, frequency: 'daily', category: 'art' },
   { name: 'Building blocks', icon: 'toy-brick', instructions: 'Build a tall tower. Count the blocks as you go.', durationMinutes: 15, frequency: 'weekdays', category: 'games' },
   { name: 'Music and clapping', icon: 'music', instructions: 'Play a favourite song. Clap or tap along with the beat.', durationMinutes: 10, frequency: 'daily', category: 'music' },
@@ -261,12 +259,8 @@ export const DEFAULT_THERAPY: {
   { name: 'Treadmill steps', icon: 'shoe-sneaker', instructions: 'Hold the rails with a grown-up right beside you. Slow, steady steps — stop whenever you need to.', durationMinutes: 10, frequency: 'weekdays', category: 'exercise' },
   { name: 'Supported walking', icon: 'human-cane', instructions: 'Walk a little way with your walker, or holding a grown-up. Count the steps out loud together.', durationMinutes: 10, frequency: 'daily', category: 'exercise' },
   { name: 'Pedal bike', icon: 'bike', instructions: 'Pedal round and round. Start slow, then a little faster if it feels good.', durationMinutes: 10, frequency: 'weekdays', category: 'exercise' },
-  { name: 'Reach up high', icon: 'arm-flex', instructions: 'Reach up for the sky, then out to the sides. Stretch as wide as a star.', durationMinutes: 5, frequency: 'daily', category: 'therapy' },
-  { name: 'Sitting balance', icon: 'seesaw', instructions: 'Sit tall and steady with a grown-up right there. Try reaching for a toy.', durationMinutes: 5, frequency: 'daily', category: 'therapy' },
-  { name: 'Gentle yoga', icon: 'yoga', instructions: 'Big slow breaths. Try the stretches your therapist showed you, nice and slowly.', durationMinutes: 10, frequency: 'daily', category: 'therapy' },
 
   // --- Calm and sensory ---
-  { name: 'Hand and leg massage', icon: 'spa', instructions: 'Warm hands, slow gentle strokes down your arms and legs. Say stop any time.', durationMinutes: 10, frequency: 'daily', category: 'therapy' },
   { name: 'Warm bath', icon: 'water', instructions: 'Warm water and soft bubbles. Let your arms and legs go floppy and relaxed.', durationMinutes: 15, frequency: 'daily', category: 'sensory' },
   { name: 'Water play', icon: 'swim', instructions: 'Splash, pour and float the toys. A grown-up stays with you the whole time.', durationMinutes: 20, frequency: 'weekly', category: 'sensory' },
   { name: 'Blow bubbles', icon: 'balloon', instructions: 'Big breath in, then blow out slowly. See how far the bubbles float.', durationMinutes: 5, frequency: 'daily', category: 'sensory' },
@@ -329,8 +323,15 @@ export const DEFAULT_SETTINGS: AppSettings = {
   rotation: 'auto',
   language: 'en-US',
   speechPracticeHidden: '',
+  toursDone: '',
   speechPronunciationSet: 'fil',
   speechPronunciationOverrides: '{}',
   adventureTheme: 'child',
   adventureWorld: '',
+  therapyGoals: '',
+  therapyHidden: '',
+  // Never pre-accepted. A grown-up sees the notice before the first therapy activity.
+  therapySafetyAcceptedAt: '',
+  // Free until something says otherwise. Never default anyone into Plus.
+  subscriptionStatus: '',
 };

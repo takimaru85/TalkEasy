@@ -1,1 +1,0 @@
-{ "compilerOptions": { "strict": true, "module": "esnext", "moduleResolution": "bundler", "target": "es2022", "jsx": "react", "esModuleInterop": true, "baseUrl": "../..", "paths": { "@/*": ["./src/*"], "expo-sqlite": ["./scripts/_tmp/expo-sqlite.ts"] } } }

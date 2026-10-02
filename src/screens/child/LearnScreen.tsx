@@ -1,7 +1,11 @@
 import React from 'react';
 import { ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { ChildScreen, Glyph, Icon, PressableScale } from '@/components/common';
-import { GameTile, HeroPanel } from '@/components/adventure';
+import { GameTile, HeroPanel, SpeechPracticeLayout } from '@/components/adventure';
+import { MIN_SUPPORTED_WIDTH } from '@/constants/sizes';
+import { LEARN_SUBJECT_ART } from '@/learning/activityArt';
+import { stageTileRows, stageTileWidth } from '@/speechpractice/stageArt';
+import { Adventure, type AdventureKey } from '@/theme/adventure';
 import { SECTION_EMOJI } from '@/constants/school';
 import { MAX_FONT_SCALE, SPACING } from '@/constants/sizes';
 import { useProfile } from '@/context/ProfileContext';
@@ -11,6 +15,10 @@ import { LEARNING_SUBJECTS } from '@/learning';
 import type { RootScreenProps } from '@/navigation/types';
 import { Fonts, Radius, useTheme } from '@/theme';
 import { fitFontSize } from '@/utils/fitText';
+
+/** The drawing and colour of each shipped subject, so the six cards are told apart at a glance. */
+const SUBJECT_COLOR: Record<string, AdventureKey> = { english: 'sky', math: 'grass', filipino: 'sun', science: 'reef', ap: 'tangerine', esp: 'grape' };
+const FALLBACK_COLORS: AdventureKey[] = ['sky', 'grass', 'sun', 'reef', 'tangerine', 'grape'];
 
 /** Learn: pick a subject. Favourite subjects come first and carry a ⭐ so they are easy to find. */
 export function LearnScreen({ navigation }: RootScreenProps<'Learn'>) {
@@ -36,8 +44,59 @@ export function LearnScreen({ navigation }: RootScreenProps<'Learn'>) {
 
   const labelSize = subjects.reduce((min, s) => Math.min(min, fitFontSize(s.name, tileInner, sizes.tileLabel, 'word', 13)), sizes.tileLabel);
 
+  if (theme.night) {
+    // Floored: the window reports 0 on a first frame (see MIN_SUPPORTED_WIDTH).
+    const contentWidth = Math.max(MIN_SUPPORTED_WIDTH, windowWidth) - sizes.horizontalPadding * 2;
+    const rows = stageTileRows(subjects.length, contentWidth, sizes.gridColumns);
+    const narrowest = Math.min(...rows.map((n) => stageTileWidth(contentWidth, n, sizes.gap)), contentWidth);
+    const nightLabel = subjects.reduce((min, s) => Math.min(min, fitFontSize(s.name, narrowest - SPACING.sm * 2 - 8, sizes.tileLabel, 'word', 13)), sizes.tileLabel);
+    let next = 0;
+    const grid = rows.map((perRow, r) => {
+      const tileWidth = stageTileWidth(contentWidth, perRow, sizes.gap);
+      const cells = subjects.slice(next, next + perRow).map((s, c) => {
+        const index = next + c;
+        const st = stats.find((x) => x.subjectKey === s.key);
+        const sessions = st?.sessions ?? 0;
+        const art = LEARN_SUBJECT_ART[s.key];
+        const color = SUBJECT_COLOR[s.key] ?? FALLBACK_COLORS[index % FALLBACK_COLORS.length];
+        return (
+          <GameTile
+            key={s.key}
+            label={s.name}
+            tint={Adventure[color].tint}
+            colorKey={color}
+            colorArt={art}
+            glyph={art ? undefined : s.emoji}
+            stretch
+            onPress={() => {
+              speakFeedback(s.name);
+              navigation.navigate('LearnSubject', { subjectKey: s.key });
+            }}
+            accessibilityLabel={`${s.name}${isFav(s.name) ? ', favourite' : ''}${sessions ? `, ${sessions} sessions played` : ''}`}
+            width={tileWidth}
+            minHeight={Math.max(sizes.tileHeight, 130)}
+            labelSize={nightLabel}
+            badge={isFav(s.name) ? (sessions ? `⭐ ${sessions}` : '⭐') : sessions ? `${sessions} played` : undefined}
+          />
+        );
+      });
+      next += perRow;
+      return (
+        <View key={r} style={[styles.nightRow, { gap: sizes.gap }]}>
+          {cells}
+        </View>
+      );
+    });
+    return (
+      <SpeechPracticeLayout title={t('questPlay')} subtitle={t('questPlaySub')} emoji={SECTION_EMOJI.learn} art="play">
+        <HeroPanel color="coral" art="play" title={t('questPlaySub')} subtitle={`What do you want to practise, ${displayName}?`} mascot mascotLeft />
+        <View style={{ gap: sizes.gap }}>{grid}</View>
+      </SpeechPracticeLayout>
+    );
+  }
+
   return (
-    <ChildScreen title={theme.night ? t('questPlay') : 'Learn'} emoji={SECTION_EMOJI.learn} art="play">
+    <ChildScreen title={theme.night ? t('questPlay') : 'Learn'} subtitle={t('questPlaySub')} emoji={SECTION_EMOJI.learn} art="play">
       <ScrollView contentContainerStyle={[styles.content, { paddingHorizontal: sizes.horizontalPadding }]}>
         <HeroPanel color="coral" art="play" title={t('questPlaySub')} subtitle={`What do you want to practise, ${displayName}?`} mascot />
         {theme.night ? null : (
@@ -111,6 +170,7 @@ export function LearnScreen({ navigation }: RootScreenProps<'Learn'>) {
 const styles = StyleSheet.create({
   content: { paddingVertical: SPACING.sm, gap: SPACING.md, paddingBottom: SPACING.xl },
   intro: { fontFamily: Fonts.bold, textAlign: 'center' },
+  nightRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'stretch' },
   grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-start' },
   tile: { borderRadius: Radius.lg, alignItems: 'center', justifyContent: 'center', gap: SPACING.xs, padding: SPACING.sm, overflow: 'hidden' },
   fav: { position: 'absolute', top: 10, right: 12, fontSize: 20 },

@@ -118,7 +118,7 @@ export function ChooseExerciseView({ exercise, kit, onSolved }: { exercise: Choo
         <BigButton label={t('spListenAgain')} icon="volume-high" variant="secondary" minHeight={72} onPress={() => kit.play(exercise.listen)} />
       ) : null}
 
-      <ChoiceGrid>
+      <ChoiceGrid columns={layout.columns}>
         {exercise.choices.map((choice) => (
           <ChoiceCard
             key={choice.id}

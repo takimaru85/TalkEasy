@@ -49,16 +49,15 @@ export function CollectionScreen({ navigation }: RootScreenProps<'Collection'>) 
   };
 
   return (
-    <ChildScreen title={t('advMyCollection')} back>
+    <ChildScreen title={t('advMyCollection')} subtitle={t('advMyCollectionSub')} emoji="🏆" art="progress" back>
       <ScrollView contentContainerStyle={[styles.content, { paddingHorizontal: sizes.horizontalPadding }]}>
         {/* The world banner: emblem, collection name, how many found. */}
         <View style={[styles.banner, theme.night ? [AdventureShadow, { backgroundColor: c.to, borderColor: shade(c.from, 1.3), borderBottomColor: shade(c.to, 0.66) }] : { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
           {theme.night ? (
             <>
               <GradientSurface from={c.from} to={c.to} direction="vertical" />
-              <View style={styles.gloss} pointerEvents="none">
-                <GradientSurface from="#FFFFFF" to="#FFFFFF" direction="vertical" fromOpacity={0.3} toOpacity={0} />
-              </View>
+              {/* Gloss: fades out 45% of the way down (a full-size surface — see GradientSurface). */}
+              <GradientSurface from="#FFFFFF" to="#FFFFFF" direction="vertical" fromOpacity={0.3} toOpacity={0} toOffset={0.45} />
             </>
           ) : null}
           <View style={styles.bannerRow}>
@@ -152,7 +151,6 @@ export function CollectionScreen({ navigation }: RootScreenProps<'Collection'>) 
 const styles = StyleSheet.create({
   content: { paddingVertical: SPACING.sm, gap: SPACING.sm + 2, paddingBottom: SPACING.xl },
   banner: { borderRadius: AdventureRadius.hero, borderWidth: 1.5, borderBottomWidth: 6, padding: SPACING.md, gap: SPACING.md, overflow: 'hidden', marginBottom: SPACING.xs },
-  gloss: { position: 'absolute', top: 0, left: 0, right: 0, height: '45%' },
   bannerRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md },
   bannerText: { flex: 1, gap: 4 },
   bannerTitle: { fontFamily: Fonts.black, textShadowColor: 'rgba(0,0,0,0.25)', textShadowOffset: { width: 0, height: 1.5 }, textShadowRadius: 2 },

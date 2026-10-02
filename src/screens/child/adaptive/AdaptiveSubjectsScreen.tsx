@@ -12,7 +12,7 @@ export function AdaptiveSubjectsScreen({ navigation }: RootScreenProps<'Adaptive
   const sizes = useSizes();
   const theme = useTheme();
   const { data: lessons, loading } = useLessons();
-  const { speakFeedback } = useSpeak();
+  const { speakInLanguage } = useSpeak();
 
   const groups = useMemo(() => {
     const map = new Map<string, { name: string; icon: string; color: string; items: typeof lessons }>();
@@ -49,13 +49,13 @@ export function AdaptiveSubjectsScreen({ navigation }: RootScreenProps<'Adaptive
                       done={complete}
                       doneLabel="Done"
                       progress={l.activityCount > 0 && !complete && l.completedCount > 0 ? { value: l.completedCount / l.activityCount, label: `${l.completedCount} / ${l.activityCount}` } : undefined}
-                      onPress={() => { speakFeedback(l.title); navigation.navigate('AdaptiveLesson', { lessonId: l.id }); }}
+                      onPress={() => { speakInLanguage(l.title, l.language); navigation.navigate('AdaptiveLesson', { lessonId: l.id }); }}
                       accessibilityLabel={`${l.title}. ${complete ? 'Completed' : `${l.completedCount} of ${l.activityCount} done`}`}
                     />
                   );
                 }
                 return (
-                  <PressableScale key={l.id} onPress={() => { speakFeedback(l.title); navigation.navigate('AdaptiveLesson', { lessonId: l.id }); }} accessibilityRole="button" accessibilityLabel={`${l.title}. ${complete ? 'Completed' : `${l.completedCount} of ${l.activityCount} done`}`}>
+                  <PressableScale key={l.id} onPress={() => { speakInLanguage(l.title, l.language); navigation.navigate('AdaptiveLesson', { lessonId: l.id }); }} accessibilityRole="button" accessibilityLabel={`${l.title}. ${complete ? 'Completed' : `${l.completedCount} of ${l.activityCount} done`}`}>
                     <Card color={complete ? theme.colors.surfaceAlt : g.color} style={styles.row} padding={SPACING.md}>
                       <LineIcon name={complete ? 'check-circle' : l.completedCount > 0 ? 'progress-clock' : 'checkbox-blank-circle-outline'} size={32} color={complete ? theme.colors.success : l.completedCount > 0 ? theme.colors.primary : theme.colors.textMuted} />
                       <View style={styles.text}>

@@ -1,14 +1,16 @@
 import React from 'react';
 import { ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { ChildScreen, Icon, PressableScale } from '@/components/common';
-import { AdventureButton, HeroBanner } from '@/components/adventure';
-import { MAX_FONT_SCALE, MIN_CHILD_TARGET, SPACING } from '@/constants/sizes';
+import { BadgeChip, ColorArt, GradientSurface, HeroBanner, StatCard } from '@/components/adventure';
+import type { ColorArtName } from '@/components/adventure';
+import { badgePreviewCount, statTextWidth } from '@/adventure/progressLayout';
+import { MAX_FONT_SCALE, MIN_CHILD_TARGET, MIN_SUPPORTED_WIDTH, SPACING } from '@/constants/sizes';
 import { useAchievements, useAdventure, useSizes } from '@/hooks';
 import { useI18n } from '@/i18n';
 import type { Strings } from '@/i18n/types';
 import type { RootScreenProps } from '@/navigation/types';
 import { Fonts, useTheme } from '@/theme';
-import { Adventure, AdventureInkMuted, AdventureRadius, AdventureShadow, shade, type AdventureKey } from '@/theme/adventure';
+import { Adventure, AdventureRadius, AdventureShadow, type AdventureKey } from '@/theme/adventure';
 import { fitFontSize } from '@/utils/fitText';
 
 /**
@@ -17,6 +19,11 @@ import { fitFontSize } from '@/utils/fitText';
  * Deliberately not a dashboard. Six plain counts and a level bar, no percentages, no accuracy, no
  * charts: a number a child can point at ("I practised 14 words") tells them more than a graph,
  * and nothing here can read as a mark out of ten. The detailed breakdowns stay in Parent Mode.
+ *
+ * EVERY NUMBER ON THIS SCREEN IS COUNTED, NONE IS WRITTEN IN. They come from `useAchievements` and
+ * `useAdventure`, which count from the practice tables, so a child who had been using TalkEasy long
+ * before this screen existed sees their real totals. The look is the only thing that is designed
+ * here; `check:layout` fails if a number is typed in.
  */
 export function MyProgressScreen({ navigation }: RootScreenProps<'MyProgress'>) {
   const sizes = useSizes();
@@ -26,25 +33,35 @@ export function MyProgressScreen({ navigation }: RootScreenProps<'MyProgress'>) 
   const { metrics, badges, earnedCount } = useAchievements();
   const { width } = useWindowDimensions();
 
+  // Floored: the window reports 0 on a first frame, and a negative width reaches an <svg> as an
+  // invalid size that draws nothing (see MIN_SUPPORTED_WIDTH).
+  const contentWidth = Math.max(MIN_SUPPORTED_WIDTH, width) - sizes.horizontalPadding * 2;
   const columns = sizes.gridColumns >= 4 ? 4 : 2;
-  const cardWidth = (width - sizes.horizontalPadding * 2 - SPACING.md * (columns - 1)) / columns;
+  const cardWidth = Math.floor((contentWidth - SPACING.md * (columns - 1)) / columns);
 
-  const stats: { labelKey: keyof Strings; value: number; icon: string; color: AdventureKey }[] = [
-    { labelKey: 'advStatStars', value: metrics.stars, icon: 'star', color: 'sun' },
-    { labelKey: 'advStatStreak', value: metrics.streak, icon: 'fire', color: 'coral' },
-    { labelKey: 'advStatSounds', value: metrics.soundsPractised, icon: 'account-voice', color: 'sky' },
-    { labelKey: 'advStatExercises', value: metrics.speechExercises, icon: 'microphone-outline', color: 'grape' },
-    { labelKey: 'advStatWords', value: metrics.wordsPractised, icon: 'bookmark-multiple-outline', color: 'grass' },
-    { labelKey: 'advStatTracing', value: metrics.tracingSessions, icon: 'pencil-outline', color: 'reef' },
+  const stats: { labelKey: keyof Strings; value: number; art: ColorArtName; color: AdventureKey }[] = [
+    { labelKey: 'advStatStars', value: metrics.stars, art: 'stat:stars', color: 'sun' },
+    { labelKey: 'advStatStreak', value: metrics.streak, art: 'stat:streak', color: 'coral' },
+    { labelKey: 'advStatSounds', value: metrics.soundsPractised, art: 'stat:sounds', color: 'sky' },
+    { labelKey: 'advStatExercises', value: metrics.speechExercises, art: 'stat:speech', color: 'grape' },
+    { labelKey: 'advStatWords', value: metrics.wordsPractised, art: 'stat:words', color: 'grass' },
+    { labelKey: 'advStatTracing', value: metrics.tracingSessions, art: 'stat:tracing', color: 'reef' },
   ];
 
+  // One label size for all six, fitted to the longest in the room a card leaves it.
   const labelSize = stats.reduce(
-    (min, s) => Math.min(min, fitFontSize(t(s.labelKey), cardWidth - SPACING.md * 2, 14, 'word', 11)),
-    14,
+    (min, s) => Math.min(min, fitFontSize(t(s.labelKey), statTextWidth(cardWidth), 15, 'word', 11)),
+    15,
   );
 
+  const goAchievements = () => navigation.navigate('Achievements');
+  const earned = badges.filter((b) => b.earned);
+  const previews = earned.slice(0, badgePreviewCount(contentWidth, earned.length));
+  const plain = theme.highContrast;
+  const grape = Adventure.grape;
+
   return (
-    <ChildScreen title={t('advProgress')} art="progress" back>
+    <ChildScreen title={t('advProgress')} subtitle={t('advProgressSub')} art="progress" back>
       <ScrollView
         style={styles.flex}
         contentContainerStyle={[styles.content, { paddingHorizontal: sizes.horizontalPadding }]}
@@ -57,55 +74,32 @@ export function MyProgressScreen({ navigation }: RootScreenProps<'MyProgress'>) 
           title={adventure.title}
           progress={adventure.progress}
           progressLabel={t('advStarsOf', { done: adventure.starsIntoLevel, total: adventure.starsPerLevel })}
+          // Settings live in Parent Mode, behind the PIN, exactly as on the Home screen.
+          onSettings={() => navigation.navigate('ParentPin')}
+          settingsLabel={t('advParentSettings')}
         />
 
         <View style={[styles.grid, { gap: SPACING.md }]}>
-          {stats.map((s) => {
-            const c = Adventure[s.color];
-            return (
-              <View
-                key={s.labelKey}
-                style={[
-                  styles.stat,
-                  { width: cardWidth },
-                  theme.highContrast
-                    ? { backgroundColor: theme.colors.surface, borderWidth: theme.borderWidth, borderColor: theme.colors.border }
-                    : theme.night
-                      ? [AdventureShadow, { backgroundColor: c.to, borderWidth: 1.5, borderColor: c.from, borderBottomWidth: 5, borderBottomColor: shade(c.to, 0.68) }]
-                      : [AdventureShadow, { backgroundColor: c.tint }],
-                ]}
-                accessibilityRole="text"
-                accessibilityLabel={`${s.value} ${t(s.labelKey)}`}
-              >
-                <Icon name={s.icon} size={26} color={theme.highContrast ? theme.colors.text : theme.night ? '#FFFFFF' : c.ink} />
-                <Text
-                  style={[styles.value, { fontSize: sizes.heading, color: theme.highContrast ? theme.colors.text : theme.night ? '#FFFFFF' : c.ink }]}
-                  maxFontSizeMultiplier={MAX_FONT_SCALE}
-                  numberOfLines={1}
-                >
-                  {s.value}
-                </Text>
-                <Text
-                  style={[styles.label, { fontSize: labelSize, color: theme.night ? 'rgba(255,255,255,0.9)' : AdventureInkMuted }]}
-                  maxFontSizeMultiplier={MAX_FONT_SCALE}
-                  numberOfLines={2}
-                  textBreakStrategy="simple"
-                >
-                  {t(s.labelKey)}
-                </Text>
-              </View>
-            );
-          })}
+          {stats.map((s) => (
+            <StatCard key={s.labelKey} value={s.value} label={t(s.labelKey)} art={s.art} color={s.color} width={cardWidth} labelSize={labelSize} />
+          ))}
         </View>
 
         <PressableScale
-          onPress={() => navigation.navigate('Achievements')}
+          onPress={goAchievements}
           accessibilityRole="button"
           accessibilityLabel={`${t('advAchievements')}. ${t('advBadgesOf', { done: earnedCount, total: badges.length })}`}
           hitSlop={4}
         >
-          <View style={[styles.badgeRow, { backgroundColor: theme.colors.surface, borderColor: theme.colors.borderSoft }]}>
-            <Icon name="medal" size={28} color={theme.night ? Adventure.sun.from : Adventure.sun.ink} />
+          <View
+            style={[
+              styles.badgeRow,
+              plain
+                ? { backgroundColor: theme.colors.surface, borderWidth: theme.borderWidth, borderColor: theme.colors.border }
+                : [AdventureShadow, { backgroundColor: theme.colors.surface, borderColor: theme.colors.borderSoft, borderWidth: 1.5 }],
+            ]}
+          >
+            <ColorArt name="stat:medal" size={52} />
             <View style={styles.badgeText}>
               <Text style={[styles.badgeTitle, { color: theme.colors.text }]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={1}>
                 {t('advAchievements')}
@@ -114,16 +108,52 @@ export function MyProgressScreen({ navigation }: RootScreenProps<'MyProgress'>) 
                 {t('advBadgesOf', { done: earnedCount, total: badges.length })}
               </Text>
             </View>
+            {previews.length > 0 ? (
+              <View style={styles.previews}>
+                {previews.map((b) => (
+                  <BadgeChip key={b.id} icon={b.icon} color={b.color} />
+                ))}
+              </View>
+            ) : null}
             <Icon name="chevron-right" size={26} color={theme.colors.textMuted} />
           </View>
         </PressableScale>
 
-        <AdventureButton
-          label={t('advSeeAll')}
-          icon="medal-outline"
-          color="grape"
-          onPress={() => navigation.navigate('Achievements')}
-        />
+        <PressableScale
+          onPress={goAchievements}
+          accessibilityRole="button"
+          accessibilityLabel={`${t('advSeeAll')}. ${t('advSeeAllSub')}`}
+          hitSlop={4}
+        >
+          <View
+            style={[
+              styles.cta,
+              plain ? { backgroundColor: grape.to, borderWidth: theme.borderWidth, borderColor: theme.colors.border } : AdventureShadow,
+            ]}
+          >
+            {plain ? null : (
+              <>
+                <GradientSurface from={grape.from} to={grape.to} />
+                <GradientSurface from="#FFFFFF" to="#FFFFFF" direction="vertical" fromOpacity={0.28} toOpacity={0} toOffset={0.5} />
+              </>
+            )}
+            {/* In a View: on web a bare SVG would paint under the absolutely positioned gradient. */}
+            <View>
+              <ColorArt name="stat:trophy" size={64} />
+            </View>
+            <View style={styles.ctaText}>
+              <Text style={styles.ctaTitle} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={2}>
+                {t('advSeeAll')}
+              </Text>
+              <Text style={styles.ctaSub} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={2}>
+                {t('advSeeAllSub')}
+              </Text>
+            </View>
+            <View style={styles.ctaArrow}>
+              <Icon name="chevron-right" size={26} color="#FFFFFF" />
+            </View>
+          </View>
+        </PressableScale>
       </ScrollView>
     </ChildScreen>
   );
@@ -133,27 +163,39 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   content: { paddingVertical: SPACING.md, gap: SPACING.md, paddingBottom: SPACING.xl },
   grid: { flexDirection: 'row', flexWrap: 'wrap' },
-  stat: {
-    borderRadius: AdventureRadius.card,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 2,
-    paddingVertical: SPACING.md,
-    paddingHorizontal: SPACING.md,
-    minHeight: 112,
-  },
-  value: { fontFamily: Fonts.black },
-  label: { fontFamily: Fonts.bold, textAlign: 'center', alignSelf: 'stretch' },
   badgeRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: SPACING.md,
-    minHeight: MIN_CHILD_TARGET,
-    paddingHorizontal: SPACING.lg,
+    minHeight: MIN_CHILD_TARGET + 24,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
     borderRadius: AdventureRadius.card,
-    borderWidth: 1.5,
   },
-  badgeText: { flex: 1, gap: 1 },
-  badgeTitle: { fontFamily: Fonts.black, fontSize: 16 },
-  badgeSub: { fontFamily: Fonts.semibold, fontSize: 13 },
+  badgeText: { flex: 1, minWidth: 0, gap: 1 },
+  badgeTitle: { fontFamily: Fonts.black, fontSize: 18 },
+  badgeSub: { fontFamily: Fonts.semibold, fontSize: 14 },
+  previews: { flexDirection: 'row', gap: 6 },
+  cta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.md,
+    minHeight: MIN_CHILD_TARGET + 28,
+    padding: SPACING.md,
+    borderRadius: AdventureRadius.card,
+    overflow: 'hidden',
+  },
+  ctaText: { flex: 1, minWidth: 0, gap: 2 },
+  ctaTitle: { fontFamily: Fonts.black, fontSize: 21, color: '#FFFFFF' },
+  ctaSub: { fontFamily: Fonts.bold, fontSize: 14, color: '#FFFFFF', opacity: 0.92 },
+  ctaArrow: {
+    width: MIN_CHILD_TARGET - 18,
+    height: MIN_CHILD_TARGET - 18,
+    borderRadius: 999,
+    borderWidth: 2.5,
+    borderColor: 'rgba(255,255,255,0.9)',
+    backgroundColor: 'rgba(40,20,120,0.35)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });

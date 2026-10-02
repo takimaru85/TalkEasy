@@ -60,7 +60,7 @@ export interface SpeechItem {
    * instead of text-to-speech — the route to professional recordings, with no screen changes.
    */
   audio?: number | string;
-  /** An isolated speech sound: played through Sound Practice's cue ("buh", not "bee"). */
+  /** An isolated speech sound (soundpractice id): its model is the PHONEME recording (soundPracticeAudio.playPhoneme), never the letter. */
   soundId?: string;
   /** Speech-rate multiplier for the model (Voice Practice: fast / slow). */
   rate?: number;

@@ -1,5 +1,9 @@
 import { getDb, nowIso } from '../db';
 import { notify } from '../events';
+import { ACTIVITY_CATEGORY_META } from '@/constants/school';
+
+/** The categories the Activities screen can show, taken from the one place that defines them. */
+const CATEGORIES = Object.keys(ACTIVITY_CATEGORY_META) as ActivityCategory[];
 import { moveRow } from '../reorder';
 import type { ActivityCategory, ActivityFrequency, ActivityLog, TherapyActivity, TherapyActivityInput } from '@/types/models';
 
@@ -32,7 +36,9 @@ const toModel = (r: TherapyRow): TherapyActivity => ({
   instructions: r.instructions,
   durationMinutes: r.duration_minutes,
   frequency: (r.frequency as ActivityFrequency) || 'daily',
-  category: (r.category as ActivityCategory) || 'therapy',
+  // 'exercise' is the fallback for a row with no category, and for any left behind by the retired
+  // 'therapy' category (migration 16) — a row must always land in a category the screen can show.
+  category: CATEGORIES.includes(r.category as ActivityCategory) ? (r.category as ActivityCategory) : 'exercise',
   imageUri: r.image_uri,
   isCompleted: r.is_completed === 1,
   completedAt: r.completed_at,

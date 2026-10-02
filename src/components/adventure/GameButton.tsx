@@ -58,9 +58,8 @@ export function GameButton({ label, icon, tone, onPress, disabled, primary, heig
         ]}
       >
         <GradientSurface from={c.from} to={c.to} direction="vertical" />
-        <View style={styles.gloss} pointerEvents="none">
-          <GradientSurface from="#FFFFFF" to="#FFFFFF" direction="vertical" fromOpacity={0.34} toOpacity={0} />
-        </View>
+        {/* Gloss: fades out 55% of the way down (a full-size surface — see GradientSurface). */}
+        <GradientSurface from="#FFFFFF" to="#FFFFFF" direction="vertical" fromOpacity={0.34} toOpacity={0} toOffset={0.55} />
         <View style={styles.content}>
           {icon ? <Icon name={icon} size={primary ? 28 : 24} color="#FFFFFF" /> : null}
           <Text style={[styles.label, primary && styles.labelPrimary]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={1}>
@@ -86,7 +85,6 @@ const styles = StyleSheet.create({
   },
   primary: { borderWidth: 2.5, borderBottomWidth: 5, shadowOpacity: 0.7, shadowRadius: 14, elevation: 9 },
   disabled: { opacity: 0.45 },
-  gloss: { position: 'absolute', top: 0, left: 0, right: 0, height: '55%' },
   content: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingHorizontal: 8 },
   label: {
     fontFamily: Fonts.black,

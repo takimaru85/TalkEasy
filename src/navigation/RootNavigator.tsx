@@ -8,6 +8,14 @@ import { ChildHomeScreen } from '@/screens/child/ChildHomeScreen';
 import { CommunicateScreen } from '@/screens/child/CommunicateScreen';
 import { FeelingsScreen } from '@/screens/child/FeelingsScreen';
 import { SchoolModeScreen } from '@/screens/child/SchoolModeScreen';
+import { PlusScreen } from '@/screens/parent/PlusScreen';
+import { ScanAssignmentScreen } from '@/screens/child/scan/ScanAssignmentScreen';
+import { ScanReviewScreen } from '@/screens/child/scan/ScanReviewScreen';
+import { TherapyActivityScreen } from '@/screens/child/therapy/TherapyActivityScreen';
+import { TherapyDayScreen } from '@/screens/child/therapy/TherapyDayScreen';
+import { TherapyGoalsScreen } from '@/screens/child/therapy/TherapyGoalsScreen';
+import { TherapyHomeScreen } from '@/screens/child/therapy/TherapyHomeScreen';
+import { TherapyLibraryScreen } from '@/screens/child/therapy/TherapyLibraryScreen';
 import { SchoolScreen } from '@/screens/child/SchoolScreen';
 import { SubjectDetailScreen } from '@/screens/child/SubjectDetailScreen';
 import { AssignmentsScreen } from '@/screens/child/AssignmentsScreen';
@@ -31,6 +39,9 @@ import { SpeechPracticeScreen } from '@/screens/child/speech/SpeechPracticeScree
 import { MyProgressScreen } from '@/screens/child/MyProgressScreen';
 import { AchievementsScreen } from '@/screens/child/AchievementsScreen';
 import { SpeechActivityScreen } from '@/screens/child/speech/SpeechActivityScreen';
+import { SpeechStageScreen } from '@/screens/child/speech/SpeechStageScreen';
+import { SoundTargetScreen } from '@/screens/child/speech/SoundTargetScreen';
+import { PracticeSessionScreen, VoiceActivityScreen, VoiceAreaScreen, VoiceCommHomeScreen } from '@/screens/child/voice';
 import { ChooseAdventureScreen } from '@/screens/child/ChooseAdventureScreen';
 import { CollectionScreen } from '@/screens/child/CollectionScreen';
 import { ParentPinScreen } from '@/screens/parent/ParentPinScreen';
@@ -38,6 +49,12 @@ import { ParentStack } from './ParentStack';
 import type { RootStackParamList } from './types';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
+
+/**
+ * Screens where a finger drags across a drawing canvas. The iOS edge swipe-back would claim a stroke that
+ * starts near the left edge and slide the whole screen away, so it is off here; the Back button remains.
+ */
+const NO_SWIPE_BACK = { gestureEnabled: false, fullScreenGestureEnabled: false } as const;
 
 /**
  * Every child screen lives in the adventure zone — the space-adventure theme — from the navigator
@@ -77,6 +94,14 @@ export function RootNavigator() {
         <Stack.Screen name="Communicate" component={CommunicateScreen} />
         <Stack.Screen name="Feelings" component={FeelingsScreen} />
         <Stack.Screen name="SchoolMode" component={SchoolModeScreen} />
+        <Stack.Screen name="Plus" component={PlusScreen} />
+        <Stack.Screen name="ScanAssignment" component={ScanAssignmentScreen} />
+        <Stack.Screen name="ScanReview" component={ScanReviewScreen} />
+        <Stack.Screen name="TherapyHome" component={TherapyHomeScreen} />
+        <Stack.Screen name="TherapyDay" component={TherapyDayScreen} />
+        <Stack.Screen name="TherapyLibrary" component={TherapyLibraryScreen} />
+        <Stack.Screen name="TherapyActivity" component={TherapyActivityScreen} />
+        <Stack.Screen name="TherapyGoals" component={TherapyGoalsScreen} />
         <Stack.Screen name="School" component={SchoolScreen} />
         <Stack.Screen name="SubjectDetail" component={SubjectDetailScreen} />
         <Stack.Screen name="Assignments" component={AssignmentsScreen} />
@@ -90,9 +115,9 @@ export function RootNavigator() {
         <Stack.Screen name="Favorites" component={FavoritesScreen} />
         <Stack.Screen name="AdaptiveHome" component={AdaptiveHomeScreen} />
         <Stack.Screen name="AdaptiveSubjects" component={AdaptiveSubjectsScreen} />
-        <Stack.Screen name="AdaptiveLesson" component={AdaptiveLessonScreen} />
+        <Stack.Screen name="AdaptiveLesson" component={AdaptiveLessonScreen} options={NO_SWIPE_BACK} />
         <Stack.Screen name="WritingPractice" component={WritingPracticeScreen} />
-        <Stack.Screen name="WritingCanvas" component={WritingCanvasScreen} />
+        <Stack.Screen name="WritingCanvas" component={WritingCanvasScreen} options={NO_SWIPE_BACK} />
         <Stack.Screen name="SpeakPractice" component={SpeakPracticeScreen} />
         <Stack.Screen name="SoundPractice" component={SoundPracticeScreen} />
         <Stack.Screen name="SoundPracticeDetail" component={SoundPracticeDetailScreen} />
@@ -100,6 +125,12 @@ export function RootNavigator() {
         <Stack.Screen name="MyProgress" component={MyProgressScreen} />
         <Stack.Screen name="Achievements" component={AchievementsScreen} />
         <Stack.Screen name="SpeechActivity" component={SpeechActivityScreen} />
+        <Stack.Screen name="SpeechStage" component={SpeechStageScreen} />
+        <Stack.Screen name="SoundTarget" component={SoundTargetScreen} />
+        <Stack.Screen name="VoiceComm" component={VoiceCommHomeScreen} />
+        <Stack.Screen name="VoiceArea" component={VoiceAreaScreen} />
+        <Stack.Screen name="VoiceActivity" component={VoiceActivityScreen} />
+        <Stack.Screen name="PracticeSession" component={PracticeSessionScreen} />
         <Stack.Screen name="ChooseAdventure" component={ChooseAdventureScreen} />
         <Stack.Screen name="Collection" component={CollectionScreen} />
         </Stack.Group>

@@ -94,7 +94,6 @@ export const ACTIVITY_CATEGORY_META: Record<ActivityCategory, { label: string; e
   outdoor: { label: 'Outdoor', emoji: '🌳', color: '#D3F3F0' },
   sensory: { label: 'Sensory', emoji: '🖐️', color: '#FFE3C7' },
   chores: { label: 'Chores', emoji: '🧹', color: '#ECEEF2' },
-  therapy: { label: 'Therapy', emoji: '🧩', color: '#FFD9D3' },
 };
 
 export const ROUTINE_SEGMENT_META: Record<RoutineSegment, { label: string; emoji: string }> = {

@@ -136,8 +136,8 @@ function say(id: string, item: SpeechItem, extra: Partial<SayExercise> = {}): Sa
 
 function soundItem(soundId: string): SpeechItem {
   const ex = getSoundExercise(soundId);
-  // A recorded model (bundled or parent-made) wins; until then the sound's cue is spoken.
-  return { id: `snd-${soundId}`, text: ex?.sound ?? soundId.toUpperCase(), picture: ex?.emoji, soundId, modelKey: modelKey('sound', soundId) };
+  // Shows the letter; the model is the PHONEME, played by soundPracticeAudio.playPhoneme (soundId).
+  return { id: `snd-${soundId}`, text: ex?.letter ?? soundId.toUpperCase(), picture: ex?.emoji, soundId, modelKey: modelKey('sound', soundId) };
 }
 
 const SAME: SpeechItem = { id: 'same', text: 'Same', picture: '🟰', labelKey: 'spSame' };

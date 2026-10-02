@@ -141,14 +141,20 @@ export function parseOverrides(value: string | null | undefined): PronunciationO
 // Model keys: one name per practice unit, shared by bundled files and parent recordings.
 // ---------------------------------------------------------------------------------------------
 
-export type ModelKind = 'sound' | 'syllable' | 'word' | 'phrase';
+export type ModelKind = 'sound' | 'syllable' | 'word' | 'phrase' | 'voice';
 
-/** "syllable:ba", "word:v-ball", "phrase:ph-water", "sound:b". */
+/**
+ * "syllable:ba", "word:v-ball", "phrase:ph-water", "sound:b", "voice:ri-1".
+ *
+ * "voice" is an intonation model — a line read with a particular pitch MOVEMENT. Those exist
+ * because text-to-speech cannot produce a contour within one utterance, so they have to be
+ * recorded by a person.
+ */
 export function modelKey(kind: ModelKind, id: string): string {
   return `${kind}:${id}`;
 }
 
 export function parseModelKey(key: string): { kind: ModelKind; id: string } | null {
-  const m = /^(sound|syllable|word|phrase):([a-z0-9-]+)$/.exec(key);
+  const m = /^(sound|syllable|word|phrase|voice):([a-z0-9-]+)$/.exec(key);
   return m ? { kind: m[1] as ModelKind, id: m[2] } : null;
 }

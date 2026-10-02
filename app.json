@@ -2,7 +2,7 @@
   "expo": {
     "name": "TalkEasy",
     "slug": "talkeasy",
-    "version": "2.0.0",
+    "version": "2.1.0",
     "description": "TalkEasy by IB Golden — an offline communication, school and learning companion for children.",
     "orientation": "default",
     "icon": "./assets/icon.png",
@@ -63,7 +63,7 @@
       [
         "expo-speech-recognition",
         {
-          "microphonePermission": "TalkEasy uses the microphone only when the child taps 'Say the answer'. Speech is turned into text on this device and no recording is kept.",
+          "microphonePermission": "TalkEasy uses the microphone when the child taps 'Say the answer', which turns speech into text on this device, and when they record a practice attempt to hear it back. A practice recording stays on this device and is deleted after playback.",
           "speechRecognitionPermission": "TalkEasy turns the child's spoken answer into text on this device. Nothing is sent anywhere.",
           "androidSpeechServicePackages": [
             "com.google.android.as",

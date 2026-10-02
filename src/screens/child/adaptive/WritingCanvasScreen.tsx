@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { HandwritingCanvas, TraceTarget } from '@/components/adaptive';
+import { HandwritingCanvas, TraceTarget, TracingLockBar, useTracingLock } from '@/components/adaptive';
 import { GradientSurface } from '@/components/adventure/GradientSurface';
 import { BigButton, Celebration, ChildScreen, Icon, ProgressBar } from '@/components/common';
 import { getWritingLevel } from '@/adaptive/handwriting';
@@ -27,6 +27,8 @@ export function WritingCanvasScreen({ navigation, route }: RootScreenProps<'Writ
   const [index, setIndex] = useState(0);
   const [strokeWidth, setStrokeWidth] = useState(14);
   const [burst, setBurst] = useState(0);
+  // True only while a finger is down on the tracing canvas: the page does not scroll then, and scrolls again after.
+  const lock = useTracingLock();
   const [finished, setFinished] = useState(false);
 
   const item = level?.items[index];
@@ -73,7 +75,7 @@ export function WritingCanvasScreen({ navigation, route }: RootScreenProps<'Writ
   return (
     <ChildScreen title={`Level ${level.level}`} emoji={level.emoji} art="trace" back>
       <Celebration trigger={burst} />
-      <ScrollView contentContainerStyle={[styles.content, { paddingHorizontal: sizes.horizontalPadding }]}>
+      <ScrollView scrollEnabled={lock.scrollEnabled} contentContainerStyle={[styles.content, { paddingHorizontal: sizes.horizontalPadding }]}>
         {theme.night ? (
           // Game progress: a gold star pill with "1 / 5" and a gold track.
           <View
@@ -107,12 +109,14 @@ export function WritingCanvasScreen({ navigation, route }: RootScreenProps<'Writ
             </Text>
           </View>
         )}
+        <TracingLockBar locked={lock.locked} onToggle={lock.toggle} />
         <HandwritingCanvas
           key={`${level.level}-${index}`}
           guide={item.guide}
           onDone={onDone}
           strokeWidth={strokeWidth}
           onStrokeWidthChange={setStrokeWidth}
+          onDrawingChange={lock.onDrawingChange}
           height={Math.max(300, sizes.tileHeight * 2.2)}
         />
         {theme.night ? (

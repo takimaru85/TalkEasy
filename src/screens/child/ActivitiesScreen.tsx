@@ -1,8 +1,12 @@
 import React, { useState } from 'react';
-import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { BigButton, Card, Celebration, ChildScreen, EmptyState, Icon } from '@/components/common';
+import { ColorArt, MissionCard } from '@/components/adventure';
+import { usesCategoryArt } from '@/activities/categoryArt';
 import { ACTIVITY_CATEGORY_META, SECTION_EMOJI } from '@/constants/school';
-import { MAX_FONT_SCALE, MIN_CHILD_TARGET, SPACING } from '@/constants/sizes';
+import { MAX_FONT_SCALE, MIN_CHILD_TARGET, MIN_SUPPORTED_WIDTH, SPACING } from '@/constants/sizes';
+import { ACTIVITY_PICTURE_RATIO } from '@/activities/pictures';
+import { activityPicture } from '@/components/activities/activityPictures';
 import { useProfile, personalize } from '@/context/ProfileContext';
 import { useSettings } from '@/context/SettingsContext';
 import { therapyRepo } from '@/database';
@@ -19,7 +23,11 @@ import { useI18n } from '@/i18n';
  * sensory, chores, therapy). Tapping a card opens it; "Done!" earns a star.
  * An organiser for activities given by the child's caregivers/professionals — not medical advice.
  */
-export function ActivitiesScreen(_props: RootScreenProps<'Activities'>) {
+/** The widest an activity's picture is drawn, in points. Phones never reach it. */
+const MAX_PICTURE_WIDTH = 640;
+
+export function ActivitiesScreen({ navigation }: RootScreenProps<'Activities'>) {
+  const { width: windowWidth } = useWindowDimensions();
   const sizes = useSizes();
   const theme = useTheme();
   const { settings } = useSettings();
@@ -60,6 +68,12 @@ export function ActivitiesScreen(_props: RootScreenProps<'Activities'>) {
 
   if (open) {
     const meta = ACTIVITY_CATEGORY_META[open.category];
+    // Sized EXPLICITLY, from the floored window width (a first frame can report 0 — see
+    // MIN_SUPPORTED_WIDTH): the screen padding and the card padding come off it. Width and height,
+    // never aspectRatio, which react-native-web ignores.
+    const picture = open.imageUri ? null : activityPicture(open.name);
+    // Capped for tablets and wide windows, where a full-width 3:2 picture would be taller than the screen.
+    const pictureWidth = Math.min(MAX_PICTURE_WIDTH, Math.max(MIN_SUPPORTED_WIDTH, windowWidth) - sizes.horizontalPadding * 2 - SPACING.lg * 2);
     return (
       <ChildScreen title={tContent(open.name)} back>
         <Celebration trigger={burst} />
@@ -67,6 +81,14 @@ export function ActivitiesScreen(_props: RootScreenProps<'Activities'>) {
           <Card color={meta.color} style={styles.hero}>
             {open.imageUri ? (
               <Image source={{ uri: open.imageUri }} style={styles.image} accessibilityIgnoresInvertColors accessibilityLabel={tContent(open.name)} />
+            ) : picture ? (
+              <Image
+                source={picture}
+                style={[styles.picture, { width: pictureWidth, height: Math.round(pictureWidth / ACTIVITY_PICTURE_RATIO) }]}
+                resizeMode="contain"
+                accessibilityIgnoresInvertColors
+                accessibilityLabel={`${tContent(open.name)}: pictures showing the steps`}
+              />
             ) : (
               <Icon name={open.icon} size={sizes.iconSize + 36} color={theme.colors.text} />
             )}
@@ -92,11 +114,20 @@ export function ActivitiesScreen(_props: RootScreenProps<'Activities'>) {
   }
 
   return (
-    <ChildScreen title={t('sectionActivities')} emoji={SECTION_EMOJI.activities} art="activities">
+    <ChildScreen title={t('sectionActivities')} subtitle={t('activitiesSubtitle')} emoji={SECTION_EMOJI.activities} art="activities">
       {!loading && activities.length === 0 ? (
         <EmptyState icon="puzzle" title="No activities yet" message="A parent can add activities in Parent Mode." />
       ) : (
         <ScrollView contentContainerStyle={[styles.list, { paddingHorizontal: sizes.horizontalPadding }]}>
+          {/* Therapy sits at the top of the list — see the note on styles.therapyEntry. */}
+          <MissionCard
+            title="Therapy"
+            subtitle="Home practice for movement and hand skills"
+            colorArt="category:therapy"
+            color="lagoon"
+            onPress={() => navigation.navigate('TherapyHome')}
+            accessibilityLabel="Therapy. Home practice for movement and hand skills."
+          />
           {categories.length > 1 ? (
             <View style={styles.filters}>
               <FilterPill label="All" emoji="✨" selected={filter === null} onPress={() => setFilter(null)} />
@@ -126,7 +157,15 @@ export function ActivitiesScreen(_props: RootScreenProps<'Activities'>) {
                 ]}
               >
                 <View style={[styles.disc, { backgroundColor: theme.tint(meta.color) }, night && { backgroundColor: shade(deep, 0.8), borderWidth: 2.5, borderColor: 'rgba(255,255,255,0.9)' }]}>
-                  {ex.imageUri ? <Image source={{ uri: ex.imageUri }} style={styles.thumb} accessibilityIgnoresInvertColors /> : <Icon name={ex.icon} size={sizes.iconSize - 8} color={night ? '#FFFFFF' : theme.colors.text} />}
+                  {/* A photo a grown-up attached wins; then the category illustration for a stock icon; then
+                      whatever icon a grown-up picked themselves, exactly as they chose it. */}
+                  {ex.imageUri ? (
+                    <Image source={{ uri: ex.imageUri }} style={styles.thumb} accessibilityIgnoresInvertColors />
+                  ) : usesCategoryArt(ex.icon) ? (
+                    <ColorArt name={`category:${ex.category}`} size={46} />
+                  ) : (
+                    <Icon name={ex.icon} size={sizes.iconSize - 8} color={night ? '#FFFFFF' : theme.colors.text} />
+                  )}
                 </View>
                 <View style={styles.cardText}>
                   <Text style={[styles.cardTitle, { fontSize: sizes.tileLabel + 1, color: ex.isCompleted ? theme.colors.textMuted : theme.colors.text }, night && !ex.isCompleted && styles.shadowText]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={2}>
@@ -172,6 +211,7 @@ function FilterPill({ label, emoji, selected, onPress }: { label: string; emoji:
 }
 
 const styles = StyleSheet.create({
+  therapyEntry: { paddingTop: SPACING.md, paddingBottom: SPACING.sm },
   list: { paddingVertical: SPACING.sm, gap: SPACING.md, paddingBottom: SPACING.xl },
   filters: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm },
   pill: { minHeight: MIN_CHILD_TARGET - 8, paddingHorizontal: SPACING.md, borderRadius: Radius.pill, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center', flexGrow: 1 },
@@ -187,6 +227,7 @@ const styles = StyleSheet.create({
   detail: { paddingVertical: SPACING.md, gap: SPACING.lg, paddingBottom: SPACING.xl },
   hero: { alignItems: 'center', gap: SPACING.md },
   image: { width: 220, height: 220, borderRadius: Radius.lg },
+  picture: { borderRadius: Radius.md },
   metaRow: { flexDirection: 'row', gap: SPACING.sm, flexWrap: 'wrap', justifyContent: 'center' },
   chip: { fontFamily: Fonts.bold, fontSize: 16, paddingHorizontal: 12, paddingVertical: 6, borderRadius: Radius.pill, overflow: 'hidden' },
   instructions: { fontFamily: Fonts.semibold, lineHeight: 34, textAlign: 'center' },

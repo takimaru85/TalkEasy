@@ -104,7 +104,7 @@ export function TurnsExerciseView({ exercise, kit }: { exercise: TurnsExercise; 
           {game.style === 'roll' ? (
             <BigButton label={`${game.item.picture} ${game.item.text}`} minHeight={110} onPress={() => childTakes(randomOption())} />
           ) : (
-            <ChoiceGrid>
+            <ChoiceGrid columns={layout.columns}>
               {game.options.map((o) => (
                 <ChoiceCard key={o.id} label={kit.label(o)} emoji={o.picture} pictureMode={layout.pictureMode} width={layout.width} onPress={() => childTakes(o)} />
               ))}

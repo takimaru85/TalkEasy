@@ -34,6 +34,7 @@ export const Adventure = {
   // Added when the cards became solid: seven destinations need seven distinct hues, so no two
   // cards can be confused by colour at a glance.
   lagoon: { from: '#49E3FF', to: '#0B8FC4', ink: '#07566F', tint: '#D6F6FF' },
+  tangerine: { from: '#FFB347', to: '#F26B0F', ink: '#7A3205', tint: '#FFE6CC' },
   magenta: { from: '#FF7BB8', to: '#D02E77', ink: '#8A1A4A', tint: '#FFDFEE' },
 } as const;
 

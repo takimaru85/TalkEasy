@@ -1,7 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { BigButton, Card, Celebration, ChildScreen, Icon } from '@/components/common';
+import { BigButton, Celebration, ChildScreen } from '@/components/common';
+import { LEARN_ACTIVITY_ART } from '@/learning/activityArt';
+import { AnswerChoiceCard, AnswerChoiceGrid, AnswerFeedback, ProgressIndicator, QuestionCard, illustratedSet, useChoiceLayout } from '@/components/adaptive';
 import { MAX_FONT_SCALE, SPACING, TAP_GUARD_MS } from '@/constants/sizes';
 import { useProfile, personalize } from '@/context/ProfileContext';
 import { useSettings } from '@/context/SettingsContext';
@@ -11,7 +13,7 @@ import { createRng, getActivity, getSubject } from '@/learning';
 import type { Question } from '@/learning';
 import type { RootScreenProps } from '@/navigation/types';
 import { speakWithSettings, stopSpeaking } from '@/services/speech';
-import { Fonts, Radius, useTheme } from '@/theme';
+import { Fonts, useTheme } from '@/theme';
 
 type Phase = 'asking' | 'correct' | 'retry' | 'reveal' | 'done';
 
@@ -49,6 +51,14 @@ export function LearnActivityScreen({ navigation, route }: RootScreenProps<'Lear
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const q = questions[index];
+  // The same balanced answer grid as Lessons and Speech Practice.
+  const layout = useChoiceLayout(q?.options.length ?? 0);
+  // When feedback appears it sits under the answers; bring it into view on short phones.
+  const scrollRef = useRef<ScrollView>(null);
+  const feedbackShown = phase === 'correct' || phase === 'retry' || phase === 'reveal';
+  useEffect(() => {
+    if (feedbackShown) setTimeout(() => scrollRef.current?.scrollToEnd({ animated: theme.duration(1) > 0 }), 60);
+  }, [feedbackShown, phase, theme]);
 
   const say = useCallback(
     (text: string, force = false) => {
@@ -168,101 +178,60 @@ export function LearnActivityScreen({ navigation, route }: RootScreenProps<'Lear
 
   if (!q) return <ChildScreen title={activity.title} back />;
 
-  const twoWide = q.options.length >= 3 && q.options.every((o) => o.label.length <= 12);
+  const hasPictures = q.options.some((o) => !!o.emoji);
+  const illustrated = illustratedSet(q.options.map((o) => o.emoji));
+  const feedback =
+    phase === 'correct' ? { kind: 'correct' as const, text: `Correct! Great job, ${displayName}!` }
+    : phase === 'retry' ? { kind: 'retry' as const, text: 'Not quite — try again!' }
+    : phase === 'reveal' ? { kind: 'reveal' as const, text: `The answer is: ${q.options[q.answer]?.label ?? ''}` }
+    : null;
 
   return (
-    <ChildScreen title={activity.title} back>
-      <View style={styles.progress} accessibilityLabel={`Question ${index + 1} of ${questions.length}`}>
-        {questions.map((_, i) => (
-          <View key={i} style={[styles.dot, { backgroundColor: i < index ? theme.colors.success : i === index ? theme.colors.selected : theme.colors.surfaceAlt, borderColor: theme.highContrast ? theme.colors.border : 'transparent', borderWidth: theme.highContrast ? 1 : 0 }, i === index && styles.dotNow]} />
-        ))}
+    <ChildScreen title={activity.title} emoji={subject.emoji} colorArt={LEARN_ACTIVITY_ART[activity.key]} back>
+      <View style={[styles.progress, { paddingHorizontal: sizes.horizontalPadding }]}>
+        <ProgressIndicator current={index + 1} total={questions.length} />
       </View>
 
-      <ScrollView contentContainerStyle={[styles.content, { paddingHorizontal: sizes.horizontalPadding }]} keyboardShouldPersistTaps="handled">
-        <Card color={subject.color} style={styles.card}>
-          {q.promptEmoji ? (
-            <Text style={[styles.promptEmoji, { fontSize: q.promptEmoji.length > 6 ? sizes.iconSize - 6 : sizes.iconSize + 28 }]} allowFontScaling={false}>
-              {q.promptEmoji}
-            </Text>
-          ) : null}
-          <Text style={[styles.prompt, { fontSize: q.prompt.length > 60 ? sizes.body + 4 : sizes.phrase - 4, color: theme.colors.text }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
-            {q.prompt}
-          </Text>
-          <Pressable onPress={() => say(q.speak ?? q.prompt, true)} accessibilityRole="button" accessibilityLabel="Hear the question again" hitSlop={6} style={[styles.hear, { backgroundColor: theme.colors.primary }]}>
-            <Icon name="volume-high" size={28} color="#FFFFFF" />
-            <Text style={styles.hearText} maxFontSizeMultiplier={MAX_FONT_SCALE}>Hear again</Text>
-          </Pressable>
-        </Card>
+      <ScrollView ref={scrollRef} contentContainerStyle={[styles.content, { paddingHorizontal: sizes.horizontalPadding }]} keyboardShouldPersistTaps="handled">
+        <QuestionCard question={q.prompt} image={q.promptEmoji} color={subject.color} onHear={() => say(q.speak ?? q.prompt, true)} />
 
-        <Text
-          style={[
-            styles.feedback,
-            { fontSize: sizes.body + 2, color: phase === 'correct' ? theme.colors.success : phase === 'asking' ? theme.colors.textMuted : theme.colors.danger },
-          ]}
-          maxFontSizeMultiplier={MAX_FONT_SCALE}
-          accessibilityLiveRegion="polite"
-        >
-          {phase === 'retry' ? '↻ Not quite — try again!' : phase === 'correct' ? `✅ Correct! Great job, ${displayName}!` : phase === 'reveal' ? '💡 The answer is highlighted.' : 'Tap your answer'}
+        <Text style={[styles.kicker, { color: theme.night ? '#FFD166' : theme.colors.textMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE} accessibilityRole="header">
+          CHOOSE YOUR ANSWER
         </Text>
 
-        <View style={[styles.options, twoWide && styles.optionsGrid, { gap: sizes.gap }]}>
+        <AnswerChoiceGrid columns={layout.columns}>
           {q.options.map((o, i) => {
             const isCorrect = i === q.answer;
             const isChosen = i === chosen;
             const showCorrect = (phase === 'correct' && isChosen) || (phase === 'reveal' && isCorrect);
             const showWrong = (phase === 'retry' || phase === 'reveal') && isChosen && !isCorrect;
             return (
-              <Pressable
+              <AnswerChoiceCard
                 key={`${index}-${i}`}
-                onPress={() => answer(i)}
-                accessibilityRole="button"
+                label={o.label}
+                emoji={o.emoji}
                 accessibilityLabel={o.speak ?? o.label}
-                accessibilityState={{ selected: isChosen }}
-                hitSlop={4}
-                style={({ pressed }) => [
-                  styles.option,
-                  theme.shadow,
-                  {
-                    minHeight: Math.max(sizes.tileHeight * 0.7, 88),
-                    width: twoWide ? '48%' : '100%',
-                    backgroundColor: showCorrect ? theme.colors.successSoft : showWrong ? '#FFE0E0' : theme.colors.surface,
-                    borderColor: showCorrect ? theme.colors.success : showWrong ? theme.colors.danger : theme.highContrast ? theme.colors.border : theme.colors.borderSoft,
-                    borderWidth: showCorrect || showWrong ? 4 : theme.highContrast ? theme.borderWidth : 1.5,
-                  },
-                  pressed && phase === 'asking' && { backgroundColor: theme.tint(theme.colors.primarySoft) },
-                ]}
-              >
-                {o.emoji ? <Text style={[styles.optionEmoji, { fontSize: sizes.iconSize }]} allowFontScaling={false}>{o.emoji}</Text> : null}
-                <Text style={[styles.optionLabel, { fontSize: o.label.length > 18 ? sizes.body + 2 : sizes.tileLabel + 4, color: theme.colors.text }]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={3} adjustsFontSizeToFit>
-                  {o.label}
-                </Text>
-                {showCorrect ? <Icon name="check-circle" size={34} color={theme.colors.success} /> : null}
-                {showWrong ? <Icon name="close-circle" size={34} color={theme.colors.danger} /> : null}
-              </Pressable>
+                pictureMode={hasPictures && layout.pictureMode}
+                illustrated={illustrated}
+                width={layout.width}
+                disabled={phase === 'correct' || phase === 'reveal'}
+                state={showCorrect ? 'correct' : showWrong ? 'wrong' : 'idle'}
+                onPress={() => answer(i)}
+              />
             );
           })}
-        </View>
+        </AnswerChoiceGrid>
+
+        <AnswerFeedback kind={feedback?.kind ?? null} text={feedback?.text ?? ''} />
       </ScrollView>
     </ChildScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  progress: { flexDirection: 'row', justifyContent: 'center', gap: 6, paddingBottom: SPACING.xs },
-  dot: { width: 14, height: 14, borderRadius: 7 },
-  dotNow: { transform: [{ scale: 1.25 }] },
+  progress: { paddingBottom: SPACING.xs },
   content: { paddingVertical: SPACING.sm, gap: SPACING.md, paddingBottom: SPACING.xl },
-  card: { alignItems: 'center', gap: SPACING.sm },
-  promptEmoji: { textAlign: 'center', lineHeight: 96 },
-  prompt: { fontFamily: Fonts.extrabold, textAlign: 'center', lineHeight: 40 },
-  hear: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, minHeight: 56, paddingHorizontal: SPACING.lg, borderRadius: Radius.pill },
-  hearText: { color: '#FFFFFF', fontFamily: Fonts.extrabold, fontSize: 18 },
-  feedback: { textAlign: 'center', fontFamily: Fonts.extrabold },
-  options: { gap: SPACING.md },
-  optionsGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
-  option: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SPACING.md, padding: SPACING.md, borderRadius: Radius.lg },
-  optionEmoji: { lineHeight: 72 },
-  optionLabel: { fontFamily: Fonts.extrabold, textAlign: 'center', flexShrink: 1 },
+  kicker: { fontFamily: Fonts.black, fontSize: 13, letterSpacing: 1.2, textAlign: 'center', marginBottom: -SPACING.xs },
   done: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: SPACING.lg },
   doneStars: { fontSize: 64, lineHeight: 80 },
   doneTitle: { fontFamily: Fonts.black, textAlign: 'center' },

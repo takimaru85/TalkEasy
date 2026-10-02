@@ -86,7 +86,17 @@ export interface RoutineItem {
   segment: RoutineSegment;
   /** Optional short note shown on the card, e.g. "Blue bag today". */
   notes: string;
+  /** Optional 'HH:MM' when the step stops being "now" (else: when the next timed step starts). */
+  endTime: string | null;
+  /** A child screen "Let's go" opens for this step (e.g. Homework → Lessons), or null. */
+  linkedActivity: RoutineLink | null;
+  /** Skipped today (the day log says so). Done and skipped are both per day. */
+  isSkipped: boolean;
 }
+
+/** Child screens a My Day step can open. */
+export type RoutineLink = 'SpeechPractice' | 'WritingPractice' | 'AdaptiveHome' | 'Learn' | 'Communicate' | 'Activities' | 'Feelings';
+export const ROUTINE_LINKS: RoutineLink[] = ['SpeechPractice', 'WritingPractice', 'AdaptiveHome', 'Learn', 'Communicate', 'Activities', 'Feelings'];
 
 export type RoutineSegment = 'morning' | 'school' | 'afternoon' | 'evening';
 
@@ -96,7 +106,15 @@ export type RoutineSegment = 'morning' | 'school' | 'afternoon' | 'evening';
 
 export type ActivityFrequency = 'daily' | 'weekdays' | 'weekly' | 'as_needed';
 
-export type ActivityCategory = 'games' | 'art' | 'music' | 'exercise' | 'reading' | 'outdoor' | 'sensory' | 'chores' | 'therapy';
+/**
+ * Categories on the Activities screen.
+ *
+ * 'therapy' was REMOVED (migration 16) when Therapy became its own section: a filter pill listing
+ * six older therapy activities, one tap below the card that opens the real Therapy section, was two
+ * answers to the same question. Removing it from this type is what also removes it from Parent
+ * Mode's category picker, so no new activity can be stranded in a category nothing shows.
+ */
+export type ActivityCategory = 'games' | 'art' | 'music' | 'exercise' | 'reading' | 'outdoor' | 'sensory' | 'chores';
 
 export interface TherapyActivity {
   id: number;
@@ -197,6 +215,16 @@ export interface Assignment {
   photoUri: string | null;
   attachmentUri: string | null;
   attachmentName: string | null;
+  /**
+   * Scan Assignment (src/scan). Empty on an assignment that was typed in rather than scanned.
+   *
+   * `scanText` is what the text engine READ and is never rewritten — `description` carries what the
+   * grown-up corrected it to, so the original is always recoverable. `scanType` is the parser's
+   * reading of it, which never replaces the text either.
+   */
+  scanText: string;
+  scanLanguage: string;
+  scanType: string;
   completedAt: string | null;
   createdAt: string;
   updatedAt: string;
@@ -220,6 +248,10 @@ export interface AssignmentInput {
   photoUri: string | null;
   attachmentUri: string | null;
   attachmentName: string | null;
+  /** Scan Assignment fields; omitted (and defaulted empty) for an assignment typed in by hand. */
+  scanText?: string;
+  scanLanguage?: string;
+  scanType?: string;
 }
 
 export type SchoolEventType = 'event' | 'holiday' | 'meeting' | 'reminder' | 'exam' | 'project';
@@ -438,6 +470,8 @@ export interface AppSettings {
   language: LocaleCode;
   /** Speech Practice activities the parent has hidden from the child (comma list of ids). */
   speechPracticeHidden: string;
+  /** Comma-separated ids of guided tours already seen or skipped. Never shown twice. */
+  toursDone: string;
   /** Speech Practice pronunciation set (see speechpractice/pronunciation.ts). English only for now. */
   /** Vowel values for the syllable drill. Source of truth: speechpractice/pronunciation.ts. */
   speechPronunciationSet: 'en' | 'fil';
@@ -453,6 +487,25 @@ export interface AppSettings {
   adventureTheme: 'child' | 'space' | 'dinosaurs' | 'animals' | 'vehicles';
   /** The world the child picked ('' = not chosen yet, which shows Space). */
   adventureWorld: '' | 'space' | 'dinosaurs' | 'animals' | 'vehicles';
+  /** Therapy goals a grown-up has chosen, as a comma list (see src/therapy). '' = none chosen. */
+  therapyGoals: string;
+  /** Therapy activities a grown-up has switched off, as a comma list of activity ids. */
+  therapyHidden: string;
+  /**
+   * When the therapy safety notice was last acknowledged (ISO date), or '' if it has not been.
+   *
+   * A DATE rather than a flag: the notice is the one thing in this section that must not become
+   * invisible furniture, and storing when it was seen leaves the door open to showing it again.
+   */
+  therapySafetyAcceptedAt: string;
+  /**
+   * The family's TalkEasy Plus entitlement, as JSON (see src/subscription).
+   *
+   * A RECORD, not a flag: it carries the plan, where it came from, the product and an expiry, so
+   * a lapsed subscription can be noticed and a development entitlement can never be mistaken for a
+   * store one. Anything unreadable is treated as Free. '' means Free.
+   */
+  subscriptionStatus: string;
 }
 
 export type RotationMode = 'auto' | 'always' | 'portrait';

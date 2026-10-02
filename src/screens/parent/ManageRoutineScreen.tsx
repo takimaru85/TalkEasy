@@ -16,7 +16,7 @@ import { MAX_FONT_SCALE, SPACING } from '@/constants/sizes';
 import { routinesRepo } from '@/database';
 import { useRoutineItems, useRoutines, useSizes } from '@/hooks';
 import type { ParentScreenProps } from '@/navigation/types';
-import type { RoutineItem, RoutineSegment } from '@/types/models';
+import type { RoutineItem, RoutineSegment, RoutineLink } from '@/types/models';
 import { ROUTINE_SEGMENT_META } from '@/constants/school';
 import { alertMessage, confirm } from '@/utils/confirm';
 import { formatTime } from '@/utils/date';
@@ -39,6 +39,8 @@ export function ManageRoutineScreen({ navigation }: ParentScreenProps<'ManageRou
   const [startTime, setStartTime] = useState<string | null>(null);
   const [segment, setSegment] = useState<RoutineSegment>('morning');
   const [notes, setNotes] = useState('');
+  const [endTime, setEndTime] = useState<string | null>(null);
+  const [link, setLink] = useState<RoutineLink | 'none'>('none');
   const [newRoutineName, setNewRoutineName] = useState('');
 
   // Select the active routine by default.
@@ -59,6 +61,8 @@ export function ManageRoutineScreen({ navigation }: ParentScreenProps<'ManageRou
     setStartTime(null);
     setSegment('morning');
     setNotes('');
+    setEndTime(null);
+    setLink('none');
     setEditing({ mode: 'new' });
   };
 
@@ -68,14 +72,19 @@ export function ManageRoutineScreen({ navigation }: ParentScreenProps<'ManageRou
     setStartTime(item.startTime);
     setSegment(item.segment);
     setNotes(item.notes);
+    setEndTime(item.endTime);
+    setLink(item.linkedActivity ?? 'none');
     setEditing({ mode: 'edit', item });
   };
 
   const saveItem = async () => {
     if (!routineId) return;
     if (!label.trim()) return alertMessage('Please give the step a name.');
-    if (editing?.mode === 'edit') await routinesRepo.updateItem(editing.item.id, label, icon, startTime, segment, notes);
-    else await routinesRepo.addItem(routineId, label, icon, startTime, segment, notes);
+    if (endTime && !startTime) return alertMessage('Add a start time first', 'An end time only makes sense with a start time.');
+    if (endTime && startTime && endTime <= startTime) return alertMessage('Check the times', 'The end time must be after the start time.');
+    const linked = link === 'none' ? null : link;
+    if (editing?.mode === 'edit') await routinesRepo.updateItem(editing.item.id, label, icon, startTime, segment, notes, endTime, linked);
+    else await routinesRepo.addItem(routineId, label, icon, startTime, segment, notes, endTime, linked);
     setEditing(null);
   };
 
@@ -139,7 +148,28 @@ export function ManageRoutineScreen({ navigation }: ParentScreenProps<'ManageRou
                 onChange={setSegment}
                 choices={(Object.keys(ROUTINE_SEGMENT_META) as RoutineSegment[]).map((k) => ({ value: k, label: `${ROUTINE_SEGMENT_META[k].emoji} ${ROUTINE_SEGMENT_META[k].label}` }))}
               />
-              <TimeField label="Time (optional)" value={startTime} onChange={setStartTime} />
+              <TimeField label="Start time (optional)" value={startTime} onChange={setStartTime} />
+              {startTime ? <TimeField label="End time (optional)" value={endTime} onChange={setEndTime} /> : null}
+              <Text style={styles.editorHint} maxFontSizeMultiplier={MAX_FONT_SCALE}>
+                Steps with a time drive the live "Now / Up next" card on the child's Home screen: it shows
+                "Starts in 15 minutes" as a step gets close and "It's time!" when it starts. Without an end
+                time, a step lasts until the next timed step.
+              </Text>
+              <ChoiceRow<RoutineLink | 'none'>
+                label={'"Let\'s go" opens'}
+                value={link}
+                onChange={setLink}
+                choices={[
+                  { value: 'none', label: 'Nothing (just tick it)' },
+                  { value: 'AdaptiveHome', label: 'Lessons' },
+                  { value: 'SpeechPractice', label: 'Speech Practice' },
+                  { value: 'WritingPractice', label: 'Learn & Trace' },
+                  { value: 'Learn', label: 'Play & Learn' },
+                  { value: 'Communicate', label: 'Talk' },
+                  { value: 'Activities', label: 'Activities' },
+                  { value: 'Feelings', label: 'Feelings' },
+                ]}
+              />
               <FormField label="Note (optional)" value={notes} onChangeText={setNotes} placeholder='e.g. "Blue bag today"' maxLength={60} />
               <IconPicker value={icon} onChange={setIcon} />
               <View style={styles.editorButtons}>
@@ -156,7 +186,7 @@ export function ManageRoutineScreen({ navigation }: ParentScreenProps<'ManageRou
             <ListRow
               key={item.id}
               title={`${index + 1}. ${item.label}`}
-              subtitle={[`${ROUTINE_SEGMENT_META[item.segment].emoji} ${ROUTINE_SEGMENT_META[item.segment].label}`, item.startTime ? formatTime(item.startTime) : null, item.notes || null, item.isDone ? 'Done today' : null].filter(Boolean).join(' · ')}
+              subtitle={[`${ROUTINE_SEGMENT_META[item.segment].emoji} ${ROUTINE_SEGMENT_META[item.segment].label}`, item.startTime ? `${formatTime(item.startTime)}${item.endTime ? `–${formatTime(item.endTime)}` : ''}` : null, item.notes || null, item.isDone ? 'Done today' : null].filter(Boolean).join(' · ')}
               icon={item.icon}
               dimmed={item.isDone}
               onPress={() => startEdit(item)}
@@ -195,6 +225,7 @@ export function ManageRoutineScreen({ navigation }: ParentScreenProps<'ManageRou
 }
 
 const styles = StyleSheet.create({
+  editorHint: { fontSize: 14, lineHeight: 20, color: '#5A6C8C' },
   flex: { flex: 1 },
   list: { padding: SPACING.lg, gap: SPACING.md, paddingBottom: SPACING.xl * 2 },
   routineRow: { gap: SPACING.sm },

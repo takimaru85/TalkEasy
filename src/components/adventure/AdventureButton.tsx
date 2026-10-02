@@ -16,6 +16,11 @@ interface Props {
   icon?: string;
   /** Illustrated game icon, drawn instead of `icon` (not in high contrast). */
   art?: GameIconName;
+  /**
+   * A ready-made illustration, drawn instead of `art` — how a themed screen supplies the active
+   * theme's artwork without this component having to know the theme system exists.
+   */
+  artNode?: React.ReactNode;
   /** Quieter second line, e.g. "Continue your journey". */
   sublabel?: string;
   color?: AdventureKey;
@@ -30,7 +35,7 @@ interface Props {
  * contrast mode the gradient is dropped for a flat fill and a hard border, because a gradient
  * behind text is exactly what high contrast exists to remove.
  */
-export function AdventureButton({ label, onPress, icon, art, sublabel, color = 'sun', accessibilityLabel }: Props) {
+export function AdventureButton({ label, onPress, icon, art, artNode, sublabel, color = 'sun', accessibilityLabel }: Props) {
   const theme = useTheme();
   const sizes = useSizes();
   const c = Adventure[color];
@@ -46,25 +51,28 @@ export function AdventureButton({ label, onPress, icon, art, sublabel, color = '
       accessibilityLabel={accessibilityLabel ?? (sublabel ? `${label}. ${sublabel}` : label)}
       hitSlop={6}
     >
+      {/* The shell casts the glow; the button inside clips its gradient. iOS clips a view's shadow
+          to its own overflow:hidden, so one layer lost the glow on iPhones only. */}
+      <View style={[styles.shell, theme.highContrast ? null : [AdventureShadow, styles.glowShadow, { shadowColor: c.to, backgroundColor: c.to }]]}>
       <View
         style={[
           styles.button,
           theme.highContrast
             ? { backgroundColor: c.to, borderWidth: theme.borderWidth, borderColor: theme.colors.border }
-            : [AdventureShadow, styles.glow, { shadowColor: c.to, borderColor: shade(c.from, 1.3), borderBottomColor: shade(c.to, 0.7) }],
+            : [styles.rim, { borderColor: shade(c.from, 1.3), borderBottomColor: shade(c.to, 0.7) }],
         ]}
       >
         {theme.highContrast ? null : (
           <>
             <GradientSurface from={c.from} to={c.to} direction="vertical" />
-            {/* A highlight that fades down the button: lit and raised, with no hard-edged band. */}
-            <View style={styles.shine} pointerEvents="none">
-              <GradientSurface from="#FFFFFF" to="#FFFFFF" direction="vertical" fromOpacity={0.34} toOpacity={0} />
-            </View>
+            {/* Gloss: fades out 55% of the way down (a full-size surface — see GradientSurface). */}
+            <GradientSurface from="#FFFFFF" to="#FFFFFF" direction="vertical" fromOpacity={0.34} toOpacity={0} toOffset={0.55} />
           </>
         )}
         <View style={styles.row}>
-          {art && !theme.highContrast ? (
+          {artNode && !theme.highContrast ? (
+            <View style={styles.art}>{artNode}</View>
+          ) : art && !theme.highContrast ? (
             <View style={styles.art}>
               <GameIcon name={art} size={46} />
             </View>
@@ -75,14 +83,14 @@ export function AdventureButton({ label, onPress, icon, art, sublabel, color = '
             <Text
               style={[styles.label, { fontSize: labelSize }]}
               maxFontSizeMultiplier={MAX_FONT_SCALE}
-              numberOfLines={1}
-              adjustsFontSizeToFit
-              minimumFontScale={0.75}
+              // Fitted to one line where it can be; on the narrowest phones it wraps to two rather
+              // than truncating. (No adjustsFontSizeToFit: Android ignores it, so the platforms differed.)
+              numberOfLines={2}
             >
               {label}
             </Text>
             {sublabel ? (
-              <Text style={styles.sublabel} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={1}>
+              <Text style={styles.sublabel} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={2}>
                 {sublabel}
               </Text>
             ) : null}
@@ -92,6 +100,7 @@ export function AdventureButton({ label, onPress, icon, art, sublabel, color = '
             <Icon name="chevron-right" size={26} color="#FFFFFF" />
           </View>
         </View>
+      </View>
       </View>
     </PressableScale>
   );
@@ -108,8 +117,9 @@ const styles = StyleSheet.create({
   },
   // Icon | words (centred in the space left) | arrow — the arrow always sits at the right edge.
   row: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md },
-  glow: { borderWidth: 2, borderBottomWidth: 5, shadowOpacity: 0.55, shadowRadius: 14, shadowOffset: { width: 0, height: 6 }, elevation: 9 },
-  shine: { position: 'absolute', top: 0, left: 0, right: 0, height: '55%' },
+  shell: { borderRadius: AdventureRadius.card },
+  glowShadow: { shadowOpacity: 0.55, shadowRadius: 14, shadowOffset: { width: 0, height: 6 }, elevation: 9 },
+  rim: { borderWidth: 2, borderBottomWidth: 5 },
   art: { width: 46, height: 46, alignItems: 'center', justifyContent: 'center' },
   arrow: { width: 38, height: 38, borderRadius: 19, borderWidth: 2, borderColor: 'rgba(255,255,255,0.8)', alignItems: 'center', justifyContent: 'center' },
   text: { flex: 1, alignItems: 'center', gap: 1 },

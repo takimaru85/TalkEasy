@@ -109,7 +109,7 @@ export function SpaceBackground({ width, height }: Props) {
   const id = useId().replace(/:/g, '');
 
   return (
-    <Svg style={StyleSheet.absoluteFill} accessible={false} pointerEvents="none">
+    <Svg style={StyleSheet.absoluteFill} width={width} height={height} accessible={false} pointerEvents="none">
       <Defs>
         <LinearGradient id={`sky${id}`} x1="0" y1="0" x2="0.3" y2="1">
           <Stop offset="0" stopColor={AdventureNight.top} />

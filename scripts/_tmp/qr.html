@@ -1,0 +1,27 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>TalkEasy on your phone</title>
+<style>
+  body { margin: 0; padding: 28px; background: #ffffff; color: #13233F;
+         font: 16px/1.5 system-ui, -apple-system, Segoe UI, sans-serif; text-align: center; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  p  { margin: 4px 0; color: #5A6C8C; }
+  #qr { display: inline-block; margin: 20px auto 10px; padding: 16px;
+        background: #fff; border: 3px solid #13233F; border-radius: 16px; }
+  code { background: #EEF3FB; padding: 6px 12px; border-radius: 8px;
+         font-size: 18px; color: #13233F; display: inline-block; margin-top: 6px; }
+</style>
+<h1>TalkEasy — scan with Expo Go</h1>
+<p>Phone and PC must be on the same Wi-Fi</p>
+<div id="qr"></div>
+<p>or type this into Expo Go:</p>
+<code>exp://192.168.1.207:8093</code>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+  new QRCode(document.getElementById('qr'), {
+    text: 'exp://192.168.1.207:8093',
+    width: 300,
+    height: 300,
+    correctLevel: QRCode.CorrectLevel.M,
+  });
+</script>

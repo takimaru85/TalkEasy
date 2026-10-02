@@ -1,9 +1,17 @@
-export { ChoiceCard, ChoiceGrid } from './ChoiceCard';
+export { ChoiceCard, ChoiceGrid, AnswerChoiceCard, AnswerChoiceGrid } from './ChoiceCard';
+export { AnswerPicture, illustratedSet } from './AnswerPicture';
+export { QuestionCard, QuestionAction } from './QuestionCard';
+export { AnswerFeedback } from './AnswerFeedback';
+export type { FeedbackKind } from './AnswerFeedback';
+export { ProgressIndicator } from './ProgressIndicator';
+export { useChoiceLayout } from './useChoiceLayout';
 export type { ChoiceState } from './ChoiceCard';
 export { AnswerMethodPicker } from './AnswerMethodPicker';
 export { BigKeyboard } from './BigKeyboard';
 export { SpeechAnswer } from './SpeechAnswer';
 export { TapMatch } from './TapMatch';
 export { HandwritingCanvas } from './HandwritingCanvas';
+export { useTracingLock } from './useTracingLock';
+export { TracingLockBar } from './TracingLockBar';
 export { TraceTarget } from './TraceTarget';
 export type { Guide } from './HandwritingCanvas';

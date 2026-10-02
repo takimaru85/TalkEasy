@@ -1,7 +1,9 @@
 import React from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { BigButton, ChildScreen, SectionTitle } from '@/components/common';
+import { useI18n } from '@/i18n';
 import { CommunicationTile, PhraseBanner } from '@/components/communication';
+import { MissionCard } from '@/components/adventure';
 import { AssignmentCard, SubjectCard } from '@/components/school';
 import { Colors } from '@/constants/colors';
 import { SCHOOL_MODE_QUICK } from '@/constants/defaults';
@@ -19,6 +21,7 @@ import { Fonts, useTheme } from '@/theme';
  */
 export function SchoolModeScreen({ navigation }: RootScreenProps<'SchoolMode'>) {
   const sizes = useSizes();
+  const { t } = useI18n();
   const theme = useTheme();
   const { isoDate, dayOfWeek, time } = useToday();
   const { data: quick } = useQuickButtons(SCHOOL_MODE_QUICK);
@@ -29,7 +32,7 @@ export function SchoolModeScreen({ navigation }: RootScreenProps<'SchoolMode'>) 
   const current = schedule.find((s) => s.startTime <= time && (!s.endTime || s.endTime >= time));
 
   return (
-    <ChildScreen title="School Mode" emoji={SECTION_EMOJI.schoolMode} art="school">
+    <ChildScreen title="School Mode" subtitle={t('schoolModeSubtitle')} emoji={SECTION_EMOJI.schoolMode} art="school">
       <PhraseBanner phrase={lastPhrase} onRepeat={repeat} placeholder="Tap what you need" />
       <ScrollView contentContainerStyle={[styles.content, { paddingHorizontal: sizes.horizontalPadding }]}>
         <View style={[styles.grid, { gap: sizes.gap }]}>
@@ -38,6 +41,19 @@ export function SchoolModeScreen({ navigation }: RootScreenProps<'SchoolMode'>) 
           ))}
         </View>
         <BigButton label="More words" icon="message-text" variant="secondary" minHeight={72} onPress={() => navigation.navigate('Communicate')} />
+
+        {/*
+          Scan Assignment sits with the schoolwork it produces, above today's subjects: what it makes
+          is an assignment, so it belongs beside them rather than in a tools menu somewhere else.
+        */}
+        <MissionCard
+          title="Scan Assignment"
+          subtitle="Photograph a worksheet and turn it into words"
+          glyph="scan-assignment"
+          color="lagoon"
+          onPress={() => navigation.navigate('ScanAssignment')}
+          accessibilityLabel="Scan Assignment. Photograph a worksheet and turn it into words."
+        />
 
         <SectionTitle title="Today's subjects" emoji={SECTION_EMOJI.school} />
         {schedule.length === 0 ? (

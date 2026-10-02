@@ -394,6 +394,151 @@ export const MIGRATIONS: Migration[] = [
       ALTER TABLE caregiver_notes ADD COLUMN note_date TEXT;
     `,
   },
+  {
+    version: 9,
+    // Voice & Communication practice. Like sound_practice_attempts and speech_practice_events,
+    // this table records THAT practice happened and nothing about how it went: no audio, no
+    // transcript, and deliberately no correctness or score column. `category` is stored so the
+    // six practice areas can be summarised without the app having to know today's activity list.
+    sql: `
+      CREATE TABLE IF NOT EXISTS voice_practice_events (
+        id          INTEGER PRIMARY KEY AUTOINCREMENT,
+        activity_id TEXT    NOT NULL,
+        category    TEXT    NOT NULL,
+        kind        TEXT    NOT NULL,
+        item        TEXT    NOT NULL DEFAULT '',
+        duration_ms INTEGER NOT NULL DEFAULT 0,
+        created_at  TEXT    NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_voice_practice ON voice_practice_events(created_at DESC);
+      CREATE INDEX IF NOT EXISTS idx_voice_practice_cat ON voice_practice_events(category);
+    `,
+  },
+  {
+    version: 10,
+    // My Day as a live schedule. A step may have an END time (when it is no longer "now") and a
+    // linked activity that "Let's go" opens. The day log learns a status, so a step can be SKIPPED
+    // as well as done — both per day, so tomorrow starts fresh without anyone resetting it.
+    sql: `
+      ALTER TABLE routine_items ADD COLUMN end_time TEXT;
+      ALTER TABLE routine_items ADD COLUMN linked_activity TEXT;
+      ALTER TABLE routine_log ADD COLUMN status TEXT NOT NULL DEFAULT 'done';
+    `,
+  },
+  {
+    version: 11,
+    // A lesson says what language it is WRITTEN in, so it can be SPOKEN in that language. The app's
+    // interface is English-only; its schoolwork is not, and a Filipino subject read by an English
+    // voice turns "Mga" into the letters M-G-A. '' means English, which is almost every lesson.
+    //
+    // The backfill is the one-off cost of adding the column late: lessons already seeded under a
+    // Filipino subject were written in Filipino, so they are marked as such rather than left silent
+    // for every child who already has them.
+    sql: `
+      ALTER TABLE lessons ADD COLUMN language TEXT NOT NULL DEFAULT '';
+
+      UPDATE lessons SET language = 'fil-PH'
+       WHERE subject_id IN (SELECT id FROM subjects WHERE LOWER(name) IN ('filipino', 'tagalog'));
+    `,
+  },
+  {
+    version: 12,
+    // Repairs lessons that were seeded with no language.
+    //
+    // Migration 11 added the column and backfilled the lessons that existed AT THAT MOMENT, but
+    // migrations run before seeding: a database created in the window where the column existed and
+    // the seed did not yet write to it ended up with a Filipino lesson marked as English, which is
+    // exactly the silence this feature is meant to fix. Seeding now carries the language itself
+    // (database/seed.ts), so this is a one-off repair for the databases caught in between.
+    //
+    // Deliberately only touches rows still left blank, so a language a grown-up chose is never
+    // overwritten by a guess made from the subject's name.
+    sql: `
+      UPDATE lessons SET language = 'fil-PH'
+       WHERE (language IS NULL OR language = '')
+         AND subject_id IN (SELECT id FROM subjects WHERE LOWER(name) IN ('filipino', 'tagalog'));
+    `,
+  },
+  {
+    version: 13,
+    // Which lessons TalkEasy shipped, and which a grown-up wrote themselves.
+    //
+    // The free plan limits the BUILT-IN lessons only. A parent who types in tonight's homework must
+    // never be told their own lesson is a premium feature, so authorship has to be a fact in the
+    // data rather than something guessed from an id or a position in a list — both of which change.
+    //
+    // Existing databases are backfilled by the seeded titles, the only signal an old row carries.
+    // A parent who renamed one keeps it as their own, which is the safe way round to be wrong.
+    sql: `
+      ALTER TABLE lessons ADD COLUMN is_builtin INTEGER NOT NULL DEFAULT 0;
+
+      UPDATE lessons SET is_builtin = 1
+       WHERE title IN ('What plants need', 'Adding to 10', 'Animal sounds', 'Mga hayop (Animals)');
+    `,
+  },
+  {
+    version: 14,
+    // Therapy home practice. Like sound_practice_attempts, speech_practice_events and
+    // voice_practice_events, this table records THAT practice happened and nothing about how it
+    // went: no measurement, no range, no quality, no correctness column, and deliberately nothing a
+    // parent or anyone else could read as a clinical result. TalkEasy is not assessing a child's
+    // movement and must never look as though it is.
+    sql: `
+      CREATE TABLE IF NOT EXISTS therapy_sessions (
+        id          INTEGER PRIMARY KEY AUTOINCREMENT,
+        activity_id TEXT    NOT NULL,
+        group_id    TEXT    NOT NULL,
+        duration_ms INTEGER NOT NULL DEFAULT 0,
+        created_at  TEXT    NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_therapy_sessions ON therapy_sessions(created_at DESC);
+      CREATE INDEX IF NOT EXISTS idx_therapy_sessions_activity ON therapy_sessions(activity_id);
+    `,
+  },
+  {
+    version: 15,
+    // Scan Assignment. A scan IS an assignment — it goes in the table School Mode already reads, so
+    // a scanned worksheet turns up under "Today's assignments" and opens in AssignmentDetail with no
+    // new list, no second store and no screen to keep in sync.
+    //
+    // Three columns, and the split between the first two is the point: `scan_text` is what the
+    // engine read and is never rewritten, while the ordinary `description` holds what the grown-up
+    // corrected it to. Keeping them apart is what lets somebody get back to the original after an
+    // edit goes wrong. `scan_type` is the parser's guess, stored beside the text rather than
+    // replacing it.
+    sql: `
+      ALTER TABLE assignments ADD COLUMN scan_text TEXT NOT NULL DEFAULT '';
+      ALTER TABLE assignments ADD COLUMN scan_language TEXT NOT NULL DEFAULT '';
+      ALTER TABLE assignments ADD COLUMN scan_type TEXT NOT NULL DEFAULT '';
+    `,
+  },
+  {
+    version: 16,
+    // Retires the old "Therapy" ACTIVITY CATEGORY, now that Therapy is its own section.
+    //
+    // Activities had a therapy category holding six seeded items, and the Activities screen listed
+    // them behind a Therapy filter pill. Since the Therapy section exists — with a safety gate,
+    // goals, a routine and practice tracking — a second, older list of therapy activities a tap away
+    // from it is not a feature, it is two answers to the same question.
+    //
+    // The two statements are deliberately different, and the order matters:
+    //  1. DELETE only the six TalkEasy shipped, matched by name, so the retired content goes.
+    //  2. MOVE anything else still in that category to 'exercise' — those are activities a GROWN-UP
+    //     created themselves, and a cleanup that silently deleted a family's own work would be a
+    //     bug, not a tidy-up. They keep their name, icon, instructions and history, and simply
+    //     appear under Exercise instead.
+    //
+    // The new Therapy section is untouched: it uses `therapy_sessions` and code content, and shares
+    // nothing with this table.
+    sql: `
+      DELETE FROM therapy_activities
+       WHERE category = 'therapy'
+         AND name IN ('Stretching', 'Reach and grab', 'Reach up high', 'Sitting balance',
+                      'Gentle yoga', 'Hand and leg massage');
+
+      UPDATE therapy_activities SET category = 'exercise' WHERE category = 'therapy';
+    `,
+  },
 ];
 
 export const CURRENT_SCHEMA_VERSION = MIGRATIONS[MIGRATIONS.length - 1].version;

@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import { BigButton, Card, ChildScreen, SectionTitle } from '@/components/common';
-import { MAX_FONT_SCALE, SPACING } from '@/constants/sizes';
+import { BigButton, Card, ChildScreen, Icon, PressableScale, SectionTitle } from '@/components/common';
+import { MAX_FONT_SCALE, MIN_CHILD_TARGET, SPACING } from '@/constants/sizes';
 import { useSettings } from '@/context/SettingsContext';
 import { soundPracticeRepo } from '@/database';
 import { useSizes, useSoundRecorder } from '@/hooks';
@@ -21,6 +21,10 @@ import { Fonts, useTheme } from '@/theme';
  *
  * The recording is a temporary file that `useSoundRecorder` deletes; only the fact that an
  * attempt happened is stored.
+ *
+ * Two different things are heard here, through two different calls: "Play sound" is the isolated
+ * PHONEME (/ɡ/, from a recording — soundPracticeAudio.playPhoneme), and the "🐐 Like Goat" line is
+ * the EXAMPLE WORD (soundPracticeAudio.playExampleWord). The letter is never spoken as the model.
  */
 
 /** Rotating praise so it does not read like a machine repeating itself. */
@@ -41,7 +45,11 @@ export function SoundPracticeDetailScreen({ route, navigation }: RootScreenProps
 
   const playModel = useCallback(async () => {
     if (!exercise) return;
-    setModelSource(await soundPracticeAudio.playModel(exercise, 'sound', exercise.sound, settings));
+    setModelSource(await soundPracticeAudio.playPhoneme(exercise, settings));
+  }, [exercise, settings]);
+
+  const playExample = useCallback(() => {
+    if (exercise) void soundPracticeAudio.playExampleWord(exercise, settings);
   }, [exercise, settings]);
 
   // Play the model once when the sound opens, so the child hears it before trying.
@@ -57,7 +65,7 @@ export function SoundPracticeDetailScreen({ route, navigation }: RootScreenProps
     const durationMs = await recorder.stop();
     setPraiseIndex((i) => i + 1);
     soundPracticeRepo
-      .recordAttempt({ soundId: exercise.id, level: 'sound', item: exercise.sound, durationMs })
+      .recordAttempt({ soundId: exercise.id, level: 'sound', item: exercise.letter, durationMs })
       .catch(() => {});
   };
 
@@ -78,13 +86,30 @@ export function SoundPracticeDetailScreen({ route, navigation }: RootScreenProps
           <Text
             style={[styles.letter, { fontSize: sizes.heading + 56, color: theme.colors.text }]}
             allowFontScaling={false}
-            accessibilityLabel={exercise.sound}
+            accessibilityLabel={exercise.letter}
           >
-            {exercise.sound}
+            {exercise.letter}
           </Text>
-          <Text style={[styles.likeWord, { fontSize: sizes.body + 2, color: theme.colors.textMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
-            {exercise.emoji} {t('soundLikeWord', { word: exercise.exampleWord })}
+          {/* The target, for grown-ups: the letter is a spelling, this is the sound being practised. */}
+          <Text
+            style={[styles.phoneme, { color: theme.colors.textMuted }]}
+            maxFontSizeMultiplier={MAX_FONT_SCALE}
+            accessibilityLabel={t('soundTargetA11y', { letter: exercise.letter, word: exercise.exampleWord })}
+          >
+            {t('soundTarget', { phoneme: exercise.phoneme })}
           </Text>
+          <PressableScale
+            onPress={playExample}
+            style={styles.example}
+            accessibilityRole="button"
+            accessibilityLabel={t('soundPlayExample', { word: exercise.exampleWord })}
+            hitSlop={4}
+          >
+            <Text style={[styles.likeWord, { fontSize: sizes.body + 2, color: theme.colors.textMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
+              {exercise.emoji} {t('soundLikeWord', { word: exercise.exampleWord })}
+            </Text>
+            <Icon name="volume-high" size={20} color={theme.colors.textMuted} />
+          </PressableScale>
         </Card>
 
         <SectionTitle title={t('soundListen')} emoji="🔊" />
@@ -145,10 +170,10 @@ export function SoundPracticeDetailScreen({ route, navigation }: RootScreenProps
 
         <BigButton label={t('soundNext')} icon="arrow-right" variant="success" minHeight={80} onPress={goToNext} />
 
-        {/* Grown-up note: be honest that a synthesised model is an approximation. */}
-        {modelSource === 'speech' ? (
+        {/* Grown-up note: be honest when the phoneme recording is missing (development fallback). */}
+        {modelSource === 'fallback' ? (
           <Text style={[styles.note, { color: theme.colors.textMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
-            {t('soundModelIsSynthetic')}
+            {t('soundModelFallback', { phoneme: exercise.phoneme, word: exercise.exampleWord })}
           </Text>
         ) : null}
       </ScrollView>
@@ -161,6 +186,8 @@ const styles = StyleSheet.create({
   content: { paddingVertical: SPACING.sm, gap: SPACING.md, paddingBottom: SPACING.xl },
   letterCard: { alignItems: 'center', gap: SPACING.xs },
   letter: { fontFamily: Fonts.black, textAlign: 'center' },
+  phoneme: { fontFamily: Fonts.bold, fontSize: 16, textAlign: 'center', marginTop: -SPACING.xs },
+  example: { minHeight: MIN_CHILD_TARGET, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SPACING.xs, paddingHorizontal: SPACING.md },
   likeWord: { fontFamily: Fonts.semibold, textAlign: 'center' },
   micTitle: { fontFamily: Fonts.extrabold, textAlign: 'center', marginBottom: SPACING.sm },
   micBody: { fontFamily: Fonts.semibold, fontSize: 15, lineHeight: 22, textAlign: 'center', marginBottom: SPACING.md },

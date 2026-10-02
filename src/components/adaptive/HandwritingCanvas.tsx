@@ -1,5 +1,5 @@
-import React, { useMemo, useRef, useState } from 'react';
-import { PanResponder, Pressable, StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { PanResponder, Platform, Pressable, StyleSheet, Text, View, type LayoutChangeEvent, type ViewStyle } from 'react-native';
 import Svg, { Circle, G, Line, Path, Polygon, Rect } from 'react-native-svg';
 import { BigButton } from '@/components/common';
 import { MAX_FONT_SCALE, MIN_CHILD_TARGET, SPACING } from '@/constants/sizes';
@@ -28,6 +28,12 @@ interface Props {
   strokeWidth?: number;
   onStrokeWidthChange?: (w: number) => void;
   height?: number;
+  /**
+   * Called with true when a finger goes down on the canvas and false when it lifts (or the gesture is
+   * cancelled, or the canvas goes away mid-stroke). The screen uses it to switch its own ScrollView off
+   * for exactly that long, so dragging a finger draws instead of scrolling the page.
+   */
+  onDrawingChange?: (drawing: boolean) => void;
 }
 
 type Stroke = string; // SVG path data
@@ -36,20 +42,33 @@ type Stroke = string; // SVG path data
  * Large finger-writing area. Strokes are captured with PanResponder (no gesture library) and
  * drawn as SVG paths over a light grey guide. Nothing is graded — Undo, Clear and Done only.
  */
-export function HandwritingCanvas({ guide, onDone, strokeWidth = 14, onStrokeWidthChange, height = 360 }: Props) {
+export function HandwritingCanvas({ guide, onDone, strokeWidth = 14, onStrokeWidthChange, height = 360, onDrawingChange }: Props) {
   const theme = useTheme();
   const [size, setSize] = useState({ w: 0, h: height });
   const [strokes, setStrokes] = useState<Stroke[]>([]);
   const [current, setCurrent] = useState<Stroke>('');
   const currentRef = useRef('');
   const startedAt = useRef<number | null>(null);
+  // The responder is built once, so it reads the callback through a ref and never goes stale.
+  const drawingCb = useRef(onDrawingChange);
+  drawingCb.current = onDrawingChange;
+  // A canvas that unmounts mid-stroke (Done pressed, level changed) must not leave the page locked.
+  useEffect(() => () => drawingCb.current?.(false), []);
 
   const pan = useMemo(
     () =>
       PanResponder.create({
         onStartShouldSetPanResponder: () => true,
         onMoveShouldSetPanResponder: () => true,
+        // THE ROOT CAUSE of the page scrolling while a child traced. This canvas sits inside a ScrollView,
+        // and a responder that will hand the gesture back when asked (the default) lets that ScrollView take
+        // it the moment the finger moves vertically. Once a stroke has begun it belongs to the canvas until the
+        // finger lifts, and the native layer is told not to scroll underneath it either.
+        onPanResponderTerminationRequest: () => false,
+        onShouldBlockNativeResponder: () => true,
         onPanResponderGrant: (e) => {
+          // Switch the screen's scrolling off NOW, at touch-down, before the finger has moved at all.
+          drawingCb.current?.(true);
           if (startedAt.current === null) startedAt.current = Date.now();
           const { locationX: x, locationY: y } = e.nativeEvent;
           currentRef.current = `M ${x.toFixed(1)} ${y.toFixed(1)}`;
@@ -66,10 +85,12 @@ export function HandwritingCanvas({ guide, onDone, strokeWidth = 14, onStrokeWid
           setStrokes((s) => [...s, d]);
           currentRef.current = '';
           setCurrent('');
+          drawingCb.current?.(false);
         },
         onPanResponderTerminate: () => {
           currentRef.current = '';
           setCurrent('');
+          drawingCb.current?.(false);
         },
       }),
     [],
@@ -99,12 +120,18 @@ export function HandwritingCanvas({ guide, onDone, strokeWidth = 14, onStrokeWid
           { height, backgroundColor: '#FFFFFF', borderColor: theme.highContrast ? theme.colors.border : theme.colors.borderSoft, borderWidth: theme.highContrast ? theme.borderWidth : 2 },
           // The cleanest thing on the screen: plain white, a soft light rim and a gentle shadow.
           night && styles.canvasNight,
+          // On the web a browser decides whether a drag scrolls BEFORE any script runs, so it has to be told
+          // up front, on this element only: `touch-action: none`. Not applied anywhere else, so the rest of
+          // the page still scrolls, and ignored on a phone.
+          Platform.OS === 'web' ? styles.webNoScroll : null,
         ]}
         accessibilityLabel="Writing area. Draw with your finger."
         {...pan.panHandlers}
       >
         {size.w > 0 ? (
-          <Svg width={size.w} height={size.h}>
+          // The drawing never takes a touch: the canvas View is always the target, so the coordinates it
+          // reports are relative to the canvas whatever is under the finger.
+          <Svg width={size.w} height={size.h} pointerEvents="none">
             {renderGuide(guide, size.w, size.h, guideColor, letterStyle, arrowColor)}
             {strokes.map((d, i) => (
               <Path key={i} d={d} stroke={ink} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" fill="none" />
@@ -287,7 +314,11 @@ function renderGuide(guide: Guide, w: number, h: number, color: string, letterSt
   }
 }
 
+/** Web only. Not in React Native's ViewStyle, hence the cast. */
+const WEB_NO_SCROLL = { touchAction: 'none', userSelect: 'none' } as unknown as ViewStyle;
+
 const styles = StyleSheet.create({
+  webNoScroll: WEB_NO_SCROLL,
   wrap: { gap: SPACING.md },
   canvas: { borderRadius: Radius.lg, overflow: 'hidden' },
   canvasNight: {

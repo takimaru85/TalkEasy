@@ -1,4 +1,5 @@
 import React from 'react';
+import { SubjectIcon } from './SubjectIcon';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Colors } from '@/constants/colors';
 import { MAX_FONT_SCALE, RADIUS, SPACING } from '@/constants/sizes';
@@ -35,7 +36,7 @@ export function SubjectCard({ subject, subtitle, onPress, highlighted }: Props) 
         pressed && onPress && styles.pressed,
       ]}
     >
-      <Icon name={subject.icon} size={sizes.iconSize} color={pal.ink} />
+      <SubjectIcon icon={subject.icon} size={sizes.iconSize} color={pal.ink} />
       <View style={styles.text}>
         <Text style={[styles.name, { fontSize: sizes.tileLabel + 2, color: pal.ink }]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={2} adjustsFontSizeToFit>
           {subject.name}

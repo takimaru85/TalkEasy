@@ -63,6 +63,21 @@ export const speechPracticeRepo = {
     return row?.n ?? 0;
   },
 
+  /**
+   * Steps practised per TARGET SOUND, from the scoped item keys the target journey writes
+   * (`ba:listen`, `ba:words`…). One query rather than one per target, so the Home screen can
+   * say which sound is in progress without five round trips.
+   */
+  async targetSteps(): Promise<{ target: string; steps: number }[]> {
+    const db = await getDb();
+    return db.getAllAsync<{ target: string; steps: number }>(
+      `SELECT substr(item, 1, instr(item, ':') - 1) AS target,
+              COUNT(DISTINCT item)                     AS steps
+         FROM speech_practice_events
+        WHERE activity_id = 'sounds' AND instr(item, ':') > 1
+        GROUP BY target`,
+    );
+  },
   /** "Today's practice", including Sound Practice attempts. */
   /**
    * All-time counts, for badges and the progress screen: exercises done, activities touched and

@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Card, Celebration, ChildScreen, EmptyState, Icon, IconTile, ProgressBar } from '@/components/common';
+import { Celebration, ChildScreen, EmptyState, Icon, IconTile } from '@/components/common';
+import { MyDayUpcoming } from '@/components/myday/MyDayUpcoming';
+import { startsIn, type ScheduleEntry } from '@/myday/schedule';
 import { tileInk } from '@/constants/colors';
 import { ROUTINE_SEGMENT_TINT } from '@/constants/school';
 import { SECTION_EMOJI } from '@/constants/school';
@@ -8,7 +10,7 @@ import { MAX_FONT_SCALE, SPACING } from '@/constants/sizes';
 import { useProfile, personalize } from '@/context/ProfileContext';
 import { useSettings } from '@/context/SettingsContext';
 import { routinesRepo } from '@/database';
-import { useActiveRoutine, useActiveRoutineItems, useAwardStars, useSizes, useSpeak } from '@/hooks';
+import { useActiveRoutine, useAwardStars, useMyDay, useSizes, useSpeak } from '@/hooks';
 import type { RootScreenProps } from '@/navigation/types';
 import { Fonts, Radius, useTheme, shade } from '@/theme';
 import type { RoutineItem, RoutineSegment } from '@/types/models';
@@ -27,26 +29,35 @@ const SEGMENTS: { key: RoutineSegment; label: string; icon: string; tint: string
 const tintFor = (segment: RoutineSegment) => ROUTINE_SEGMENT_TINT[segment] ?? ROUTINE_SEGMENT_TINT.school;
 
 /**
- * Visual daily schedule. A fixed card at the top shows NOW / NEXT and progress; below, the
- * steps are grouped by part of the day. Tap = speak + tick (tap again to un-tick). Ticking a
- * step earns a star; finishing the whole plan celebrates.
+ * My Day — the child's LIVE daily schedule. At the top, the same live card as Home (NOW / NEXT,
+ * "Starts in…", "It's time!"), here with "I did it!" and Skip. Below, the steps by part of the
+ * day, each showing its state: ✓ done, → now, ○ still to come, or skipped. Tap a step = speak +
+ * tick (tap again to un-tick). Ticking earns a star; finishing the whole plan celebrates.
+ * Everything updates by itself as the time passes (useMyDay).
  */
-export function MyDayScreen(_props: RootScreenProps<'MyDay'>) {
+export function MyDayScreen({ navigation }: RootScreenProps<'MyDay'>) {
   const sizes = useSizes();
   const theme = useTheme();
   const { settings } = useSettings();
   const { profile, displayName } = useProfile();
   const { data: routine, loading } = useActiveRoutine();
-  const { data: items } = useActiveRoutineItems();
+  const day = useMyDay();
+  const items = day.entries.map((e) => e.item);
+  const statusOf = new Map(day.entries.map((e) => [e.item.id, e] as const));
   const { speakPhrase, speakFeedback } = useSpeak();
   const { t, tContent } = useI18n();
   const award = useAwardStars();
   const [burst, setBurst] = useState(0);
 
-  const done = items.filter((i) => i.isDone).length;
-  const currentIndex = items.findIndex((i) => !i.isDone);
-  const current = currentIndex >= 0 ? items[currentIndex] : null;
-  const next = currentIndex >= 0 ? items.slice(currentIndex + 1).find((i) => !i.isDone) ?? null : null;
+  const done = day.done;
+  const current = day.now?.item ?? null;
+  const next = day.next?.item ?? null;
+
+  /** "I did it!" from the live card ticks the step exactly as tapping it in the list does. */
+  const tick = (e: ScheduleEntry) => (e.item.isDone ? undefined : onPressItem(e.item));
+  const skip = async (e: ScheduleEntry) => {
+    if (await confirm('Skip this?', `Skip "${tContent(e.item.label)}" for today?`, 'Skip')) await routinesRepo.setItemSkipped(e.item.id, true);
+  };
 
   const onPressItem = async (item: RoutineItem) => {
     speakPhrase(tContent(item.label));
@@ -57,7 +68,7 @@ export function MyDayScreen(_props: RootScreenProps<'MyDay'>) {
     await routinesRepo.setItemDone(item.id, !item.isDone);
     if (!item.isDone) {
       const stars = await award('routine', item.label);
-      const finishedAll = done + 1 === items.length;
+      const finishedAll = day.entries.filter((e) => e.status !== 'completed' && e.status !== 'skipped').length === 1;
       if (finishedAll) {
         setBurst((b) => b + 1);
         setTimeout(() => speakFeedback(`${personalize(profile.rewards.celebrationMessage, displayName)} Your plan is all done!`), 600);
@@ -68,43 +79,19 @@ export function MyDayScreen(_props: RootScreenProps<'MyDay'>) {
   };
 
   return (
-    <ChildScreen title={routine ? tContent(routine.name) : t('sectionMyDay')} emoji={SECTION_EMOJI.myday} art="myday">
+    <ChildScreen title={routine ? tContent(routine.name) : t('sectionMyDay')} subtitle={t('myDaySubtitle')} emoji={SECTION_EMOJI.myday} art="myday">
       <Celebration trigger={burst} />
       {!loading && items.length === 0 ? (
         <EmptyState icon="calendar-check" title="No plan yet" message="A parent can build the day in Parent Mode." />
       ) : (
         <ScrollView contentContainerStyle={[styles.list, { paddingHorizontal: sizes.horizontalPadding }]}>
-          <Card color={theme.colors.primarySoft}>
-            <ProgressBar value={items.length ? done / items.length : 0} label={`${done} / ${items.length}`} color={theme.colors.success} accessibilityLabel={`${done} of ${items.length} steps done`} />
-            <View style={styles.nowRow}>
-              <View style={styles.nowCol}>
-                <Text style={[styles.caption, { color: theme.colors.textMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>{t('dayNow')}</Text>
-                {current ? (
-                  <View style={styles.nowItem}>
-                    <IconTile name={current.icon} size={sizes.iconSize + 4} tint={tintFor(current.segment)} />
-                    <Text style={[styles.nowText, { fontSize: sizes.tileLabel + 2, color: theme.colors.text }]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={2} adjustsFontSizeToFit>
-                      {current.label}
-                    </Text>
-                  </View>
-                ) : (
-                  <Text style={[styles.nowText, { fontSize: sizes.tileLabel, color: theme.colors.text }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>{t('dayAllDone')} 🎉</Text>
-                )}
-              </View>
-              <View style={[styles.nowCol, styles.nextCol, { borderColor: theme.colors.borderSoft }]}>
-                <Text style={[styles.caption, { color: theme.colors.textMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>{t('dayNext')}</Text>
-                {next ? (
-                  <View style={styles.nowItem}>
-                    <IconTile name={next.icon} size={sizes.iconSize - 6} tint={tintFor(next.segment)} muted />
-                    <Text style={[styles.nowText, { fontSize: sizes.tileLabel - 2, color: theme.colors.textMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={2} adjustsFontSizeToFit>
-                      {next.label}
-                    </Text>
-                  </View>
-                ) : (
-                  <Text style={[styles.nowText, { fontSize: sizes.tileLabel - 2, color: theme.colors.textMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>—</Text>
-                )}
-              </View>
-            </View>
-          </Card>
+          <MyDayUpcoming
+            state={day}
+            variant="full"
+            onGo={(e) => (e.item.linkedActivity ? navigation.navigate(e.item.linkedActivity) : tick(e))}
+            onDone={tick}
+            onSkip={skip}
+          />
 
           {SEGMENTS.map((seg) => {
             const segItems = items.filter((i) => i.segment === seg.key);
@@ -119,15 +106,18 @@ export function MyDayScreen(_props: RootScreenProps<'MyDay'>) {
                 </View>
                 {segItems.map((item) => {
                   const isNow = current?.id === item.id;
+                  const entry = statusOf.get(item.id);
+                  const skipped = entry?.status === 'skipped';
+                  const isNext = next?.id === item.id;
                   // On the night sky a step is a solid card in its part of the day's colour; the
                   // step happening now gets the gold rim, a finished one steps back to the panel.
-                  const deep = item.isDone ? theme.colors.surfaceAlt : tileInk(seg.tint);
+                  const deep = item.isDone || skipped ? theme.colors.surfaceAlt : tileInk(seg.tint);
                   return (
                     <Pressable
                       key={item.id}
                       onPress={() => onPressItem(item)}
                       accessibilityRole="button"
-                      accessibilityLabel={`${tContent(item.label)}${item.startTime ? `, ${formatTime(item.startTime)}` : ''}${item.notes ? `, ${item.notes}` : ''}${item.isDone ? ', done' : isNow ? ', now' : ''}`}
+                      accessibilityLabel={`${tContent(item.label)}${item.startTime ? `, ${formatTime(item.startTime)}` : ''}${item.notes ? `, ${item.notes}` : ''}${item.isDone ? ', done' : skipped ? ', skipped' : isNow ? ', now' : isNext ? ', next' : ''}`}
                       accessibilityState={{ checked: item.isDone }}
                       hitSlop={4}
                       style={({ pressed }) => [
@@ -146,22 +136,28 @@ export function MyDayScreen(_props: RootScreenProps<'MyDay'>) {
                           borderBottomWidth: 5,
                           borderBottomColor: isNow ? theme.colors.selected : shade(deep, 0.64),
                         },
+                        skipped && styles.skipped,
                         pressed && { opacity: 0.85 },
                       ]}
                     >
-                      <IconTile name={item.icon} size={56} tint={seg.tint} muted={item.isDone} />
+                      <IconTile name={item.icon} size={56} tint={seg.tint} muted={item.isDone || skipped} />
                       <View style={styles.stepText}>
                         <Text style={[styles.label, { fontSize: sizes.tileLabel, color: item.isDone ? theme.colors.textMuted : theme.colors.text }, item.isDone && styles.labelDone]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={2}>
                           {tContent(item.label)}
                         </Text>
-                        {item.startTime || item.notes ? (
-                          <Text style={[styles.meta, { fontSize: sizes.body - 3, color: theme.night && !item.isDone ? 'rgba(255,255,255,0.88)' : theme.colors.textMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={1}>
-                            {[item.startTime ? formatTime(item.startTime) : null, item.notes ? tContent(item.notes) : null].filter(Boolean).join(' · ')}
+                        {item.startTime || item.notes || skipped || (isNext && day.minutesUntilNext !== null) ? (
+                          <Text style={[styles.meta, { fontSize: sizes.body - 3, color: theme.night && !item.isDone && !skipped ? 'rgba(255,255,255,0.88)' : theme.colors.textMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={1}>
+                            {[
+                              skipped ? 'Skipped today' : null,
+                              item.startTime ? formatTime(item.startTime) : null,
+                              isNext && day.minutesUntilNext !== null && day.nextPhase !== 'later' ? startsIn(day.minutesUntilNext) : null,
+                              item.notes ? tContent(item.notes) : null,
+                            ].filter(Boolean).join(' · ')}
                           </Text>
                         ) : null}
                       </View>
                       <View style={[styles.check, { borderColor: item.isDone ? theme.colors.success : theme.colors.borderSoft, backgroundColor: item.isDone ? theme.colors.success : theme.colors.surface }, theme.night && !item.isDone && { backgroundColor: shade(deep, 0.78), borderColor: 'rgba(255,255,255,0.9)' }]}>
-                        {item.isDone ? <Icon name="check-bold" size={28} color="#FFFFFF" /> : isNow ? <Text style={[styles.arrow, { color: theme.night ? '#FFFFFF' : theme.colors.primaryDark }]} allowFontScaling={false}>→</Text> : null}
+                        {item.isDone ? <Icon name="check-bold" size={28} color="#FFFFFF" /> : skipped ? <Icon name="skip-next" size={24} color={theme.colors.textMuted} /> : isNow ? <Text style={[styles.arrow, { color: theme.night ? '#FFFFFF' : theme.colors.primaryDark }]} allowFontScaling={false}>→</Text> : <Icon name="circle-outline" size={22} color={theme.night ? 'rgba(255,255,255,0.75)' : theme.colors.textMuted} />}
                       </View>
                     </Pressable>
                   );
@@ -177,12 +173,6 @@ export function MyDayScreen(_props: RootScreenProps<'MyDay'>) {
 
 const styles = StyleSheet.create({
   list: { paddingVertical: SPACING.sm, gap: SPACING.md, paddingBottom: SPACING.xl },
-  nowRow: { flexDirection: 'row', marginTop: SPACING.md, gap: SPACING.md },
-  nowCol: { flex: 1.3, gap: 4 },
-  nextCol: { flex: 1, borderLeftWidth: 1.5, paddingLeft: SPACING.md },
-  caption: { fontFamily: Fonts.black, fontSize: 13, letterSpacing: 1 },
-  nowItem: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
-  nowText: { fontFamily: Fonts.black, flexShrink: 1 },
   segment: { gap: SPACING.sm },
   segmentRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginTop: SPACING.xs },
   segmentTitle: { fontFamily: Fonts.black, letterSpacing: 1.2 },
@@ -193,4 +183,5 @@ const styles = StyleSheet.create({
   meta: { fontFamily: Fonts.bold },
   check: { width: 48, height: 48, borderRadius: 14, borderWidth: 2.5, alignItems: 'center', justifyContent: 'center' },
   arrow: { fontSize: 26, fontFamily: Fonts.black },
+  skipped: { opacity: 0.7 },
 });

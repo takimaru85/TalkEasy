@@ -22,6 +22,7 @@ export const DEMO_LESSONS: DemoLesson[] = [
       content: 'Plants need sunlight, water and air to make their own food. This is called photosynthesis.',
       vocabulary: ['☀️ Sunlight', '💧 Water', '🌬️ Air'],
       objectives: 'Name what a plant needs to grow.',
+      language: '',
       assignedDate: null,
       isActive: true,
     },
@@ -56,6 +57,7 @@ export const DEMO_LESSONS: DemoLesson[] = [
       content: 'When we add, we put groups together and count them all. 5 + 5 = 10.',
       vocabulary: ['➕ Add', '🟰 Equals', '🔟 Ten'],
       objectives: 'Add two numbers with a total of 10 or less.',
+      language: '',
       assignedDate: null,
       isActive: true,
     },
@@ -85,6 +87,7 @@ export const DEMO_LESSONS: DemoLesson[] = [
       content: 'Animals make different sounds. A dog says woof. A cat says meow. A cow says moo.',
       vocabulary: ['🐶 Dog — woof', '🐱 Cat — meow', '🐮 Cow — moo'],
       objectives: 'Match animals to their sounds and name a mammal.',
+      language: '',
       assignedDate: null,
       isActive: true,
     },
@@ -113,6 +116,9 @@ export const DEMO_LESSONS: DemoLesson[] = [
       content: 'Aso ang tawag sa dog. Pusa ang tawag sa cat. Ibon ang tawag sa bird.',
       vocabulary: ['🐶 Aso', '🐱 Pusa', '🐦 Ibon'],
       objectives: 'Recognise Filipino words for common animals.',
+      // Written in Filipino, so it is SPOKEN in Filipino: the title, the sentences, each animal
+      // word and both questions. Without this the English voice reads "Mga" as M-G-A.
+      language: 'fil-PH',
       assignedDate: null,
       isActive: true,
     },

@@ -2,6 +2,7 @@ import React from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { ChildScreen, EmptyState, Glyph, Icon, PressableScale } from '@/components/common';
 import { MissionCard } from '@/components/adventure/MissionCard';
+import { LEARN_ACTIVITY_ART, LEARN_SUBJECT_ART } from '@/learning/activityArt';
 import { MAX_FONT_SCALE, SPACING } from '@/constants/sizes';
 import { useLearningBest, useLearningConfigs, useSizes, useSpeak } from '@/hooks';
 import { getSubject } from '@/learning';
@@ -31,7 +32,7 @@ export function LearnSubjectScreen({ navigation, route }: RootScreenProps<'Learn
   const activities = subject.activities.filter((a) => configs.get(a.key)?.isEnabled ?? true);
 
   return (
-    <ChildScreen title={subject.name} emoji={subject.emoji} back>
+    <ChildScreen title={subject.name} emoji={subject.emoji} colorArt={LEARN_SUBJECT_ART[subject.key]} back>
       {activities.length === 0 ? (
         <EmptyState icon="book-open-variant" title="Nothing to practise yet" message="A parent can turn activities on in Parent Mode." />
       ) : (
@@ -43,6 +44,7 @@ export function LearnSubjectScreen({ navigation, route }: RootScreenProps<'Learn
               title={a.title}
               subtitle={a.description}
               glyph={a.emoji}
+              colorArt={LEARN_ACTIVITY_ART[a.key]}
               color={COLORS[i % COLORS.length]}
               onPress={() => {
                 speakFeedback(a.title);

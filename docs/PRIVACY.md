@@ -1,6 +1,6 @@
 # TalkEasy — Privacy Policy
 
-_Last updated: 20 September 2026_
+_Last updated: 30 September 2026_
 
 TalkEasy is a communication, school and learning companion app for a child. It is designed to
 work completely offline and to keep everything on the device it is installed on.
@@ -10,6 +10,10 @@ work completely offline and to keep everything on the device it is installed on.
 **Nothing.** TalkEasy does not collect, transmit, or store any personal information on any
 server. The app has no user accounts, no analytics, no advertising, no crash reporting, and no
 network features.
+
+The app can record your child's voice in one place — the *Hear yourself* button in Sound Practice
+and Speech Practice — and that recording is played back and then deleted. See **Permissions**
+below, and the full [privacy policy](privacy-policy.md) for the detail.
 
 ## What stays on the device
 
@@ -23,7 +27,15 @@ storage area on the device. It is never uploaded anywhere. Uninstalling the app 
 * **Camera / Photos** — only used when a parent chooses *Take photo* or *Choose photo* to attach a
   picture to an assignment, activity, communication card or the child's profile. The picture is
   copied into the app's private storage on the device. No photo is ever sent off the device.
-* **Text-to-speech** uses the voice engine built into the phone or tablet. No audio is recorded.
+* **Text-to-speech** uses the voice engine built into the phone or tablet. Reading a phrase aloud
+  records nothing.
+* **Microphone** — used in two places, each only after the child taps a microphone button:
+  * *Say the answer* (Learning) turns speech into text using the device's own recognizer. No
+    audio file is created; only the text answer is kept.
+  * *Hear yourself* (Sound Practice, Speech Practice) records the attempt to a temporary cache
+    file so it can be played straight back, then deletes it — when the next attempt starts, when
+    the child moves on, or when the screen closes. At most one clip exists at a time. It is never
+    transcribed, never scored, never stored permanently, and never sent off the device.
 
 ## Children
 

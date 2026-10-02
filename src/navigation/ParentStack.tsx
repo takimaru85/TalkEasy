@@ -20,10 +20,13 @@ import { CareNotesScreen } from '@/screens/parent/CareNotesScreen';
 import { EditNoteScreen } from '@/screens/parent/EditNoteScreen';
 import { ProgressScreen } from '@/screens/parent/ProgressScreen';
 import { SettingsScreen } from '@/screens/parent/SettingsScreen';
+import { SubscriptionScreen } from '@/screens/parent/SubscriptionScreen';
+import { TherapySettingsScreen } from '@/screens/parent/TherapySettingsScreen';
 import { ManageLessonsScreen } from '@/screens/parent/ManageLessonsScreen';
 import { EditLessonScreen } from '@/screens/parent/EditLessonScreen';
 import { AdaptiveProgressScreen } from '@/screens/parent/AdaptiveProgressScreen';
 import { SpeechPracticeSettingsScreen } from '@/screens/parent/SpeechPracticeSettingsScreen';
+import { VoicePracticeSummaryScreen } from '@/screens/parent/VoicePracticeSummaryScreen';
 import { PronunciationTestScreen } from '@/screens/parent/PronunciationTestScreen';
 import { WeeklyProgressScreen } from '@/screens/parent/WeeklyProgressScreen';
 import type { ParentStackParamList } from './types';
@@ -54,10 +57,13 @@ export function ParentStack() {
       <Stack.Screen name="EditNote" component={EditNoteScreen} />
       <Stack.Screen name="Progress" component={ProgressScreen} />
       <Stack.Screen name="Settings" component={SettingsScreen} />
+      <Stack.Screen name="Subscription" component={SubscriptionScreen} />
+      <Stack.Screen name="TherapySettings" component={TherapySettingsScreen} />
       <Stack.Screen name="ManageLessons" component={ManageLessonsScreen} />
       <Stack.Screen name="EditLesson" component={EditLessonScreen} />
       <Stack.Screen name="AdaptiveProgress" component={AdaptiveProgressScreen} />
       <Stack.Screen name="SpeechPracticeSettings" component={SpeechPracticeSettingsScreen} />
+      <Stack.Screen name="VoicePracticeSummary" component={VoicePracticeSummaryScreen} />
       <Stack.Screen name="PronunciationTest" component={PronunciationTestScreen} />
       <Stack.Screen name="WeeklyProgress" component={WeeklyProgressScreen} />
     </Stack.Navigator>

@@ -1,10 +1,10 @@
 import { createAudioPlayer } from 'expo-audio';
 import { ensureAudioActive, speak, speakWithSettings } from './speech';
 import { modelRecordings } from './modelRecordings';
-import { getSoundExercise } from '@/soundpractice/content';
-import type { PracticeLevel, SoundExercise } from '@/soundpractice/types';
+import { getSoundExercise, phonemeAssetPath, phonemeModelKey } from '@/soundpractice/content';
+import type { SoundExercise } from '@/soundpractice/types';
 import { SPOKEN_OVERRIDES, syllablePronunciation, type SpokenForm } from '@/speechpractice/pronunciationDictionary';
-import { modelKey, overrideKey, parseModelKey, parseOverrides } from '@/speechpractice/pronunciation';
+import { overrideKey, parseModelKey, parseOverrides } from '@/speechpractice/pronunciation';
 import type { SpeechItem } from '@/speechpractice/types';
 import type { AppSettings } from '@/types/models';
 import { getLocale } from '@/i18n/registry';
@@ -17,30 +17,46 @@ import { getLocale } from '@/i18n/registry';
  * change without touching any screen.
  *
  * The rule that shapes it: a voice engine given a raw practice target decides for itself how to
- * read it — "B" becomes the letter name "bee", "BO" may become "baw". So what the engine is given
- * is never the raw target:
- *   - syllables → the pronunciation dictionary's spoken form (speechpractice/pronunciationDictionary.ts),
- *     in its own locale, e.g. "BO" → "beau" (en-US); a grown-up's per-device choice overrides it;
- *   - isolated sounds → the sound's cue ("buh", "mmm");
- *   - words and phrases → their own text (real language), unless SPOKEN_OVERRIDES says otherwise.
- * A recording of the model (bundled or a parent's) always wins over any of these.
+ * read it — "G" becomes the letter name "gee", "BO" may become "baw". So what the engine is given
+ * is never the raw target, and there are separate calls for separate jobs:
+ *   - playPhoneme      an isolated speech sound (/ɡ/) — from a RECORDING only (see below);
+ *   - playExampleWord  the sound's example word ("Goat") — a real word, so the voice reads it;
+ *   - playInstruction  a spoken instruction or encouragement — ordinary speech;
+ *   - playLetterName   the letter's NAME ("gee"), only where the name itself is what is meant;
+ *   - syllables        the pronunciation dictionary's spoken form (speechpractice/pronunciationDictionary.ts),
+ *                      in its own locale, e.g. "BO" → "beau" (en-US); a grown-up's choice overrides it;
+ *   - words, phrases   their own text, unless SPOKEN_OVERRIDES says otherwise.
+ * A recording of the model always wins over any of these.
+ *
+ * WHY A PHONEME IS NEVER SYNTHESISED. expo-speech hands the engine plain text (iOS
+ * AVSpeechUtterance(string:), Android TextToSpeech.speak) — no IPA, no SSML phoneme tags — and an
+ * engine only ever reads text as words. "G" is read as the letter name; any respelling that gets a
+ * sound out of it ("guh") puts a vowel after the consonant, /ɡə/ instead of /ɡ/, and a child copies
+ * the vowel. Engines also differ between Android and iOS. So an isolated phoneme comes from ONE
+ * recording, identical on every device.
  */
-
-/**
- * Recorded model pronunciations for Sound Practice, keyed by `SoundExercise.id`. Empty for now.
- * (The general registry for every practice unit is speechpractice/modelAudio.ts.)
- */
-const MODEL_AUDIO: Record<string, number> = {};
 
 /**
  * 'missing' = a syllable with no dictionary entry: nothing is played rather than letting the
  * engine guess at the raw syllable.
+ * 'fallback' = DEVELOPMENT FALLBACK: a sound has no phoneme recording yet, so its example word was
+ * played instead (see playPhoneme). The screen tells a grown-up which recording is missing.
  */
-export type ModelSource = 'recording' | 'speech' | 'unavailable' | 'missing';
+export type ModelSource = 'recording' | 'speech' | 'unavailable' | 'missing' | 'fallback';
 
-/** Whether this sound has a recorded model, i.e. is not relying on text-to-speech. */
-export function hasRecordedModel(soundId: string): boolean {
-  return MODEL_AUDIO[soundId] !== undefined;
+/**
+ * The recording of a sound's isolated phoneme: bundled in the family's set, else bundled in
+ * English (phonemes are English targets), else one a grown-up recorded on this device. Null when
+ * there is none yet.
+ */
+function phonemeClip(soundId: string, settings: AppSettings): number | string | null {
+  const key = phonemeModelKey(soundId);
+  return modelRecordings.resolve(settings.speechPronunciationSet, key) ?? modelRecordings.resolve('en', key);
+}
+
+/** Whether this sound's phoneme has a recording, i.e. plays the true isolated sound. */
+export function hasPhonemeRecording(soundId: string, settings: AppSettings): boolean {
+  return phonemeClip(soundId, settings) !== null;
 }
 
 /** Plays a bundled or on-device audio file and releases the player when it finishes. */
@@ -63,13 +79,6 @@ async function playAudio(source: number | string): Promise<boolean> {
   } catch {
     return false;
   }
-}
-
-/** What text-to-speech should say for one Sound Practice item. */
-function speechFor(exercise: SoundExercise, level: PracticeLevel, item: string): string {
-  // An isolated letter needs the cue; a syllable, word or phrase is already pronounceable.
-  if (level === 'sound') return `${exercise.cue}. ${exercise.cue}. Like ${exercise.exampleWord}.`;
-  return item;
 }
 
 /**
@@ -104,42 +113,78 @@ export function syllableSpokenForm(item: SpeechItem, settings: AppSettings): Spo
   return entry?.spoken ?? null;
 }
 
-/** What the engine reads for a non-syllable item. */
+/** What the engine reads for a non-syllable, non-sound item (a word or a phrase). */
 function spokenFormFor(item: SpeechItem): SpokenForm {
   const override = item.modelKey ? SPOKEN_OVERRIDES[item.modelKey] : undefined;
   if (override) return override;
-  const sound = item.soundId ? getSoundExercise(item.soundId) : undefined;
-  // An isolated sound: its cue, twice — no example word, which in Sound Matching would give the
-  // answer away.
-  const text = sound ? `${sound.cue}. ${sound.cue}.` : item.speak ?? item.text;
-  return { text, locale: 'en-US' };
+  return { text: item.speak ?? item.text, locale: 'en-US' };
+}
+
+/** The sound behind a practice item, when the item IS an isolated sound. */
+function soundOf(item: SpeechItem): SoundExercise | undefined {
+  return item.soundId ? getSoundExercise(item.soundId) : undefined;
+}
+
+/**
+ * Plays a sound's isolated PHONEME (/ɡ/) — what "Play sound" means everywhere in the app.
+ *
+ * Only a recording is the phoneme. Until one exists for a sound, this is a DEVELOPMENT FALLBACK:
+ * it plays the example word ("Goat"), where a voice engine does say a true /ɡ/ — at the start of a
+ * real word, with that word's own vowel — and returns 'fallback' so the screen can tell a grown-up
+ * that the recording is missing. It never speaks the letter ("gee") and never a respelling
+ * ("guh"). Adding the recording at phonemeAssetPath(id) replaces the fallback with no code change.
+ */
+export async function playPhoneme(sound: SoundExercise, settings: AppSettings): Promise<ModelSource> {
+  const clip = phonemeClip(sound.id, settings);
+  if (clip !== null && (await playAudio(clip))) return 'recording';
+  if (__DEV__) {
+    console.warn(
+      `[sound practice] no recording of ${sound.phoneme} ("${sound.letter}") — development fallback plays "${sound.exampleWord}". ` +
+        `Add ${phonemeAssetPath(sound.id)} and register '${phonemeModelKey(sound.id)}' in speechpractice/modelAudio.ts.`,
+    );
+  }
+  const spoken = await playExampleWord(sound, settings);
+  return spoken === 'speech' ? 'fallback' : spoken;
+}
+
+/** Plays a sound's example word ("Goat") as a whole word: a real word, so the voice reads it naturally. */
+export async function playExampleWord(sound: SoundExercise, settings: AppSettings): Promise<ModelSource> {
+  try {
+    await speakForm({ text: sound.exampleWord, locale: 'en-US' }, settings);
+    return 'speech';
+  } catch {
+    return 'unavailable';
+  }
+}
+
+/** Speaks an instruction or encouragement ("Your turn!") with the parent's voice settings. */
+export async function playInstruction(text: string, settings: AppSettings): Promise<void> {
+  try {
+    await speakWithSettings(text, settings);
+  } catch {
+    // speech problems are reported in Settings; an instruction is never essential
+  }
+}
+
+/**
+ * Speaks a letter's NAME ("gee"). Only for teaching the alphabet — never as the model of a sound,
+ * which is what playPhoneme is for.
+ */
+export async function playLetterName(letter: string, settings: AppSettings): Promise<void> {
+  await playInstruction(letter, settings);
 }
 
 export const soundPracticeAudio = {
-  hasRecordedModel,
-
-  /**
-   * Sound Practice: plays the model pronunciation of one sound. Returns which source was used so
-   * the screen can tell a grown-up when it is hearing a synthesised approximation.
-   */
-  async playModel(exercise: SoundExercise, level: PracticeLevel, item: string, settings: AppSettings): Promise<ModelSource> {
-    // A bundled clip in MODEL_AUDIO, or the model-audio registry (bundled per set, or a parent recording).
-    const recorded =
-      level === 'sound'
-        ? MODEL_AUDIO[exercise.id] ?? modelRecordings.resolve(settings.speechPronunciationSet, modelKey('sound', exercise.id)) ?? undefined
-        : undefined;
-    if (recorded !== undefined && (await playAudio(recorded))) return 'recording';
-    try {
-      await speakWithSettings(speechFor(exercise, level, item), settings);
-      return 'speech';
-    } catch {
-      return 'unavailable';
-    }
-  },
+  hasPhonemeRecording,
+  playPhoneme,
+  playExampleWord,
+  playInstruction,
+  playLetterName,
 
   /** Where an item's model comes from right now — for the practice screen and Parent Mode. */
   modelStatus(item: SpeechItem, settings: AppSettings): 'recording' | 'voice' | 'missing' {
     if (item.audio !== undefined) return 'recording';
+    if (item.soundId) return hasPhonemeRecording(item.soundId, settings) ? 'recording' : 'voice';
     if (item.modelKey && modelRecordings.source(settings.speechPronunciationSet, item.modelKey) !== 'none') return 'recording';
     if (item.strict) return syllableSpokenForm(item, settings) ? 'voice' : 'missing';
     return 'voice';
@@ -165,18 +210,16 @@ export const soundPracticeAudio = {
   },
 
   /**
-   * Speech Practice: plays the model for one item — a recording if there is one; else, for a
-   * syllable, its dictionary spoken form (never the raw syllable); else the item's own text.
-   * Never throws.
+   * Speech Practice: plays the model for one item — a recording if there is one; else, for an
+   * isolated sound, playPhoneme; for a syllable, its dictionary spoken form (never the raw
+   * syllable); else the item's own text. Never throws.
    */
   async playItem(item: SpeechItem, settings: AppSettings): Promise<ModelSource> {
     if (item.audio !== undefined && (await playAudio(item.audio))) return 'recording';
+    const sound = soundOf(item);
+    if (sound) return playPhoneme(sound, settings);
     const model = item.modelKey ? modelRecordings.resolve(settings.speechPronunciationSet, item.modelKey) : null;
     if (model !== null && (await playAudio(model))) return 'recording';
-    if (item.soundId && hasRecordedModel(item.soundId)) {
-      const sound = getSoundExercise(item.soundId);
-      if (sound) return soundPracticeAudio.playModel(sound, 'sound', sound.sound, settings);
-    }
     const form = item.strict ? syllableSpokenForm(item, settings) : spokenFormFor(item);
     if (!form) return 'missing';
     try {
@@ -195,11 +238,12 @@ export const soundPracticeAudio = {
   async playSequence(items: SpeechItem[], settings: AppSettings): Promise<ModelSource> {
     if (items.length === 0) return 'unavailable';
     if (items.length === 1) return soundPracticeAudio.playItem(items[0], settings);
+    // An isolated sound always goes through playPhoneme on its own, never into a joined utterance.
     const recorded = items.some(
       (i) =>
         i.audio !== undefined ||
-        (i.modelKey && modelRecordings.source(settings.speechPronunciationSet, i.modelKey) !== 'none') ||
-        (i.soundId && hasRecordedModel(i.soundId)),
+        soundOf(i) !== undefined ||
+        (i.modelKey && modelRecordings.source(settings.speechPronunciationSet, i.modelKey) !== 'none'),
     );
     const forms = items.map((i) => (i.strict ? syllableSpokenForm(i, settings) : spokenFormFor(i)));
     const oneLocale = forms.every((f) => f && f.locale === forms[0]?.locale);

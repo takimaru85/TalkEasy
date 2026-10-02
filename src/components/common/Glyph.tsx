@@ -2,6 +2,7 @@ import React from 'react';
 import { Text } from 'react-native';
 import { tileColor } from '@/constants/colors';
 import { uiIcon } from '@/constants/uiIcons';
+import { hasTalkEasyIcon } from '@/components/icons';
 import { IconTile } from './IconTile';
 import { isEmoji, isValidIcon } from './Icon';
 
@@ -23,6 +24,9 @@ interface Props {
 export function Glyph({ value, size, tint, muted }: Props) {
   const mapped = uiIcon(value);
   if (mapped) return <IconTile name={mapped.icon} size={size} tint={tint ?? mapped.tint} muted={muted} />;
+  // A TalkEasy icon name is checked FIRST: these are not Material names, so isValidIcon would reject
+  // them and the name itself would be rendered as text on a child's screen.
+  if (hasTalkEasyIcon(value)) return <IconTile name={value} size={size} tint={tint ?? tileColor('blue')} muted={muted} />;
   if (!isEmoji(value) && isValidIcon(value)) return <IconTile name={value} size={size} tint={tint ?? tileColor('blue')} muted={muted} />;
   return (
     <Text style={{ fontSize: size * 0.62, lineHeight: size * 0.9, textAlign: 'center' }} allowFontScaling={false} accessible={false}>

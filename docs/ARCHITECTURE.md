@@ -118,12 +118,19 @@ as clinical. Feedback is encouragement only.
 * **Content** is code, like `src/learning/content`: `SOUND_EXERCISES` carries each sound with its
   syllables, words and phrases, so levels 2–4 need data only, not a redesign. The first version
   practises the `'sound'` level.
-* **Model audio** goes through `services/soundPracticeAudio.ts`, which wraps the existing speech
-  service rather than starting a second audio system. Text-to-speech says the letter *name*
-  ("bee") rather than the sound, so an isolated sound is spoken from a phonetic `cue` ("buh")
-  anchored by an example word. Dropping a clip into that module's `MODEL_AUDIO` map makes the
-  sound play a real recording instead, with no screen changes — which is the right long-term
-  answer for phonemes and needs a speech-language pathologist, not a developer.
+* **Letter, phoneme, example word** are three fields of every sound (`letter: 'G'`,
+  `phoneme: '/ɡ/'`, `exampleWord: 'Goat'`, `exampleIpa: '/ɡoʊt/'`) and three different audio
+  calls in `services/soundPracticeAudio.ts`: `playPhoneme` ("Play sound"), `playExampleWord`
+  (the "Like Goat" line) and `playInstruction` / `playLetterName` for ordinary speech.
+* **A phoneme is only ever a recording.** expo-speech gives the engine plain text — no IPA, no
+  SSML — so "G" comes out as the letter name "gee", and any respelling that gets a sound out of
+  it ("guh") is /ɡə/, a consonant plus a vowel, which a child copies. Recordings live at
+  `assets/audio/speech-practice/en/sounds/<id>.m4a` (`phonemeAssetPath`), registered in
+  `speechpractice/modelAudio.ts` as `sound:<id>`, and play identically on Android, iOS and Expo
+  Go. Until a sound has one, `playPhoneme` uses a DEVELOPMENT FALLBACK — the example word, where
+  a voice does say the true consonant — returns `'fallback'`, warns in development with the
+  missing path, and the screen tells a grown-up; Parent Mode → Pronunciation test lists which
+  recordings are missing. Recording them needs a speech-language pathologist, not a developer.
 * **Recording** lives in `hooks/useSoundRecorder.ts`. The child's voice is written to the OS
   cache, played back, and deleted — on the next attempt, on leaving the screen and on unmount.
   It is never copied into app storage, never transcribed, never written to SQLite and never

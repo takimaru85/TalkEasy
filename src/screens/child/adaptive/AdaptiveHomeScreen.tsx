@@ -1,9 +1,14 @@
 import React from 'react';
+import { subjectArtFor } from '@/school/subjectArt';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Card, ChildScreen, EmptyState, Glyph, Icon as LineIcon, IconTile, PressableScale, ProgressBar, SectionTitle } from '@/components/common';
+import { useI18n } from '@/i18n';
 import { GameTile, HeroPanel, MissionCard, type GameIconName } from '@/components/adventure';
 import { MAX_FONT_SCALE, SPACING } from '@/constants/sizes';
+import { LockBadge } from '@/components/subscription/LockBadge';
 import { useProfile } from '@/context/ProfileContext';
+import { useSubscription } from '@/context/SubscriptionContext';
+import { builtinLessonIndexes } from '@/subscription';
 import { useAdaptiveProgress, useSizes, useSpeak, useToday, useTodayLessons } from '@/hooks';
 import type { RootScreenProps } from '@/navigation/types';
 import { Fonts, Radius, useTheme } from '@/theme';
@@ -20,19 +25,22 @@ const PRACTICE: { screen: 'WritingPractice' | 'SpeakPractice'; label: string; ic
  */
 export function AdaptiveHomeScreen({ navigation }: RootScreenProps<'AdaptiveHome'>) {
   const sizes = useSizes();
+  const { t } = useI18n();
   const theme = useTheme();
   const { displayName } = useProfile();
   const { isoDate } = useToday();
   const { data: lessons, loading } = useTodayLessons(isoDate);
   const { data: progress } = useAdaptiveProgress();
-  const { speakFeedback } = useSpeak();
+  const { speakFeedback, speakInLanguage } = useSpeak();
+  const { canOwnAuthored } = useSubscription();
+  const builtinIdx = builtinLessonIndexes(lessons);
 
   const doneToday = lessons.filter((l) => l.activityCount > 0 && l.completedCount >= l.activityCount).length;
   const encouragement =
     progress.learningPercent >= 80 ? 'Great job! 🌟' : progress.learningPercent >= 50 ? "You're making progress! 👏" : progress.questionsAnswered > 0 ? 'Keep going! 💪' : "Let's start! 🚀";
 
   return (
-    <ChildScreen title="Lessons" emoji="🎓" art="lessons">
+    <ChildScreen title="Lessons" subtitle={t('questLessonsSub')} emoji="🎓" art="lessons">
       <ScrollView contentContainerStyle={[styles.content, { paddingHorizontal: sizes.horizontalPadding }]}>
         <HeroPanel color="grass" art="lessons" title={`Hi, ${displayName}!`} subtitle={encouragement} mascot>
           <ProgressBar value={progress.learningPercent / 100} label={`${progress.learningPercent}%`} color="#FFD84D" accessibilityLabel={`Learning progress ${progress.learningPercent} percent`} />
@@ -48,21 +56,26 @@ export function AdaptiveHomeScreen({ navigation }: RootScreenProps<'AdaptiveHome
           <EmptyState icon="school-outline" title="No lessons yet" message="A parent or teacher can add lessons in Parent Mode." />
         ) : null}
         {lessons.map((l) => {
+          // A lesson a grown-up wrote is always theirs; only the built-in ones have an allowance.
+          const locked = !canOwnAuthored('lessons', builtinIdx.get(l.id) ?? 0, !l.isBuiltin).allowed;
           const complete = l.activityCount > 0 && l.completedCount >= l.activityCount;
           const started = l.completedCount > 0 && !complete;
           const open = () => {
-            speakFeedback(`${l.subjectName}. ${l.title}`);
+            if (locked) return navigation.navigate('Plus');
+            speakInLanguage(`${l.subjectName}. ${l.title}`, l.language);
             navigation.navigate('AdaptiveLesson', { lessonId: l.id });
           };
-          const a11y = `${l.subjectName}: ${l.title}. ${complete ? 'Completed' : started ? `Continue, ${l.completedCount} of ${l.activityCount} done` : 'Start'}`;
+          const a11y = `${l.subjectName}: ${l.title}. ${complete ? 'Completed' : started ? `Continue, ${l.completedCount} of ${l.activityCount} done` : 'Start'}${locked ? '. Needs TalkEasy Plus' : ''}`;
           if (theme.night) {
             return (
               <MissionCard
                 key={l.id}
                 eyebrow={l.subjectName.toUpperCase()}
                 title={l.title}
+                colorArt={subjectArtFor(l.subjectIcon)}
                 glyph={l.subjectIcon}
                 tint={l.subjectColor}
+                locked={locked}
                 done={complete}
                 doneLabel="Done"
                 progress={l.activityCount > 0 && !complete ? { value: l.completedCount / l.activityCount, label: `${l.completedCount} / ${l.activityCount}` } : undefined}
@@ -72,15 +85,7 @@ export function AdaptiveHomeScreen({ navigation }: RootScreenProps<'AdaptiveHome
             );
           }
           return (
-            <PressableScale
-              key={l.id}
-              onPress={() => {
-                speakFeedback(`${l.subjectName}. ${l.title}`);
-                navigation.navigate('AdaptiveLesson', { lessonId: l.id });
-              }}
-              accessibilityRole="button"
-              accessibilityLabel={`${l.subjectName}: ${l.title}. ${complete ? 'Completed' : started ? `Continue, ${l.completedCount} of ${l.activityCount} done` : 'Start'}`}
-            >
+            <PressableScale key={l.id} onPress={open} accessibilityRole="button" accessibilityLabel={a11y}>
               <Card color={complete ? theme.colors.surfaceAlt : l.subjectColor} style={styles.lessonCard}>
                 {complete ? <LineIcon name="check-circle" size={44} color={theme.colors.success} /> : <Glyph value={l.subjectIcon} size={52} />}
                 <View style={styles.lessonText}>
@@ -88,9 +93,13 @@ export function AdaptiveHomeScreen({ navigation }: RootScreenProps<'AdaptiveHome
                   <Text style={[styles.lessonTitle, { fontSize: sizes.tileLabel + 1, color: theme.colors.text }]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={2}>{l.title}</Text>
                   {l.activityCount > 0 ? <Text style={[styles.lessonMeta, { color: theme.colors.textMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>{l.completedCount} / {l.activityCount} questions</Text> : null}
                 </View>
-                <View style={[styles.cta, { backgroundColor: complete ? theme.colors.success : theme.colors.primary }]}>
-                  <Text style={styles.ctaText} maxFontSizeMultiplier={MAX_FONT_SCALE}>{complete ? 'Done' : started ? 'Continue' : 'Start'}</Text>
-                </View>
+                {locked ? (
+                  <LockBadge />
+                ) : (
+                  <View style={[styles.cta, { backgroundColor: complete ? theme.colors.success : theme.colors.primary }]}>
+                    <Text style={styles.ctaText} maxFontSizeMultiplier={MAX_FONT_SCALE}>{complete ? 'Done' : started ? 'Continue' : 'Start'}</Text>
+                  </View>
+                )}
               </Card>
             </PressableScale>
           );

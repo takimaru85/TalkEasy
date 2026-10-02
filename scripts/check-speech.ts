@@ -30,7 +30,46 @@ ok(serializeHiddenActivities(parseHiddenActivities('voice, nonsense ,words')) ==
 ok(parseHiddenActivities('').size === 0, 'nothing hidden by default');
 
 // ---- Sounds: the spec's set -------------------------------------------------------------------
-for (const s of ['A', 'B', 'M', 'P', 'T', 'D', 'K', 'G', 'F', 'S', 'N']) ok(SOUND_EXERCISES.some((e) => e.sound === s), `sound ${s} present`);
+for (const s of ['A', 'B', 'M', 'P', 'T', 'D', 'K', 'G', 'F', 'S', 'N']) ok(SOUND_EXERCISES.some((e) => e.letter === s), `sound ${s} present`);
+
+// ---- Sounds: letter, phoneme and example word are explicit, and a phoneme is never respelled ----
+// The curriculum's targets. A change here is a curriculum decision, not a refactor.
+const PHONEMES: Record<string, [string, string]> = {
+  a: ['/æ/', 'Apple'], b: ['/b/', 'Ball'], d: ['/d/', 'Dog'], f: ['/f/', 'Fish'], g: ['/ɡ/', 'Goat'], k: ['/k/', 'Kite'],
+  m: ['/m/', 'Moon'], n: ['/n/', 'Nose'], p: ['/p/', 'Person'], s: ['/s/', 'Sun'], t: ['/t/', 'Teddy'],
+};
+const VOWEL_IPA = /[aeiouæɑɒɔəɛɜɝɪʊʌ]/;
+for (const e of SOUND_EXERCISES) {
+  const want = PHONEMES[e.id];
+  ok(want, `${e.id}: has a curriculum target`);
+  if (want) {
+    ok(e.phoneme === want[0], `${e.id}: phoneme is ${want[0]} (got ${e.phoneme})`);
+    ok(e.exampleWord === want[1], `${e.id}: example word is ${want[1]} (got ${e.exampleWord})`);
+  }
+  ok(/^\/[^/]+\/$/.test(e.phoneme), `${e.id}: phoneme is written as IPA between slashes`);
+  ok(!e.phoneme.includes('g'), `${e.id}: IPA uses the script g "ɡ" (U+0261), not the Latin "g"`);
+  ok(e.exampleIpa.replace(/ˈ/g, '').startsWith(e.phoneme.slice(0, -1)), `${e.id}: example word ${e.exampleWord} ${e.exampleIpa} begins with ${e.phoneme}`);
+  ok(e.exampleWord[0].toUpperCase() === e.letter, `${e.id}: example word is spelled with the letter ${e.letter}`);
+  // A consonant target is the consonant alone — no schwa or other vowel after it (/ɡ/ not /ɡə/).
+  if (e.phonemeKind === 'consonant') ok(!VOWEL_IPA.test(e.phoneme), `${e.id}: consonant phoneme ${e.phoneme} has no vowel`);
+  else ok(VOWEL_IPA.test(e.phoneme), `${e.id}: vowel phoneme ${e.phoneme} is a vowel`);
+  ok(!('cue' in e) && !('sound' in e), `${e.id}: no respelled cue field`);
+}
+// The isolated-sound model is never a voice-engine string: no screen or service builds one.
+{
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const fsx = require('fs') as typeof import('fs');
+  const audio = fsx.readFileSync('src/services/soundPracticeAudio.ts', 'utf8');
+  ok(!/speak\w*\([^)]*\.letter/.test(audio), 'soundPracticeAudio never speaks a letter as a model');
+  for (const f of ['src/practice/content.ts', 'src/soundpractice/content.ts', 'src/speechpractice/engine.ts']) {
+    const src = fsx.readFileSync(f, 'utf8').replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
+    ok(!/['"`](buh|duh|guh|kuh|puh|tuh|mmm|nnn|sss|fff)['"`]/i.test(src), `${f}: no respelled sound ("buh", "sss"…) in content`);
+  }
+}
+for (const e of SOUND_EXERCISES) {
+  const bundled = BUNDLED_MODEL_AUDIO.en[`sound:${e.id}`] !== undefined;
+  if (!bundled) console.log(`note: ${e.letter} ${e.phoneme} has no phoneme recording yet (assets/audio/speech-practice/en/sounds/${e.id}.m4a) — "Play sound" uses the development fallback`);
+}
 
 // ---- Every activity builds exercises, for every group ---------------------------------------
 const myWords: MyWord[] = [

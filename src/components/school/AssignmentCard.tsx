@@ -1,4 +1,5 @@
 import React from 'react';
+import { SubjectIcon } from './SubjectIcon';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Colors } from '@/constants/colors';
 import { KIND_META, STATUS_META } from '@/constants/school';
@@ -48,7 +49,7 @@ export function AssignmentCard({ assignment: a, today, onPress, onToggleDone, co
       ]}
     >
       <View style={styles.iconBox}>
-        <Icon name={done ? 'check-circle' : (a.subject?.icon ?? KIND_META[a.kind].icon)} size={compact ? 36 : 44} color={pal.night ? '#FFFFFF' : done ? Colors.success : Colors.text} />
+        <SubjectIcon icon={done ? 'check-circle' : (a.subject?.icon ?? KIND_META[a.kind].icon)} size={compact ? 36 : 44} color={pal.night ? '#FFFFFF' : done ? Colors.success : Colors.text} />
       </View>
       <View style={styles.text}>
         <Text style={[styles.subject, { fontSize: sizes.body - 2 }, pal.night && { color: pal.inkMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={1}>

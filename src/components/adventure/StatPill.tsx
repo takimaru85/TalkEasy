@@ -11,6 +11,10 @@ interface Props {
   /** Read out instead of the bare number: "12 stars" rather than "12". */
   label: string;
   color: AdventureKey;
+  /** Words after the number, so a full-width row reads "0  Stars earned" instead of a bare count. */
+  caption?: string;
+  /** Stretch across the row instead of hugging its content. */
+  wide?: boolean;
 }
 
 /**
@@ -20,7 +24,7 @@ interface Props {
  * number is which. The accessible label carries the units, so a screen reader says "12 stars"
  * and not just "12".
  */
-export function StatPill({ icon, value, label, color }: Props) {
+export function StatPill({ icon, value, label, color, caption, wide }: Props) {
   const theme = useTheme();
   const c = Adventure[color];
   const background = theme.highContrast ? theme.colors.surface : c.tint;
@@ -30,6 +34,7 @@ export function StatPill({ icon, value, label, color }: Props) {
     <View
       style={[
         styles.pill,
+        wide ? styles.wide : null,
         { backgroundColor: background },
         theme.highContrast && { borderWidth: theme.borderWidth, borderColor: theme.colors.border },
       ]}
@@ -40,6 +45,11 @@ export function StatPill({ icon, value, label, color }: Props) {
       <Text style={[styles.value, { color: ink }]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={1}>
         {value}
       </Text>
+      {caption ? (
+        <Text style={[styles.caption, { color: ink }]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={1}>
+          {caption}
+        </Text>
+      ) : null}
     </View>
   );
 }
@@ -53,5 +63,7 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
     borderRadius: AdventureRadius.pill,
   },
+  wide: { alignSelf: 'stretch', paddingVertical: 9 },
   value: { fontFamily: Fonts.black, fontSize: 16 },
+  caption: { fontFamily: Fonts.bold, fontSize: 14, flexShrink: 1 },
 });

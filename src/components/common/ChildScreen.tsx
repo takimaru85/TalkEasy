@@ -7,6 +7,7 @@ import { ScreenHeader } from './ScreenHeader';
 import { useI18n } from '@/i18n';
 import { AdventureZone } from '@/theme';
 import type { GameIconName } from '@/components/adventure/GameIcon';
+import type { ColorArtName } from '@/components/adventure/ColorArt';
 
 interface Props {
   title: string;
@@ -15,11 +16,15 @@ interface Props {
   back?: boolean;
   rightIcon?: string;
   rightLabel?: string;
+  /** Screen-reader name for an icon-only right button. */
+  rightAccessibilityLabel?: string;
   onRightPress?: () => void;
   emoji?: string;
   emojiTint?: string;
   /** Illustrated game icon beside the title (shown on the night sky; `emoji` elsewhere). */
   art?: GameIconName;
+  /** A colourful illustration (ColorArt) beside the title, in place of `art`. */
+  colorArt?: ColorArtName;
   subtitle?: string;
 }
 
@@ -28,7 +33,7 @@ interface Props {
  * (or a back arrow on nested screens). Same layout on every section so the child always
  * knows where the way back is.
  */
-export function ChildScreen({ title, children, back = false, rightIcon, rightLabel, onRightPress, emoji, emojiTint, art, subtitle }: Props) {
+export function ChildScreen({ title, children, back = false, rightIcon, rightLabel, rightAccessibilityLabel, onRightPress, emoji, emojiTint, art, colorArt, subtitle }: Props) {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const goHome = () => navigation.navigate('ChildHome');
   const { t } = useI18n();
@@ -42,10 +47,12 @@ export function ChildScreen({ title, children, back = false, rightIcon, rightLab
         backLabel={back ? undefined : t('actionHome')}
         rightIcon={rightIcon}
         rightLabel={rightLabel}
+        rightAccessibilityLabel={rightAccessibilityLabel}
         onRightPress={onRightPress}
         emoji={emoji}
         emojiTint={emojiTint}
         art={art}
+        colorArt={colorArt}
         subtitle={subtitle}
       />
         {children}
