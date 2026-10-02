@@ -1,17 +1,32 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { AnswerMethodPicker, BigKeyboard, ChoiceCard, ChoiceGrid, HandwritingCanvas, SpeechAnswer, TapMatch } from '@/components/adaptive';
-import { BigButton, Card, Celebration, ChildScreen, Icon, ProgressBar } from '@/components/common';
+import {
+  AnswerChoiceCard,
+  AnswerChoiceGrid,
+  AnswerFeedback,
+  AnswerMethodPicker,
+  BigKeyboard,
+  HandwritingCanvas,
+  TracingLockBar,
+  useTracingLock,
+  ProgressIndicator,
+  QuestionCard,
+  SpeechAnswer,
+  TapMatch,
+  illustratedSet,
+  useChoiceLayout,
+} from '@/components/adaptive';
+import { BigButton, Card, Celebration, ChildScreen, Icon } from '@/components/common';
 import { acceptedAnswers, choicesForLevel, matchesFreeAnswer, orderedMethods } from '@/adaptive/answers';
-import { ANSWER_METHOD_META, ASSISTANCE_META, type AnswerMethod, type LessonActivity } from '@/adaptive/types';
+import { ASSISTANCE_META, type AnswerMethod, type LessonActivity } from '@/adaptive/types';
 import { MAX_FONT_SCALE, SPACING, TAP_GUARD_MS } from '@/constants/sizes';
 import { useProfile } from '@/context/ProfileContext';
 import { useSettings } from '@/context/SettingsContext';
 import { adaptiveProgressRepo } from '@/database';
 import { useAwardStars, useCompletedActivityIds, useLesson, useLessonActivities, useSizes, useSpeak } from '@/hooks';
 import type { RootScreenProps } from '@/navigation/types';
-import { speakWithSettings, stopSpeaking } from '@/services/speech';
+import { speakContent, speakWithSettings, stopSpeaking } from '@/services/speech';
 import { Fonts, Radius, useTheme } from '@/theme';
 
 type Phase = 'intro' | 'question' | 'correct' | 'retry' | 'reveal' | 'summary';
@@ -52,9 +67,34 @@ export function AdaptiveLessonScreen({ navigation, route }: RootScreenProps<'Ada
   const activity = queue?.[index];
   const methods = useMemo(() => (activity ? orderedMethods(activity, profile.preferredMethod, profile.assistanceLevel) : []), [activity, profile.preferredMethod, profile.assistanceLevel]);
   const choices = useMemo(() => (activity ? choicesForLevel(activity.choices, profile.assistanceLevel) : []), [activity, profile.assistanceLevel]);
+  // Balanced answer grid: 2 or 4 answers two per row, 3 answers one per row (no orphan card).
+  const layout = useChoiceLayout(choices.length);
+  // When feedback appears it sits under the answers; bring it into view on short phones.
+  const scrollRef = useRef<ScrollView>(null);
+  // True only while a finger is down on the writing canvas: the page does not scroll then, and scrolls again after.
+  const lock = useTracingLock();
+  const feedbackShown = phase === 'correct' || phase === 'retry' || phase === 'reveal';
+  useEffect(() => {
+    if (feedbackShown) setTimeout(() => scrollRef.current?.scrollToEnd({ animated: theme.duration(1) > 0 }), 60);
+  }, [feedbackShown, phase, theme]);
   const multiSelect = choices.filter((c) => c.correct).length > 1;
 
+  // TWO voices on this screen, and the difference matters.
+  //
+  // `say` is the APP talking — praise, "try again", the end-of-lesson line. Those are English
+  // strings from the interface and belong in the app's own voice.
+  //
+  // `sayContent` is the LESSON talking — its title, its explanation, its vocabulary, its
+  // questions and hints. Those are spoken in the language the lesson is WRITTEN in, so a
+  // Filipino lesson sounds Filipino. Anything carrying lesson text goes through here, including
+  // the sentences that wrap a lesson word in an English frame ("The answer is Pusa"), because
+  // reading that word with an English voice is the very thing this is here to stop.
   const say = useCallback((text: string, force = false) => (force || settings.soundEnabled ? speakWithSettings(text, settings) : Promise.resolve()), [settings]);
+  const lessonLanguage = lesson?.language ?? '';
+  const sayContent = useCallback(
+    (text: string, force = false) => (force || settings.soundEnabled ? speakContent(text, lessonLanguage, settings) : Promise.resolve()),
+    [settings, lessonLanguage],
+  );
 
   // Build the queue once activities load: unfinished first, then (if all done) everything again.
   useEffect(() => {
@@ -75,7 +115,7 @@ export function AdaptiveLessonScreen({ navigation, route }: RootScreenProps<'Ada
     setTyped('');
     setAttempt(1);
     setShowHint(level.hintAlways);
-    say(activity.question);
+    sayContent(activity.question);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activity?.id, phase]);
 
@@ -124,14 +164,14 @@ export function AdaptiveLessonScreen({ navigation, route }: RootScreenProps<'Ada
       setAttempt(2);
       setPhase('retry');
       setShowHint(true);
-      say(`Not quite. ${activity?.hint ?? ''} Try again.`);
+      sayContent(`Not quite. ${activity?.hint ?? ''} Try again.`);
       timer.current = setTimeout(() => setPhase('question'), 1800);
     } else {
       record(false, usedMethod, answerText);
       setScore((s) => ({ correct: s.correct, total: s.total + 1 }));
       setPhase('reveal');
       const correct = activity ? acceptedAnswers(activity)[0] : '';
-      say(`The answer is ${correct}. Let's keep going.`);
+      sayContent(`The answer is ${correct}. Let's keep going.`);
       next(2400);
     }
   };
@@ -186,14 +226,14 @@ export function AdaptiveLessonScreen({ navigation, route }: RootScreenProps<'Ada
           {lesson.vocabulary.length > 0 ? (
             <View style={styles.vocab}>
               {lesson.vocabulary.map((v, i) => (
-                <Pressable key={i} onPress={() => say(v.replace(/[^\p{L}\p{N}\s'—-]/gu, ''), true)} accessibilityRole="button" accessibilityLabel={v} style={[styles.vocabRow, theme.shadow, { backgroundColor: theme.colors.surface, borderColor: theme.colors.borderSoft }]}>
+                <Pressable key={i} onPress={() => sayContent(v.replace(/[^\p{L}\p{N}\s'—-]/gu, ''), true)} accessibilityRole="button" accessibilityLabel={v} style={[styles.vocabRow, theme.shadow, { backgroundColor: theme.colors.surface, borderColor: theme.colors.borderSoft }]}>
                   <Text style={[styles.vocabText, { fontSize: sizes.tileLabel + 4, color: theme.colors.text }]} allowFontScaling={false}>{v}</Text>
                   <Icon name="volume-high" size={26} color={theme.colors.textMuted} />
                 </Pressable>
               ))}
             </View>
           ) : null}
-          <BigButton label="Read it to me" icon="volume-high" variant="secondary" minHeight={72} onPress={() => say(`${lesson.title}. ${lesson.content}`, true)} />
+          <BigButton label="Read it to me" icon="volume-high" variant="secondary" minHeight={72} onPress={() => sayContent(`${lesson.title}. ${lesson.content}`, true)} />
           {activities.length > 0 ? (
             <BigButton label={completedIds.size > 0 && completedIds.size < activities.length ? 'Continue questions' : 'Start questions'} icon="play" minHeight={88} onPress={() => setPhase('question')} />
           ) : (
@@ -225,59 +265,47 @@ export function AdaptiveLessonScreen({ navigation, route }: RootScreenProps<'Ada
 
   if (!activity || !queue) return <ChildScreen title={lesson.title} back />;
 
-  const meta = ANSWER_METHOD_META[method];
-  const isPicture = method === 'picture' || (activity.type === 'picture' && method === 'tap');
   const locked = phase !== 'question';
+  const hasPictures = choices.some((c) => !!c.emoji);
+  // Picture cards (picture above label) when two fit side by side; otherwise picture beside label.
+  const pictureCards = hasPictures && layout.pictureMode;
+  const illustrated = illustratedSet(choices.map((c) => c.emoji));
+  const feedback =
+    phase === 'correct' ? { kind: 'correct' as const, text: `Great job, ${displayName}!` }
+    : phase === 'retry' ? { kind: 'retry' as const, text: 'Not quite — try again!' }
+    : phase === 'reveal' ? { kind: 'reveal' as const, text: `The answer is: ${acceptedAnswers(activity)[0] ?? ''}` }
+    : null;
 
   return (
     <ChildScreen title={lesson.subjectName} emoji={lesson.subjectIcon} back>
       <Celebration trigger={burst} />
       <View style={[styles.progressRow, { paddingHorizontal: sizes.horizontalPadding }]}>
-        <ProgressBar value={index / queue.length} label={`${index + 1} / ${queue.length}`} height={12} />
+        <ProgressIndicator current={index + 1} total={queue.length} />
       </View>
-      <ScrollView contentContainerStyle={[styles.content, { paddingHorizontal: sizes.horizontalPadding }]} keyboardShouldPersistTaps="handled">
-        <Card color={lesson.subjectColor} style={styles.questionCard}>
-          {activity.image ? <Text style={[styles.image, { fontSize: sizes.iconSize + 20 }]} allowFontScaling={false}>{activity.image}</Text> : null}
-          <Text style={[styles.question, { fontSize: activity.question.length > 50 ? sizes.body + 4 : sizes.phrase - 4, color: theme.colors.text }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
-            {activity.question}
-          </Text>
-          <View style={styles.qActions}>
-            <Pressable onPress={() => say(activity.question, true)} accessibilityRole="button" accessibilityLabel="Hear the question again" style={[styles.hear, { backgroundColor: theme.colors.primary }]}>
-              <Icon name="volume-high" size={26} color="#FFFFFF" />
-              <Text style={styles.hearText} maxFontSizeMultiplier={MAX_FONT_SCALE}>Hear again</Text>
-            </Pressable>
-            {activity.hint && !showHint ? (
-              <Pressable onPress={() => { setShowHint(true); say(activity.hint, true); }} accessibilityRole="button" accessibilityLabel="Show a hint" style={[styles.hear, { backgroundColor: theme.colors.surface, borderWidth: 1.5, borderColor: theme.colors.borderSoft }]}>
-                <Text style={styles.hintEmoji} allowFontScaling={false}>💡</Text>
-                <Text style={[styles.hearText, { color: theme.colors.text }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>Hint</Text>
-              </Pressable>
-            ) : null}
-          </View>
-          {showHint && activity.hint ? (
-            <Text style={[styles.hint, { color: theme.colors.text }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>💡 {activity.hint}</Text>
-          ) : null}
-        </Card>
-
-        <Text
-          style={[styles.feedback, { fontSize: sizes.body + 2, color: phase === 'correct' ? theme.colors.success : phase === 'question' ? theme.colors.textMuted : theme.colors.danger }]}
-          maxFontSizeMultiplier={MAX_FONT_SCALE}
-          accessibilityLiveRegion="polite"
-        >
-          {phase === 'correct' ? `✅ Great job, ${displayName}!` : phase === 'retry' ? '↻ Not quite — try again' : phase === 'reveal' ? `💡 The answer: ${acceptedAnswers(activity)[0] ?? ''}` : `${meta.emoji} ${meta.label}`}
-        </Text>
+      <ScrollView ref={scrollRef} scrollEnabled={lock.scrollEnabled} contentContainerStyle={[styles.content, { paddingHorizontal: sizes.horizontalPadding }]} keyboardShouldPersistTaps="handled">
+        <QuestionCard
+          question={activity.question}
+          image={activity.image}
+          color={lesson.subjectColor}
+          onHear={() => sayContent(activity.question, true)}
+          hint={activity.hint}
+          showHint={showHint}
+          onHint={() => { setShowHint(true); sayContent(activity.hint, true); }}
+        />
 
         <AnswerMethodPicker methods={methods} value={method} onChange={(m) => { setMethod(m); setSelected([]); setTyped(''); }} compact />
 
         {(method === 'tap' || method === 'picture') ? (
           <>
-            <ChoiceGrid>
+            <AnswerChoiceGrid columns={layout.columns}>
               {choices.map((c, i) => (
-                <ChoiceCard
+                <AnswerChoiceCard
                   key={`${activity.id}-${i}`}
                   label={c.label}
                   emoji={c.emoji}
-                  pictureMode={isPicture && !!c.emoji}
-                  width={isPicture || choices.length > 2 ? '48%' : '100%'}
+                  pictureMode={pictureCards}
+                  illustrated={illustrated}
+                  width={layout.width}
                   disabled={locked}
                   state={
                     (phase === 'correct' && c.correct && selected.includes(i)) || (phase === 'reveal' && c.correct) ? 'correct'
@@ -289,7 +317,7 @@ export function AdaptiveLessonScreen({ navigation, route }: RootScreenProps<'Ada
                   onPress={() => tapChoice(i)}
                 />
               ))}
-            </ChoiceGrid>
+            </AnswerChoiceGrid>
             {multiSelect ? (
               <BigButton label={`Check my answer (${selected.length} chosen)`} icon="check-bold" variant="success" minHeight={72} disabled={locked || selected.length === 0} onPress={checkMulti} />
             ) : null}
@@ -318,12 +346,14 @@ export function AdaptiveLessonScreen({ navigation, route }: RootScreenProps<'Ada
             <Text style={[styles.note, { color: theme.colors.textMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
               Any size is fine. Tap Done when you finish.
             </Text>
+            <TracingLockBar locked={lock.locked} onToggle={lock.toggle} />
             <HandwritingCanvas
               key={`${activity.id}-write`}
               guide={profile.assistanceLevel === 'independent' ? { kind: 'none' } : { kind: 'text', text: acceptedAnswers(activity)[0] ?? '' }}
               onDone={writingDone}
               strokeWidth={strokeWidth}
               onStrokeWidthChange={setStrokeWidth}
+              onDrawingChange={lock.onDrawingChange}
               height={Math.max(260, sizes.tileHeight * 2)}
             />
           </View>
@@ -340,6 +370,8 @@ export function AdaptiveLessonScreen({ navigation, route }: RootScreenProps<'Ada
             </View>
           </Card>
         ) : null}
+
+        <AnswerFeedback kind={feedback?.kind ?? null} text={feedback?.text ?? ''} />
       </ScrollView>
     </ChildScreen>
   );
@@ -356,15 +388,6 @@ const styles = StyleSheet.create({
   note: { fontFamily: Fonts.semibold, fontSize: 16, textAlign: 'center' },
   summary: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: SPACING.lg },
   bigEmoji: { fontSize: 72, lineHeight: 88 },
-  questionCard: { alignItems: 'center', gap: SPACING.sm },
-  image: { textAlign: 'center', lineHeight: 96 },
-  question: { fontFamily: Fonts.extrabold, textAlign: 'center', lineHeight: 40 },
-  qActions: { flexDirection: 'row', gap: SPACING.sm, flexWrap: 'wrap', justifyContent: 'center' },
-  hear: { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 56, paddingHorizontal: SPACING.lg, borderRadius: Radius.pill },
-  hearText: { color: '#FFFFFF', fontFamily: Fonts.extrabold, fontSize: 17 },
-  hintEmoji: { fontSize: 22 },
-  hint: { fontFamily: Fonts.bold, fontSize: 18, textAlign: 'center' },
-  feedback: { fontFamily: Fonts.extrabold, textAlign: 'center' },
   writeWrap: { gap: SPACING.sm },
   row: { flexDirection: 'row', gap: SPACING.sm, marginTop: SPACING.md },
   half: { flex: 1 },

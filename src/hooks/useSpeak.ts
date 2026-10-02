@@ -4,24 +4,18 @@ import { useSettings } from '@/context/SettingsContext';
 import { useI18n } from '@/i18n';
 import { useProfile } from '@/context/ProfileContext';
 import { buttonsRepo } from '@/database';
-import { onSpeechStatus, speakWithSettings, speechStatus, stopSpeaking } from '@/services/speech';
+import { onSpeechStatus, speakContent, speakWithSettings, speechStatus, stopSpeaking } from '@/services/speech';
+import { generatePhrase, isStarterPhrase, starterHead } from '@/talk/phraseEngine';
 import type { CommunicationButton } from '@/types/models';
-
-/** "I want..." → "I want"; "Water" → "water" ; join → "I want water." */
-function composeSentence(starter: string, endingLabel: string): string {
-  const head = starter.replace(/\.\.\.$/, '').trim();
-  const tail = endingLabel.trim().replace(/[.!?]+$/, '');
-  const lowered = tail.charAt(0).toLowerCase() + tail.slice(1);
-  return `${head} ${lowered}.`;
-}
 
 /**
  * Everything a communication screen needs to "say" a tile:
  * - speaks the phrase with the parent's speech settings (communication always speaks,
  *   even when feedback sound is off — talking is the point),
  * - haptic feedback, tap recording for Recent / most-used,
- * - the sentence builder: a starter tile ("I want...") waits for the next tile and
- *   composes "I want water."
+ * - the sentence builder: a starter tile ("I want...") waits for the next tile, and the two
+ *   become ONE natural sentence via talk/phraseEngine — "I want water.", but "I am hungry.",
+ *   never "I want hungry." The banner shows exactly the sentence that is spoken.
  */
 export function useSpeak() {
   const { settings } = useSettings();
@@ -62,6 +56,22 @@ export function useSpeak() {
     [settings],
   );
 
+  /**
+   * Speaks text that belongs to CONTENT, in the language that content is written in.
+   *
+   * Same silencing rule as speakFeedback, but the voice follows the material rather than the app:
+   * a lesson titled "Mga hayop" is Filipino wherever it is read out, including from a list of
+   * lessons, and an English voice reads that title as the letters M, G, A. Pass '' (or nothing)
+   * for English and this behaves exactly like speakFeedback.
+   */
+  const speakInLanguage = useCallback(
+    async (text: string, language: string | null | undefined) => {
+      if (!settings.soundEnabled) return;
+      await speakContent(text, language, settings);
+    },
+    [settings],
+  );
+
   const speakButton = useCallback(
     async (button: CommunicationButton) => {
       setLastButtonId(button.id);
@@ -70,18 +80,18 @@ export function useSpeak() {
 
       const phrase = tContent(button.phrase);
       const label = tContent(button.label);
-      const isStarter = phrase.trim().endsWith('...');
       if (profile.communication.sentenceBuilder) {
-        if (isStarter) {
+        if (isStarterPhrase(phrase)) {
           setPendingStarter(phrase);
           setLastPhrase(null);
-          await speakWithSettings(phrase.replace(/\.\.\.$/, ''), settings);
+          await speakWithSettings(starterHead(phrase), settings);
           return;
         }
         if (pendingStarter) {
-          const sentence = composeSentence(pendingStarter, label);
+          // The tile's PHRASE carries its grammar ("I'm hungry.", "I want a snack."); its label does not.
+          const sentence = generatePhrase({ starter: pendingStarter, label, phrase });
           setPendingStarter(null);
-          await speakPhrase(sentence);
+          await speakPhrase(sentence.speech);
           return;
         }
       }
@@ -106,5 +116,5 @@ export function useSpeak() {
 
   const cancelStarter = useCallback(() => setPendingStarter(null), []);
 
-  return { lastPhrase, lastButtonId, pendingStarter, speechAvailable, speakButton, speakPhrase, speakFeedback, repeat, clear, cancelStarter };
+  return { lastPhrase, lastButtonId, pendingStarter, speechAvailable, speakButton, speakPhrase, speakFeedback, speakInLanguage, repeat, clear, cancelStarter };
 }

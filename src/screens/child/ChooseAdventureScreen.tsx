@@ -39,7 +39,7 @@ export function ChooseAdventureScreen({ navigation }: RootScreenProps<'ChooseAdv
   };
 
   return (
-    <ChildScreen title={t('advChooseTitle')} back>
+    <ChildScreen title={t('advChooseTitle')} subtitle={t('advChooseTitleSub')} emoji="🚀" art="mission" back>
       <ScrollView contentContainerStyle={[styles.content, { paddingHorizontal: sizes.horizontalPadding }]}>
         <View style={styles.intro}>
           <Text style={[styles.question, { fontSize: sizes.heading, color: theme.colors.text }]} maxFontSizeMultiplier={MAX_FONT_SCALE} accessibilityRole="header">
@@ -79,9 +79,8 @@ export function ChooseAdventureScreen({ navigation }: RootScreenProps<'ChooseAdv
                   {theme.night ? (
                     <>
                       <GradientSurface from={c.from} to={c.to} direction="vertical" />
-                      <View style={styles.gloss} pointerEvents="none">
-                        <GradientSurface from="#FFFFFF" to="#FFFFFF" direction="vertical" fromOpacity={0.32} toOpacity={0} />
-                      </View>
+                      {/* Gloss: fades out 50% of the way down (a full-size surface — see GradientSurface). */}
+                      <GradientSurface from="#FFFFFF" to="#FFFFFF" direction="vertical" fromOpacity={0.32} toOpacity={0} toOffset={0.5} />
                     </>
                   ) : null}
                   <WorldArt name={w.emblem} size={art} />
@@ -130,7 +129,6 @@ const styles = StyleSheet.create({
   // The world in use: a gold rim and a "Your adventure" tag — shape and words, not colour alone.
   cardCurrent: { borderWidth: 3.5, borderBottomWidth: 6, borderColor: '#FFE27A', borderBottomColor: '#FFD84D' },
   cardDisabled: { opacity: 0.55 },
-  gloss: { position: 'absolute', top: 0, left: 0, right: 0, height: '50%' },
   name: { fontFamily: Fonts.black, letterSpacing: 0.8, textAlign: 'center', textShadowColor: 'rgba(0,0,0,0.25)', textShadowOffset: { width: 0, height: 1.5 }, textShadowRadius: 2 },
   tagline: { fontFamily: Fonts.bold, fontSize: 14, lineHeight: 18, textAlign: 'center' },
   badge: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4, backgroundColor: '#FFD84D', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 3 },

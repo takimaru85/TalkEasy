@@ -2,6 +2,7 @@ import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { tileInk } from '@/constants/colors';
 import { useTheme } from '@/theme';
+import { TalkEasyIcon, hasTalkEasyIcon } from '@/components/icons';
 import { Icon } from './Icon';
 
 interface Props {
@@ -17,6 +18,12 @@ interface Props {
 /**
  * The app's icon style: a soft rounded square in a tint, the glyph in the deep tone of the same
  * hue. Used wherever an icon labels an item (My Day steps, Now / Next), matching the Talk cards.
+ *
+ * The glyph is a CUSTOM TalkEasy icon when the set has one for this name, and the Material glyph
+ * otherwise (see components/icons). Doing the swap here rather than at each call site means every
+ * screen that already uses an IconTile gets the drawn set without being touched, and a name the set
+ * does not cover keeps working exactly as before — so a grown-up can still pick any icon in Parent
+ * Mode and nothing a family has already chosen can break.
  */
 export function IconTile({ name, size, tint, muted }: Props) {
   const theme = useTheme();
@@ -36,7 +43,13 @@ export function IconTile({ name, size, tint, muted }: Props) {
         },
       ]}
     >
-      <Icon name={name} size={Math.round(size * 0.55)} color={ink} />
+      {hasTalkEasyIcon(name) ? (
+        // Drawn slightly larger than the Material glyph: these icons carry their own padding, so
+        // matching the glyph's box would leave them looking shrunken inside the tile.
+        <TalkEasyIcon name={name} size={Math.round(size * 0.62)} color={ink} />
+      ) : (
+        <Icon name={name} size={Math.round(size * 0.55)} color={ink} />
+      )}
     </View>
   );
 }

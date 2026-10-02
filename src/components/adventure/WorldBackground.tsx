@@ -45,7 +45,7 @@ function Scene({ world, width: w, height: h }: { world: Exclude<WorldId, 'space'
   const p = PALETTE[world];
 
   return (
-    <Svg style={StyleSheet.absoluteFill} accessible={false} pointerEvents="none">
+    <Svg style={StyleSheet.absoluteFill} width={w} height={h} accessible={false} pointerEvents="none">
       <Defs>
         <LinearGradient id={`sky${id}`} x1="0" y1="0" x2="0.3" y2="1">
           <Stop offset="0" stopColor={p.top} />

@@ -1,129 +1,135 @@
 import React, { useMemo } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Card, ChildScreen, SectionTitle } from '@/components/common';
-import { GameTile, HeroPanel, StatPill, SyllableChips } from '@/components/adventure';
+import { StyleSheet, Text, View } from 'react-native';
+import { Card } from '@/components/common';
+import { GrownUpsCard, HeroPanel, MissionCard, SpeechPracticeLayout, StatPill } from '@/components/adventure';
 import { MAX_FONT_SCALE, SPACING } from '@/constants/sizes';
 import { useSettings } from '@/context/SettingsContext';
-import { useSizes, useTodaySpeechPractice } from '@/hooks';
+import { useAdventure, useSizes, useTodaySpeechPractice } from '@/hooks';
 import { useI18n } from '@/i18n';
 import type { RootScreenProps } from '@/navigation/types';
-import { ACTIVITIES, LEVELS, parseHiddenActivities } from '@/speechpractice/activities';
-import type { ActivityDef } from '@/speechpractice/types';
+import { parseHiddenActivities } from '@/speechpractice/activities';
+import { STAGE_ART } from '@/speechpractice/stageArt';
+import { SPEECH_STAGES, visibleMembers } from '@/speechpractice/stages';
+import { useSubscription } from '@/context/SubscriptionContext';
 import { Fonts, useTheme } from '@/theme';
 
-/** Whole minutes, rounded up once any practice has happened, so "0 min" never follows real work. */
-function minutes(ms: number): number {
-  return ms > 0 ? Math.max(1, Math.round(ms / 60000)) : 0;
-}
-
 /**
- * Speech Practice — pick an activity.
+ * Speech Practice — the production ladder.
  *
- * Activities are grouped Beginner / Intermediate / Advanced as a guide for grown-ups; nothing is
- * locked and there is no progression to unlock. A parent can hide activities in Parent Mode.
+ * WHAT CHANGED AND WHY. This screen used to list all twenty activities at once under Beginner /
+ * Intermediate / Advanced. Level is a note for a grown-up about difficulty; to a child it says
+ * nothing about what they are doing, so the screen answered "what is available?" when the only
+ * question worth answering is "what am I practising right now?".
+ *
+ * It now shows FIVE things, in the order speech is built: sounds, syllables, words, phrases,
+ * sentences. Each opens to its own activities. Nothing was deleted — every activity lives inside
+ * the stage it belongs to, except the ones that were never speech production (listening, memory,
+ * vocabulary, following directions, and the social ones), which moved to Listen & Talk where they
+ * belong and where several of them already had a home.
+ *
+ * The cards are the shared `MissionCard`, the same component Listen & Talk and Lessons use. The
+ * two sections keep DIFFERENT layouts — a ladder here, a pathway there, a grid inside a stage —
+ * but one card, one radius, one shadow, one progress bar, one press animation.
+ *
+ * THE LATEST RESTYLE is look only: each stage wears an illustration (a megaphone, letter blocks, a
+ * book, speech bubbles, a page and pencil), the banner carries Pip and two real counts, and a
+ * "Grown-ups" card points to Parent Mode. Which stages show, which are locked behind Plus, what
+ * they count and where they go are exactly what they were.
  */
 export function SpeechPracticeScreen({ navigation }: RootScreenProps<'SpeechPractice'>) {
   const sizes = useSizes();
   const theme = useTheme();
   const { t } = useI18n();
   const { settings } = useSettings();
+  const adventure = useAdventure();
   const { data: stats } = useTodaySpeechPractice();
   const hidden = useMemo(() => parseHiddenActivities(settings.speechPracticeHidden), [settings.speechPracticeHidden]);
 
-  const tileWidth = `${Math.floor(100 / sizes.gridColumns) - 2}%` as const;
-  const open = (a: ActivityDef) => (a.route ? navigation.navigate(a.route) : navigation.navigate('SpeechActivity', { activityId: a.id }));
-  const visible = ACTIVITIES.filter((a) => !hidden.has(a.id));
+  // A stage with everything hidden by a parent is not shown at all, rather than opening empty.
+  const stages = SPEECH_STAGES.filter((s) => visibleMembers(s, hidden).length > 0);
+  // The free plan opens the beginning of the ladder; the rest asks for Plus. The index counted is
+  // the position in the list the CHILD sees, so a stage a grown-up hid never silently uses up part
+  // of the free allowance.
+  const { can } = useSubscription();
+
+  // Settings and Parent Mode live behind the PIN, exactly as the Parent tab on Home.
+  const openParentMode = () => navigation.navigate('ParentPin');
 
   return (
-    <ChildScreen title={t('spTitle')} emoji="microphone-outline" emojiTint="#FFD9D3" art="speech">
-      <ScrollView style={styles.flex} contentContainerStyle={[styles.content, { paddingHorizontal: sizes.horizontalPadding }]}>
-        {/* On the night sky: the section's own banner — Pip, the mic, and BA-BU to tap and hear. */}
-        <HeroPanel color="lagoon" art="speech" title={t('advPipLine')} subtitle={t('spSubtitle')} mascot>
-          <SyllableChips />
-          <View style={styles.pills}>
-            <StatPill icon="star" value={String(stats.activitiesCompleted)} label={`${t('spStatActivities')}: ${stats.activitiesCompleted}`} color="sun" />
-            <StatPill icon="microphone" value={String(stats.attempts)} label={`${t('soundStatAttempts')}: ${stats.attempts}`} color="lagoon" />
-          </View>
-        </HeroPanel>
-        {theme.night ? null : (
-          <Text style={[styles.subtitle, { fontSize: sizes.body + 1, color: theme.colors.textMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
-            {t('spSubtitle')}
-          </Text>
-        )}
-
-        {visible.length === 0 ? (
-          <Card>
-            <Text style={[styles.subtitle, { fontSize: sizes.body, color: theme.colors.text }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
-              {t('spAllHidden')}
-            </Text>
-          </Card>
-        ) : null}
-
-        {LEVELS.map(({ level, emoji, titleKey }) => {
-          const items = visible.filter((a) => a.level === level);
-          if (items.length === 0) return null;
-          return (
-            <View key={level} style={styles.level}>
-              <SectionTitle title={t(titleKey)} emoji={emoji} />
-              <View style={[styles.grid, { gap: sizes.gap }]}>
-                {items.map((a) => (
-                  <GameTile
-                    key={a.id}
-                    label={t(a.titleKey)}
-                    tint={a.tint}
-                    glyph={a.icon}
-                    onPress={() => open(a)}
-                    accessibilityLabel={`${t(a.titleKey)}, ${t(titleKey)}`}
-                    width={tileWidth}
-                    minHeight={Math.max(sizes.tileHeight * 0.8, 112)}
-                  />
-                ))}
-              </View>
+    <SpeechPracticeLayout title={t('spTitle')} subtitle={t('spSubtitle')} emoji="microphone-outline" emojiTint="#FFD9D3" art="speech">
+          {/* Pip and the day's two counts: the child's total stars, and what they finished today. */}
+          <HeroPanel
+            color="lagoon"
+            art="speech"
+            title={t('advPipLine')}
+            subtitle={t('spSubtitle')}
+            mascot
+            mascotLeft
+            onSettings={openParentMode}
+            settingsLabel={t('advParentSettings')}
+          >
+            <View style={styles.pills}>
+              <StatPill
+                wide
+                icon="star"
+                value={String(adventure.totalStars)}
+                caption={t('advStatStars')}
+                label={`${t('advStatStars')}: ${adventure.totalStars}`}
+                color="sun"
+              />
+              <StatPill
+                wide
+                icon="microphone"
+                value={String(stats.activitiesCompleted)}
+                caption={t('spStatToday')}
+                label={`${t('spStatToday')}: ${stats.activitiesCompleted}`}
+                color="lagoon"
+              />
             </View>
-          );
-        })}
+          </HeroPanel>
 
-        <SectionTitle title={t('soundTodaysPractice')} emoji="📋" />
-        <Card>
-          <StatLine label={t('spStatActivities')} value={String(stats.activitiesCompleted)} />
-          <StatLine label={t('spStatWords')} value={String(stats.wordsPracticed)} />
-          <StatLine label={t('soundStatAttempts')} value={String(stats.attempts)} />
-          <StatLine label={t('soundStatTime')} value={`${minutes(stats.practiceMs)} min`} />
-        </Card>
+          {stages.length === 0 ? (
+            <Card>
+              <Text style={[styles.plain, { fontSize: sizes.body, color: theme.colors.text }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
+                {t('spAllHidden')}
+              </Text>
+            </Card>
+          ) : (
+            stages.map((stage, i) => {
+              const locked = !can('speechPractice', i).allowed;
+              return (
+                <MissionCard
+                  key={stage.id}
+                  locked={locked}
+                  title={t(stage.titleKey)}
+                  subtitle={t(stage.subtitleKey)}
+                  // Step AND length in the eyebrow. A progress bar here would sit at 0% on every stage
+                  // a child has not started, and a column of empty bars reads as a column of failures
+                  // rather than as a menu.
+                  eyebrow={`${t('spStageStep', { n: i + 1 })} · ${t('spStageActivities', { n: visibleMembers(stage, hidden).length })}`}
+                  colorArt={STAGE_ART[stage.id]}
+                  bare
+                  arrowIcon="chevron-right"
+                  color={stage.color}
+                  // A locked card still responds: it explains Plus rather than doing nothing, because a
+                  // card that ignores a child's tap just looks broken to them.
+                  onPress={() => {
+                    if (locked) return navigation.navigate('Plus');
+                    navigation.navigate('SpeechStage', { stageId: stage.id });
+                  }}
+                  accessibilityLabel={`${t(stage.titleKey)}. ${t(stage.subtitleKey)}.${locked ? '. Needs TalkEasy Plus' : ''}`}
+                />
+              );
+            })
+          )}
 
-        {/* One quiet line for grown-ups; the full notice lives in Parent Mode, not in the child's way. */}
-        <Text style={[styles.grownUps, { color: theme.colors.textMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
-          {t('spGrownUps')}
-        </Text>
-      </ScrollView>
-    </ChildScreen>
-  );
-}
-
-function StatLine({ label, value }: { label: string; value: string }) {
-  const sizes = useSizes();
-  const theme = useTheme();
-  return (
-    <View style={styles.statRow} accessibilityRole="text" accessibilityLabel={`${label}: ${value}`}>
-      <Text style={[styles.statLabel, { fontSize: sizes.body, color: theme.colors.textMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
-        {label}
-      </Text>
-      <Text style={[styles.statValue, { fontSize: sizes.body + 4, color: theme.colors.text }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
-        {value}
-      </Text>
-    </View>
+          {/* A door for grown-ups: the existing Parent PIN, not a second route into Parent Mode. */}
+          <GrownUpsCard title={t('spGrownUpsTitle')} text={t('spGrownUpsText')} onPress={openParentMode} />
+    </SpeechPracticeLayout>
   );
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1 },
-  content: { paddingVertical: SPACING.sm, gap: SPACING.md, paddingBottom: SPACING.xl },
-  subtitle: { fontFamily: Fonts.semibold, textAlign: 'center' },
-  level: { gap: SPACING.sm },
-  grid: { flexDirection: 'row', flexWrap: 'wrap' },
-  pills: { flexDirection: 'row', justifyContent: 'center', gap: SPACING.sm, marginTop: SPACING.sm },
-  statRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 6 },
-  statLabel: { fontFamily: Fonts.semibold, flexShrink: 1 },
-  statValue: { fontFamily: Fonts.black },
-  grownUps: { fontFamily: Fonts.semibold, fontSize: 14, lineHeight: 20, textAlign: 'center' },
+  plain: { fontFamily: Fonts.bold, textAlign: 'center' },
+  pills: { gap: 6 },
 });

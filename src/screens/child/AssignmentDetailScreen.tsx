@@ -1,4 +1,5 @@
 import React from 'react';
+import { SubjectIcon } from '@/components/school/SubjectIcon';
 import { Image, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useCardPalette } from '@/components/common/cardPalette';
 import { useTheme } from '@/theme';
@@ -51,7 +52,7 @@ export function AssignmentDetailScreen({ navigation, route }: RootScreenProps<'A
     <ChildScreen title={subjectName} back>
       <ScrollView contentContainerStyle={[styles.content, { paddingHorizontal: sizes.horizontalPadding }]}>
         <View style={[styles.hero, pal.night ? pal.cardStyle : { backgroundColor: done ? '#E8E8E8' : a.subject?.color ?? '#FFF3A8' }]}>
-          <Icon name={done ? 'check-circle' : (a.subject?.icon ?? KIND_META[a.kind].icon)} size={sizes.iconSize + 16} color={pal.night ? '#FFFFFF' : done ? Colors.success : Colors.text} />
+          <SubjectIcon icon={done ? 'check-circle' : (a.subject?.icon ?? KIND_META[a.kind].icon)} size={sizes.iconSize + 16} color={pal.night ? '#FFFFFF' : done ? Colors.success : Colors.text} />
           <Text style={[styles.title, { fontSize: sizes.phrase - 6, color: pal.ink }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
             {a.title}
           </Text>

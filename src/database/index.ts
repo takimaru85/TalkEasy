@@ -18,5 +18,8 @@ export { lessonsRepo } from './repositories/lessonsRepo';
 export { adaptiveProgressRepo, HANDWRITING_LEVEL_COUNT } from './repositories/adaptiveProgressRepo';
 export { soundPracticeRepo } from './repositories/soundPracticeRepo';
 export { speechPracticeRepo } from './repositories/speechPracticeRepo';
+export { therapyPracticeRepo } from './repositories/therapyPracticeRepo';
+export { voicePracticeRepo } from './repositories/voicePracticeRepo';
+export type { VoiceAreaRow, VoiceTodayRow } from './repositories/voicePracticeRepo';
 export { summaryRepo, weekRange, localDay } from './repositories/summaryRepo';
 export type { WeekRange, WeeklySummary } from './repositories/summaryRepo';

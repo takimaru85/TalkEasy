@@ -6,6 +6,8 @@ import { Fonts, useTheme } from '@/theme';
 import { Adventure, AdventureRadius, AdventureShadow } from '@/theme/adventure';
 import { GradientSurface } from './GradientSurface';
 import { Mascot } from './Mascot';
+import { CardDecor } from './CardDecor';
+import { CornerGear } from './CornerGear';
 
 interface Props {
   headline: string;
@@ -18,34 +20,48 @@ interface Props {
   progress: number;
   /** "12 / 20 stars" */
   progressLabel: string;
+  /** Shows a settings button in the corner. The screen decides where it goes. */
+  onSettings?: () => void;
+  settingsLabel?: string;
 }
 
+const BAR = '#4ADE80';
+
 /**
- * The top of the home screen: Pip, a greeting, and how far along the child is.
+ * The level card at the top of My Progress: Pip, the level name, and how far along the child is.
  *
  * This is the "you are on a journey" moment. It shows progress as a bar and a level name rather
  * than a statistic, because "Level 4 · Speech Explorer" means something to a child and
  * "38 activities completed" does not.
+ *
+ * The planet and stars are decoration drawn UNDER the words, inside the card (it clips), and they
+ * are kept faint so they never compete with the numbers.
  */
-export function HeroBanner({ headline, subtitle, levelLabel, title, progress, progressLabel }: Props) {
+export function HeroBanner({ headline, subtitle, levelLabel, title, progress, progressLabel, onSettings, settingsLabel }: Props) {
   const theme = useTheme();
   const sizes = useSizes();
   const clamped = Math.max(0, Math.min(1, progress));
+  const plain = theme.highContrast;
 
   return (
     <View
       style={[
         styles.hero,
-        theme.highContrast
+        plain
           ? { backgroundColor: Adventure.sky.to, borderWidth: theme.borderWidth, borderColor: theme.colors.border }
           : AdventureShadow,
       ]}
     >
-      {theme.highContrast ? null : <GradientSurface from={Adventure.sky.from} to={Adventure.sky.to} />}
+      {plain ? null : (
+        <>
+          <GradientSurface from={Adventure.sky.from} to={Adventure.sky.to} />
+          <CardDecor />
+        </>
+      )}
 
       <View style={styles.row}>
         <Mascot size={Math.min(96, sizes.iconSize + 40)} mood="cheer" />
-        <View style={styles.text}>
+        <View style={[styles.text, onSettings ? styles.textWithButton : null]}>
           <Text
             style={[styles.headline, { fontSize: sizes.heading + 4 }]}
             maxFontSizeMultiplier={MAX_FONT_SCALE}
@@ -67,18 +83,20 @@ export function HeroBanner({ headline, subtitle, levelLabel, title, progress, pr
         accessibilityLabel={`${levelLabel}, ${title}. ${progressLabel}`}
         accessibilityValue={{ now: Math.round(clamped * 100), min: 0, max: 100 }}
       >
-        <View style={styles.progressTop}>
-          <Text style={styles.level} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={1}>
-            {levelLabel} · {title}
-          </Text>
+        <Text style={styles.level} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={1}>
+          {levelLabel} · {title}
+        </Text>
+        <View style={styles.barRow}>
+          <View style={styles.track}>
+            <View style={[styles.fill, { width: `${Math.round(clamped * 100)}%` }]} />
+          </View>
           <Text style={styles.progressLabel} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={1}>
             {progressLabel}
           </Text>
         </View>
-        <View style={styles.track}>
-          <View style={[styles.fill, { width: `${Math.round(clamped * 100)}%` }]} />
-        </View>
       </View>
+
+      {onSettings ? <CornerGear onPress={onSettings} label={settingsLabel ?? 'Settings'} /> : null}
     </View>
   );
 }
@@ -92,12 +110,14 @@ const styles = StyleSheet.create({
   },
   row: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md },
   text: { flex: 1, gap: 2 },
+  // Room for the gear in the corner, so a long title never runs underneath it.
+  textWithButton: { paddingRight: 28 },
   headline: { fontFamily: Fonts.black, color: '#FFFFFF', letterSpacing: 0.6, alignSelf: 'stretch' },
   subtitle: { fontFamily: Fonts.bold, color: '#FFFFFF', opacity: 0.93, fontSize: 15, alignSelf: 'stretch' },
   progressBlock: { gap: 6 },
-  progressTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: SPACING.sm },
-  level: { fontFamily: Fonts.extrabold, color: '#FFFFFF', fontSize: 14, flexShrink: 1 },
-  progressLabel: { fontFamily: Fonts.bold, color: '#FFFFFF', opacity: 0.9, fontSize: 13 },
-  track: { height: 12, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.32)', overflow: 'hidden' },
-  fill: { height: '100%', borderRadius: 999, backgroundColor: '#FFFFFF' },
+  level: { fontFamily: Fonts.extrabold, color: '#FFFFFF', opacity: 0.92, fontSize: 14 },
+  barRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
+  track: { flex: 1, height: 16, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.85)', overflow: 'hidden' },
+  fill: { height: '100%', borderRadius: 999, backgroundColor: BAR },
+  progressLabel: { fontFamily: Fonts.extrabold, color: '#FFFFFF', fontSize: 14, flexShrink: 0 },
 });

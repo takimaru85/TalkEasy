@@ -29,7 +29,10 @@ export type ParentStackParamList = {
   AdaptiveProgress: undefined;
   WeeklyProgress: undefined;
   SpeechPracticeSettings: undefined;
+  VoicePracticeSummary: undefined;
   PronunciationTest: undefined;
+  Subscription: undefined;
+  TherapySettings: undefined;
 };
 
 /** Child mode is one stack: a Home grid plus one screen per section. */
@@ -61,10 +64,37 @@ export type RootStackParamList = {
   MyProgress: undefined;
   Achievements: undefined;
   SpeechActivity: { activityId: string; category?: string };
+  SpeechStage: { stageId: string };
+  SoundTarget: { targetId: string };
+  VoiceComm: undefined;
+  VoiceArea: { category: string };
+  VoiceActivity: { activityId: string; limit?: number; sessionStep?: number };
+  PracticeSession: { completed?: number } | undefined;
+  /**
+   * Therapy home practice, under Activities. Child-side routes, because the child does the
+   * practice — but every plan-changing and goal-changing control stays in Parent Mode.
+   */
+  /**
+   * Scan Assignment, under School Mode. `ScanReview` is told how the flow starts so the screen can
+   * open the camera, the library or an empty editor without a second entry point for each.
+   */
+  ScanAssignment: undefined;
+  ScanReview: { source: 'camera' | 'library' | 'manual' };
+  TherapyHome: undefined;
+  TherapyDay: undefined;
+  TherapyLibrary: undefined;
+  TherapyActivity: { activityId: string };
+  TherapyGoals: undefined;
   ChooseAdventure: undefined;
   Collection: undefined;
   ParentPin: undefined;
   Parent: NavigatorScreenParams<ParentStackParamList>;
+  /**
+   * TalkEasy Plus. On the ROOT stack, not inside Parent Mode, because a child reaches it by tapping
+   * a locked activity and must not need a PIN just to be told what the lock is. Nothing on it can
+   * change a plan or spend money — that lives behind the PIN in Parent → Subscription.
+   */
+  Plus: undefined;
 };
 
 export type RootScreenProps<T extends keyof RootStackParamList> = NativeStackScreenProps<RootStackParamList, T>;

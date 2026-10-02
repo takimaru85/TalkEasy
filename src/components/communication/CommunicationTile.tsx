@@ -175,9 +175,8 @@ export const CommunicationTile = React.memo(function CommunicationTile({ button,
             {night ? (
               <>
                 <GradientSurface from={shade(deep, pressed ? 1.15 : 1.32)} to={deep} direction="vertical" />
-                <View style={styles.gloss} pointerEvents="none">
-                  <GradientSurface from="#FFFFFF" to="#FFFFFF" direction="vertical" fromOpacity={0.32} toOpacity={0} />
-                </View>
+                {/* Gloss: fades out 55% of the way down (a full-size surface — see GradientSurface). */}
+                <GradientSurface from="#FFFFFF" to="#FFFFFF" direction="vertical" fromOpacity={0.32} toOpacity={0} toOffset={0.55} />
               </>
             ) : null}
             {art ? (
@@ -240,7 +239,6 @@ const styles = StyleSheet.create({
   disc: { alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   label: { fontFamily: Fonts.extrabold, textAlign: 'center' },
   labelNight: { textShadowColor: 'rgba(0,0,0,0.28)', textShadowOffset: { width: 0, height: 1.5 }, textShadowRadius: 2 },
-  gloss: { position: 'absolute', top: 0, left: 0, right: 0, height: '55%' },
   badge: {
     position: 'absolute',
     top: 8,

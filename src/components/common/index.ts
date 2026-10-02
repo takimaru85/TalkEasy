@@ -26,3 +26,4 @@ export { Card } from './Card';
 export { Avatar } from './Avatar';
 export { ProgressBar } from './ProgressBar';
 export { Celebration } from './Celebration';
+export { CompletionView } from './CompletionView';

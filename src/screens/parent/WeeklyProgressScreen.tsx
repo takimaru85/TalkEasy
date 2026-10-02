@@ -66,7 +66,7 @@ export function WeeklyProgressScreen({ navigation }: ParentScreenProps<'WeeklyPr
   // Plain sentences, only for things that actually happened.
   const highlights: { icon: string; text: string }[] = [];
   if (w.topSound) {
-    const sound = getSoundExercise(w.topSound.soundId)?.sound ?? w.topSound.soundId.toUpperCase();
+    const sound = getSoundExercise(w.topSound.soundId)?.letter ?? w.topSound.soundId.toUpperCase();
     highlights.push({ icon: 'microphone-outline', text: `Practiced the ${sound} sound ${plural(w.topSound.count, 'time')}` });
   }
   if (w.newWords) highlights.push({ icon: 'alphabetical-variant', text: `Practiced ${plural(w.newWords, 'new word')}` });

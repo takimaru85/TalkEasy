@@ -30,7 +30,16 @@ const ROW: { id: string; display: string; color: AdventureKey }[] = [
  * This is the shortest path in the app from opening it to hearing a correct model — no screens
  * in between.
  */
-export function SyllableChips() {
+interface Props {
+  /**
+   * Given, a tap OPENS that target instead of only speaking it — how the Sounds stage turns the
+   * row into "choose a sound". On the Home screen no handler is passed, so a tap stays what it
+   * has always been: the shortest path in the app from opening it to hearing a correct model.
+   */
+  onSelect?: (id: string) => void;
+}
+
+export function SyllableChips({ onSelect }: Props = {}) {
   const { settings } = useSettings();
 
   const say = (id: string) => {
@@ -45,7 +54,7 @@ export function SyllableChips() {
         return (
           <PressableScale
             key={s.id}
-            onPress={() => say(s.id)}
+            onPress={() => (onSelect ? onSelect(s.id) : say(s.id))}
             accessibilityRole="button"
             accessibilityLabel={`Say ${s.display}`}
             hitSlop={4}
@@ -56,9 +65,8 @@ export function SyllableChips() {
             <View style={[styles.chip, { shadowColor: shade(c.to, 0.55), borderBottomColor: shade(c.to, 0.68) }]}>
               <GradientSurface from={c.from} to={c.to} direction="vertical" />
               {/* A highlight that fades down the pill: a lit, glossy button, not a flat swatch. */}
-              <View style={styles.chipShine} pointerEvents="none">
-                <GradientSurface from="#FFFFFF" to="#FFFFFF" direction="vertical" fromOpacity={0.45} toOpacity={0} />
-              </View>
+              {/* Gloss: fades out 60% of the way down (a full-size surface — see GradientSurface). */}
+              <GradientSurface from="#FFFFFF" to="#FFFFFF" direction="vertical" fromOpacity={0.45} toOpacity={0} toOffset={0.6} />
               <Text style={styles.label} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={1} allowFontScaling={false}>
                 {s.display}
               </Text>
@@ -89,13 +97,6 @@ const styles = StyleSheet.create({
     shadowRadius: 7,
     shadowOffset: { width: 0, height: 4 },
     elevation: 6,
-  },
-  chipShine: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: '60%',
   },
   label: { fontFamily: Fonts.black, color: '#FFFFFF', fontSize: 18, letterSpacing: 0.5, textShadowColor: 'rgba(0,0,0,0.35)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3 },
 });

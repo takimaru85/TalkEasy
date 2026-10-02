@@ -1,7 +1,15 @@
 import { getDb, nowIso } from '../db';
 import { notify } from '../events';
 import { moveRow } from '../reorder';
-import type { Routine, RoutineItem, RoutineSegment } from '@/types/models';
+import { ROUTINE_LINKS, type Routine, type RoutineItem, type RoutineLink, type RoutineSegment } from '@/types/models';
+
+/** Local 'YYYY-MM-DD'. */
+function today(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+const asLink = (v: string | null | undefined): RoutineLink | null => (v && (ROUTINE_LINKS as string[]).includes(v) ? (v as RoutineLink) : null);
 
 interface RoutineRow {
   id: number;
@@ -20,6 +28,10 @@ interface RoutineItemRow {
   start_time: string | null;
   segment: string;
   notes: string;
+  end_time: string | null;
+  linked_activity: string | null;
+  /** Today's day-log status, joined in getItems. */
+  log_status?: string | null;
 }
 
 const toRoutine = (r: RoutineRow): Routine => ({
@@ -39,6 +51,9 @@ const toItem = (r: RoutineItemRow): RoutineItem => ({
   startTime: r.start_time,
   segment: (r.segment as RoutineSegment) || 'morning',
   notes: r.notes ?? '',
+  endTime: r.end_time ?? null,
+  linkedActivity: asLink(r.linked_activity),
+  isSkipped: r.log_status === 'skipped',
 });
 
 export const routinesRepo = {
@@ -98,29 +113,50 @@ export const routinesRepo = {
 
   async getItems(routineId: number): Promise<RoutineItem[]> {
     const db = await getDb();
+    await routinesRepo.rolloverIfNewDay();
     const rows = await db.getAllAsync<RoutineItemRow>(
-      'SELECT * FROM routine_items WHERE routine_id = ? ORDER BY sort_order, id',
-      routineId,
+      `SELECT i.*, l.status AS log_status
+         FROM routine_items i
+         LEFT JOIN routine_log l ON l.routine_item_id = i.id AND l.day = ?
+        WHERE i.routine_id = ? ORDER BY i.sort_order, i.id`,
+      today(), routineId,
     );
     return rows.map(toItem);
   },
 
-  async addItem(routineId: number, label: string, icon: string, startTime: string | null = null, segment: RoutineSegment = 'morning', notes = ''): Promise<number> {
+  /**
+   * My Day is a DAILY schedule: the first time it is read on a new day, yesterday's ticks are
+   * cleared. (Skips need nothing — they live in the day log, which is per day already.) The day
+   * last seen is kept in app_settings, so this runs once a day however often the screen renders.
+   */
+  async rolloverIfNewDay(): Promise<void> {
+    const db = await getDb();
+    const day = today();
+    const row = await db.getFirstAsync<{ value: string }>("SELECT value FROM app_settings WHERE key = 'routineDay'");
+    if (row?.value === day) return;
+    if (row) await db.runAsync('UPDATE routine_items SET is_done = 0');
+    await db.runAsync("INSERT OR REPLACE INTO app_settings (key, value) VALUES ('routineDay', ?)", day);
+  },
+
+  async addItem(routineId: number, label: string, icon: string, startTime: string | null = null, segment: RoutineSegment = 'morning', notes = '', endTime: string | null = null, linkedActivity: RoutineLink | null = null): Promise<number> {
     const db = await getDb();
     const max = await db.getFirstAsync<{ m: number | null }>(
       'SELECT MAX(sort_order) AS m FROM routine_items WHERE routine_id = ?', routineId,
     );
     const res = await db.runAsync(
-      'INSERT INTO routine_items (routine_id, label, icon, sort_order, is_done, start_time, segment, notes) VALUES (?, ?, ?, ?, 0, ?, ?, ?)',
-      routineId, label.trim(), icon, (max?.m ?? -1) + 1, startTime, segment, notes.trim(),
+      'INSERT INTO routine_items (routine_id, label, icon, sort_order, is_done, start_time, segment, notes, end_time, linked_activity) VALUES (?, ?, ?, ?, 0, ?, ?, ?, ?, ?)',
+      routineId, label.trim(), icon, (max?.m ?? -1) + 1, startTime, segment, notes.trim(), endTime, linkedActivity,
     );
     notify('routines');
     return res.lastInsertRowId;
   },
 
-  async updateItem(id: number, label: string, icon: string, startTime: string | null = null, segment: RoutineSegment = 'morning', notes = ''): Promise<void> {
+  async updateItem(id: number, label: string, icon: string, startTime: string | null = null, segment: RoutineSegment = 'morning', notes = '', endTime: string | null = null, linkedActivity: RoutineLink | null = null): Promise<void> {
     const db = await getDb();
-    await db.runAsync('UPDATE routine_items SET label = ?, icon = ?, start_time = ?, segment = ?, notes = ? WHERE id = ?', label.trim(), icon, startTime, segment, notes.trim(), id);
+    await db.runAsync(
+      'UPDATE routine_items SET label = ?, icon = ?, start_time = ?, segment = ?, notes = ?, end_time = ?, linked_activity = ? WHERE id = ?',
+      label.trim(), icon, startTime, segment, notes.trim(), endTime, linkedActivity, id,
+    );
     notify('routines');
   },
 
@@ -142,11 +178,12 @@ export const routinesRepo = {
     const db = await getDb();
     await db.runAsync('UPDATE routine_items SET is_done = ? WHERE id = ?', done ? 1 : 0, id);
     // Remember the day, for the weekly summary (un-ticking the same day takes it back out).
-    const d = new Date();
-    const day = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    // Done replaces a skip made earlier the same day.
+    const day = today();
     if (done) {
       await db.runAsync(
-        'INSERT OR IGNORE INTO routine_log (routine_item_id, label, day, created_at) SELECT id, label, ?, ? FROM routine_items WHERE id = ?',
+        `INSERT INTO routine_log (routine_item_id, label, day, created_at, status) SELECT id, label, ?, ?, 'done' FROM routine_items WHERE id = ?
+         ON CONFLICT (routine_item_id, day) DO UPDATE SET status = 'done'`,
         day, nowIso(), id,
       );
     } else {
@@ -155,10 +192,28 @@ export const routinesRepo = {
     notify('routines');
   },
 
-  /** Clears all "done" ticks — used by the "Start a new day" button. */
+  /** Skip a step for today (or undo the skip). A skipped step is not done and not "next". */
+  async setItemSkipped(id: number, skipped: boolean): Promise<void> {
+    const db = await getDb();
+    const day = today();
+    if (skipped) {
+      await db.runAsync('UPDATE routine_items SET is_done = 0 WHERE id = ?', id);
+      await db.runAsync(
+        `INSERT INTO routine_log (routine_item_id, label, day, created_at, status) SELECT id, label, ?, ?, 'skipped' FROM routine_items WHERE id = ?
+         ON CONFLICT (routine_item_id, day) DO UPDATE SET status = 'skipped'`,
+        day, nowIso(), id,
+      );
+    } else {
+      await db.runAsync("DELETE FROM routine_log WHERE routine_item_id = ? AND day = ? AND status = 'skipped'", id, day);
+    }
+    notify('routines');
+  },
+
+  /** Clears today's ticks and skips — used by the "Start a new day" button. */
   async resetDone(routineId: number): Promise<void> {
     const db = await getDb();
     await db.runAsync('UPDATE routine_items SET is_done = 0 WHERE routine_id = ?', routineId);
+    await db.runAsync('DELETE FROM routine_log WHERE day = ? AND routine_item_id IN (SELECT id FROM routine_items WHERE routine_id = ?)', today(), routineId);
     notify('routines');
   },
 };

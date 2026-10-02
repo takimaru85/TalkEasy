@@ -9,6 +9,7 @@ import { tileInk } from '@/constants/colors';
 import { Fonts, useTheme } from '@/theme';
 import { Adventure, AdventureRadius, AdventureShadow, shade, type AdventureKey } from '@/theme/adventure';
 import { GameIcon, type GameIconName } from './GameIcon';
+import { ColorArt, type ColorArtName } from './ColorArt';
 import { GradientSurface } from './GradientSurface';
 
 interface Props {
@@ -19,6 +20,12 @@ interface Props {
   /** Illustrated art for the disc; otherwise `glyph` (an emoji or a line-icon name). */
   art?: GameIconName;
   glyph?: string;
+  /** A colourful illustration from the ColorArt sets (category, subject, level, therapy) — takes the place of `art`/`glyph`. */
+  colorArt?: ColorArtName;
+  /** Draw the illustration straight onto the card, a little larger, instead of inside a ringed disc. */
+  bare?: boolean;
+  /** The icon in the round arrow button; a play triangle unless a card says otherwise (a stage uses a chevron). */
+  arrowIcon?: string;
   color?: AdventureKey;
   /** A soft tile tint (a subject's colour) instead of `color`: drawn in the solid colour it stands for. */
   tint?: string;
@@ -32,6 +39,13 @@ interface Props {
   /** The mission to do next: a gold rim, a soft gold glow, a gold play button and `currentLabel`. */
   current?: boolean;
   currentLabel?: string;
+  /**
+   * Behind TalkEasy Plus: a padlock instead of the play arrow, and the card steps back slightly.
+   *
+   * It stays TAPPABLE on purpose — tapping explains what Plus is. A card a child cannot press at
+   * all just looks broken to them, and they have no way to find out why.
+   */
+  locked?: boolean;
   onPress: () => void;
   accessibilityLabel: string;
 }
@@ -44,7 +58,7 @@ interface Props {
  *
  * Outside the night sky (high contrast) it falls back to a plain bordered surface card.
  */
-export function MissionCard({ title, subtitle, eyebrow, art, glyph, color = 'grape', tint, done, doneLabel, progress, compact, current, currentLabel, onPress, accessibilityLabel }: Props) {
+export function MissionCard({ title, subtitle, eyebrow, art, glyph, colorArt, bare, arrowIcon, color = 'grape', tint, done, doneLabel, progress, compact, current, currentLabel, locked, onPress, accessibilityLabel }: Props) {
   const theme = useTheme();
   const sizes = useSizes();
   const deep = tint ? tileInk(tint) : null;
@@ -73,9 +87,8 @@ export function MissionCard({ title, subtitle, eyebrow, art, glyph, color = 'gra
         {night ? (
           <>
             <GradientSurface from={c.from} to={c.to} direction="vertical" />
-            <View style={styles.gloss} pointerEvents="none">
-              <GradientSurface from="#FFFFFF" to="#FFFFFF" direction="vertical" fromOpacity={0.3} toOpacity={0} />
-            </View>
+            {/* Gloss: fades out 50% of the way down (a full-size surface — see GradientSurface). */}
+            <GradientSurface from="#FFFFFF" to="#FFFFFF" direction="vertical" fromOpacity={0.3} toOpacity={0} toOffset={0.5} />
           </>
         ) : null}
 
@@ -84,9 +97,10 @@ export function MissionCard({ title, subtitle, eyebrow, art, glyph, color = 'gra
             styles.disc,
             { width: disc, height: disc, borderRadius: AdventureRadius.disc },
             night ? { backgroundColor: shade(c.to, 0.8), borderColor: 'rgba(255,255,255,0.9)', borderWidth: 2.5 } : { backgroundColor: theme.colors.surfaceAlt },
+            bare ? { backgroundColor: 'transparent', borderWidth: 0, overflow: 'visible' } : null,
           ]}
         >
-          {art ? <GameIcon name={art} size={Math.round(disc * 0.86)} /> : glyph ? <Glyph value={glyph} size={Math.round(disc * 0.8)} /> : null}
+          {colorArt ? <ColorArt name={colorArt} size={Math.round(disc * (bare ? 1.08 : 0.86))} /> : art ? <GameIcon name={art} size={Math.round(disc * 0.86)} /> : glyph ? <Glyph value={glyph} size={Math.round(disc * 0.8)} /> : null}
         </View>
 
         <View style={styles.text}>
@@ -137,6 +151,17 @@ export function MissionCard({ title, subtitle, eyebrow, art, glyph, color = 'gra
               </Text>
             ) : null}
           </View>
+        ) : locked ? (
+          <View
+            style={[
+              styles.arrow,
+              night
+                ? { backgroundColor: 'rgba(255,216,77,0.16)', borderColor: 'rgba(255,216,77,0.55)' }
+                : { backgroundColor: theme.colors.surfaceAlt, borderColor: theme.colors.borderSoft },
+            ]}
+          >
+            <Icon name="lock" size={24} color={night ? '#FFD84D' : theme.colors.textMuted} />
+          </View>
         ) : (
           <View
             style={[
@@ -145,7 +170,7 @@ export function MissionCard({ title, subtitle, eyebrow, art, glyph, color = 'gra
               highlight && styles.arrowCurrent,
             ]}
           >
-            <Icon name="play" size={highlight ? 30 : 26} color={highlight ? '#5A3A00' : '#FFFFFF'} />
+            <Icon name={arrowIcon ?? 'play'} size={highlight ? 30 : 26} color={highlight ? '#5A3A00' : '#FFFFFF'} />
           </View>
         )}
       </View>
@@ -175,7 +200,6 @@ const styles = StyleSheet.create({
     elevation: 10,
   },
   cardQuiet: { shadowOpacity: 0.1, elevation: 2 },
-  gloss: { position: 'absolute', top: 0, left: 0, right: 0, height: '50%' },
   disc: { alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   text: { flex: 1, gap: 2 },
   eyebrowRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },

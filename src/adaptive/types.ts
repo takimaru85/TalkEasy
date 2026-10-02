@@ -86,15 +86,30 @@ export interface Lesson {
   content: string;
   /** Visual vocabulary lines, e.g. "☀️ Sunlight". One per line. */
   vocabulary: string[];
+  /**
+   * The language the lesson is WRITTEN in, as a BCP-47 tag ('fil-PH'); '' means English.
+   *
+   * Everything this lesson speaks inherits it — the title, the explanation, each vocabulary word,
+   * every question and hint. It is stored rather than guessed from the text, because guessing is
+   * what makes a Filipino lesson get read by an English voice. See services/contentLanguage.ts.
+   */
+  language: string;
   objectives: string;
   /** ISO date to show under "Today's schoolwork"; null = always available. */
   assignedDate: string | null;
+  /**
+   * True for the lessons TalkEasy ships with; false for anything a grown-up wrote.
+   *
+   * The free plan's allowance applies to built-in lessons ONLY — see subscription/access.ts. Not
+   * part of LessonInput: authorship is decided by who created the row, never by a form.
+   */
+  isBuiltin: boolean;
   sortOrder: number;
   isActive: boolean;
   createdAt: string;
 }
 
-export type LessonInput = Omit<Lesson, 'id' | 'sortOrder' | 'createdAt'>;
+export type LessonInput = Omit<Lesson, 'id' | 'sortOrder' | 'createdAt' | 'isBuiltin'>;
 
 export interface LessonWithSubject extends Lesson {
   subjectName: string;

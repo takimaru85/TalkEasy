@@ -1,4 +1,5 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
+import { inTransaction } from './transaction';
 import {
   DEFAULT_BUTTONS,
   DEFAULT_CATEGORIES,
@@ -31,7 +32,7 @@ export async function seedIfNeeded(db: SQLiteDatabase): Promise<void> {
   const fresh = current === 0;
   const now = new Date().toISOString();
 
-  await db.withExclusiveTransactionAsync(async (txn) => {
+  await inTransaction(db, async (txn) => {
     // ---- Categories (insert missing, keep order) --------------------------
     for (let i = 0; i < DEFAULT_CATEGORIES.length; i++) {
       const cat = DEFAULT_CATEGORIES[i];
@@ -78,10 +79,13 @@ export async function seedIfNeeded(db: SQLiteDatabase): Promise<void> {
       const subject = await txn.getFirstAsync<{ id: number }>('SELECT id FROM subjects WHERE name = ?', demo.subjectName);
       const maxOrder = await txn.getFirstAsync<{ m: number | null }>('SELECT MAX(sort_order) AS m FROM lessons');
       const res = await txn.runAsync(
-        `INSERT INTO lessons (subject_id, title, grade_level, content, vocabulary_json, objectives, assigned_date, sort_order, is_active, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?)`,
+        `INSERT INTO lessons (subject_id, title, grade_level, content, vocabulary_json, objectives, language, assigned_date, sort_order, is_builtin, is_active, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 1, ?)`,
         subject?.id ?? null, demo.lesson.title, demo.lesson.gradeLevel, demo.lesson.content, JSON.stringify(demo.lesson.vocabulary),
-        demo.lesson.objectives, demo.lesson.assignedDate, (maxOrder?.m ?? -1) + 1, now,
+        // The language the lesson is WRITTEN in travels with it. Leaving it out of this INSERT is
+        // what made a freshly seeded Filipino lesson speak English: the demo said 'fil-PH' and the
+        // column quietly took its '' default.
+        demo.lesson.objectives, demo.lesson.language, demo.lesson.assignedDate, (maxOrder?.m ?? -1) + 1, now,
       );
       for (let i = 0; i < demo.activities.length; i++) {
         const a = demo.activities[i];

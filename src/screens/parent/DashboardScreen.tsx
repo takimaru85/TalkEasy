@@ -25,6 +25,7 @@ type MenuScreen = Extract<
   | 'ManageLessons'
   | 'AdaptiveProgress'
   | 'SpeechPracticeSettings'
+  | 'VoicePracticeSummary'
   | 'ManageRewards'
   | 'ManageButtons'
   | 'ManageFavorites'
@@ -37,6 +38,8 @@ type MenuScreen = Extract<
   | 'CareNotes'
   | 'Progress'
   | 'Settings'
+  | 'Subscription'
+  | 'TherapySettings'
 >;
 
 interface MenuItem {
@@ -69,6 +72,10 @@ const MENU_GROUPS: { title: string; items: MenuItem[] }[] = [
     items: [
       { screen: 'ManageLessons', title: 'Lessons', detail: "Today's schoolwork and adaptive lessons", icon: 'school-outline', tint: tileColor('purple') },
       { screen: 'SpeechPracticeSettings', title: 'Speech Practice', detail: 'Activities, My Words and practice history', icon: 'microphone-outline', tint: tileColor('coral') },
+      { screen: 'VoicePracticeSummary', title: 'Voice & Communication', detail: "Today's practice and one idea to try at home", icon: 'music-note', tint: tileColor('teal') },
+      // Goals, which activities are on, and the week's practice. The only place an activity can be
+      // switched off — a decision about a particular child's body, not a child's tap.
+      { screen: 'TherapySettings', title: 'Therapy', detail: 'Practice goals, which activities are on, and this week', icon: 'arm-flex-outline', tint: tileColor('blue') },
       { screen: 'ManageLearning', title: 'Learning activities', detail: 'Which Learn activities are on, and how hard', icon: 'book-open-page-variant-outline', tint: tileColor('teal') },
       { screen: 'AdaptiveProgress', title: 'Learning progress', detail: 'Lessons and handwriting, shown separately', icon: 'chart-line', tint: tileColor('green') },
       { screen: 'Progress', title: 'Practice results', detail: 'Recent Learn sessions and subjects', icon: 'chart-bar', tint: tileColor('blue') },
@@ -94,6 +101,8 @@ const MENU_GROUPS: { title: string; items: MenuItem[] }[] = [
     title: 'App',
     items: [
       { screen: 'Settings', title: 'Settings', detail: 'Language, voice, sizes, accessibility and PIN', icon: 'cog-outline', tint: tileColor('grey') },
+      // The only place a plan can be changed. Deliberately in Parent Mode, behind the PIN.
+      { screen: 'Subscription', title: 'Subscription', detail: 'Your plan, TalkEasy Plus and restoring a purchase', icon: 'star-four-points-outline', tint: tileColor('sun') },
     ],
   },
 ];

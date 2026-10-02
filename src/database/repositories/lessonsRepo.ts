@@ -13,6 +13,7 @@ import type {
   MatchPair,
 } from '@/adaptive/types';
 import { ACTIVITY_TYPE_META } from '@/adaptive/types';
+import { normalizeContentLanguage } from '@/services/contentLanguage';
 
 interface LessonRow {
   id: number;
@@ -22,6 +23,8 @@ interface LessonRow {
   content: string;
   vocabulary_json: string;
   objectives: string;
+  language: string;
+  is_builtin: number;
   assigned_date: string | null;
   sort_order: number;
   is_active: number;
@@ -60,6 +63,10 @@ const toLesson = (r: LessonRow): Lesson => ({
   content: r.content,
   vocabulary: parseArray<string>(r.vocabulary_json),
   objectives: r.objectives,
+  // Normalised on the way out, so a tag typed by a parent or carried in from an import can never
+  // reach the speech engine as something it will refuse.
+  language: normalizeContentLanguage(r.language),
+  isBuiltin: r.is_builtin === 1,
   assignedDate: r.assigned_date,
   sortOrder: r.sort_order,
   isActive: r.is_active === 1,
@@ -144,10 +151,10 @@ export const lessonsRepo = {
     const db = await getDb();
     const max = await db.getFirstAsync<{ m: number | null }>('SELECT MAX(sort_order) AS m FROM lessons');
     const res = await db.runAsync(
-      `INSERT INTO lessons (subject_id, title, grade_level, content, vocabulary_json, objectives, assigned_date, sort_order, is_active, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO lessons (subject_id, title, grade_level, content, vocabulary_json, objectives, language, assigned_date, sort_order, is_active, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       input.subjectId, input.title.trim(), input.gradeLevel.trim(), input.content.trim(), JSON.stringify(input.vocabulary),
-      input.objectives.trim(), input.assignedDate, (max?.m ?? -1) + 1, input.isActive ? 1 : 0, nowIso(),
+      input.objectives.trim(), normalizeContentLanguage(input.language), input.assignedDate, (max?.m ?? -1) + 1, input.isActive ? 1 : 0, nowIso(),
     );
     notify('lessons');
     return res.lastInsertRowId;
@@ -156,10 +163,10 @@ export const lessonsRepo = {
   async update(id: number, input: LessonInput): Promise<void> {
     const db = await getDb();
     await db.runAsync(
-      `UPDATE lessons SET subject_id = ?, title = ?, grade_level = ?, content = ?, vocabulary_json = ?, objectives = ?,
+      `UPDATE lessons SET subject_id = ?, title = ?, grade_level = ?, content = ?, vocabulary_json = ?, objectives = ?, language = ?,
          assigned_date = ?, is_active = ? WHERE id = ?`,
       input.subjectId, input.title.trim(), input.gradeLevel.trim(), input.content.trim(), JSON.stringify(input.vocabulary),
-      input.objectives.trim(), input.assignedDate, input.isActive ? 1 : 0, id,
+      input.objectives.trim(), normalizeContentLanguage(input.language), input.assignedDate, input.isActive ? 1 : 0, id,
     );
     notify('lessons');
   },

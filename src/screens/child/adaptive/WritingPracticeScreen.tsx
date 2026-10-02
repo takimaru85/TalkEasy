@@ -1,8 +1,10 @@
 import React from 'react';
+import type { ColorArtName } from '@/components/adventure/ColorArt';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Card, ChildScreen, ProgressBar } from '@/components/common';
 import { MissionCard } from '@/components/adventure/MissionCard';
 import { WRITING_LEVELS } from '@/adaptive/handwriting';
+import { useSubscription } from '@/context/SubscriptionContext';
 import { MAX_FONT_SCALE, SPACING } from '@/constants/sizes';
 import { useAdaptiveProgress, useSizes, useSpeak } from '@/hooks';
 import type { RootScreenProps } from '@/navigation/types';
@@ -25,6 +27,7 @@ export function WritingPracticeScreen({ navigation }: RootScreenProps<'WritingPr
   const tried = new Set(progress.handwritingLevelsPractised);
   // The level to do next: the first one not tried yet. Every level stays open; this only points.
   const nextLevel = WRITING_LEVELS.find((l) => !tried.has(l.level))?.level;
+  const { can } = useSubscription();
 
   return (
     <ChildScreen title={theme.night ? t('traceTitle') : t('titleWritingPractice')} emoji="✏️" art="trace" subtitle={theme.night ? t('traceSub') : undefined} back>
@@ -35,12 +38,16 @@ export function WritingPracticeScreen({ navigation }: RootScreenProps<'WritingPr
           </Text>
           <ProgressBar value={tried.size / WRITING_LEVELS.length} label={`${tried.size} / ${WRITING_LEVELS.length}`} color={theme.colors.selected} accessibilityLabel={`${tried.size} of ${WRITING_LEVELS.length} levels tried`} />
         </Card>
-        {WRITING_LEVELS.map((l, i) => (
+        {WRITING_LEVELS.map((l, i) => {
+          const locked = !can('writing', i).allowed;
+          return (
           <MissionCard
             key={l.level}
+            locked={locked}
             eyebrow={`LEVEL ${l.level}`}
             title={l.title}
             subtitle={l.description}
+            colorArt={`level:${l.level}` as ColorArtName}
             glyph={l.emoji}
             color={LEVEL_COLORS[i % LEVEL_COLORS.length]}
             done={tried.has(l.level)}
@@ -48,10 +55,15 @@ export function WritingPracticeScreen({ navigation }: RootScreenProps<'WritingPr
             compact={tried.has(l.level)}
             current={l.level === nextLevel}
             currentLabel={t('traceUpNext')}
-            onPress={() => { speakFeedback(l.title); navigation.navigate('WritingCanvas', { level: l.level }); }}
-            accessibilityLabel={`Level ${l.level}, ${l.title}. ${l.description}${tried.has(l.level) ? '. Practised' : l.level === nextLevel ? '. Up next' : ''}`}
+            onPress={() => {
+              if (locked) return navigation.navigate('Plus');
+              speakFeedback(l.title);
+              navigation.navigate('WritingCanvas', { level: l.level });
+            }}
+            accessibilityLabel={`Level ${l.level}, ${l.title}. ${l.description}${tried.has(l.level) ? '. Practised' : l.level === nextLevel ? '. Up next' : ''}${locked ? '. Needs TalkEasy Plus' : ''}`}
           />
-        ))}
+          );
+        })}
       </ScrollView>
     </ChildScreen>
   );

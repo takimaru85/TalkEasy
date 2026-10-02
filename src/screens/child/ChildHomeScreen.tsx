@@ -3,21 +3,23 @@ import { ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-n
 import { Avatar, Icon, PressableScale, ScreenContainer } from '@/components/common';
 import {
   AdventureButton,
-  GameIcon,
+  DiscoveryBadge,
   HeroSparkles,
   GradientSurface,
-  Mascot,
+  Artwork,
+  ThemeMascot,
   SpaceNav,
   SyllableChips,
   TalkEasyLogo,
   WorldArt,
   WorldBackground,
 } from '@/components/adventure';
-import type { WorldArtName } from '@/adventure/worlds';
-import type { GameIconName } from '@/components/adventure/GameIcon';
-import { MAX_FONT_SCALE, MIN_CHILD_TARGET, SPACING } from '@/constants/sizes';
+import { game, themeFor, type CardArt, type CardSlot } from '@/adventure/themes';
+import { TourOverlay, TourProvider, TourTarget, useTour } from '@/components/onboarding';
+import { MAX_FONT_SCALE, MIN_CHILD_TARGET, MIN_SUPPORTED_WIDTH, SPACING } from '@/constants/sizes';
 import { useProfile } from '@/context/ProfileContext';
-import { useAdventure, useAdventureWorld, useCollection, useSizes, useToday, useTodayLessons, useTodaySoundPractice } from '@/hooks';
+import { MyDayUpcoming } from '@/components/myday/MyDayUpcoming';
+import { useAdventure, useMyDay, useAdventureWorld, useCollection, useCurrentTarget, useSizes, useToday, useTodayAdventure, useTodayLessons, useTodaySoundPractice } from '@/hooks';
 import { useI18n } from '@/i18n';
 import type { Strings } from '@/i18n/types';
 import type { RootScreenProps } from '@/navigation/types';
@@ -27,7 +29,7 @@ import { fitFontSize, textWidth } from '@/utils/fitText';
 
 type Destination =
   | 'SpeechPractice' | 'WritingPractice' | 'Learn' | 'Communicate' | 'Favorites' | 'AdaptiveHome'
-  | 'MyProgress' | 'Achievements' | 'SoundPractice'
+  | 'MyProgress' | 'Achievements' | 'SoundPractice' | 'VoiceComm'
   | 'School' | 'MyDay' | 'Activities' | 'Feelings' | 'SchoolMode' | 'ParentPin'
   | 'Collection' | 'ChooseAdventure';
 
@@ -83,7 +85,23 @@ const EXPLORE_TONES = {
  * Every number is derived from practice that really happened (hooks/useAdventure, today's sound
  * practice) — this screen never shows a figure the app cannot justify.
  */
-export function ChildHomeScreen({ navigation }: RootScreenProps<'ChildHome'>) {
+/**
+ * The Home screen, wrapped in the tour provider.
+ *
+ * The provider has to sit ABOVE the screen that registers targets, so the body is its own
+ * component. The overlay is a sibling of the body rather than a child of the ScrollView, so the
+ * dim covers the whole screen and never scrolls away from what it is pointing at.
+ */
+export function ChildHomeScreen(props: RootScreenProps<'ChildHome'>) {
+  return (
+    <TourProvider>
+      <HomeBody {...props} />
+      <TourOverlay />
+    </TourProvider>
+  );
+}
+
+function HomeBody({ navigation }: RootScreenProps<'ChildHome'>) {
   const sizes = useSizes();
   const theme = useTheme();
   const { t } = useI18n();
@@ -94,6 +112,38 @@ export function ChildHomeScreen({ navigation }: RootScreenProps<'ChildHome'>) {
   const adventure = useAdventure();
   // The child's interest world: scenery, collectibles and a little artwork. Never the layout.
   const { world, unchosen } = useAdventureWorld();
+  // My Day, live (re-evaluated every minute): what is happening now, and what is next.
+  const myDay = useMyDay();
+  // What today actually is, and which sound to carry on with — both from real practice data.
+  const { showTour, setScroller } = useTour();
+  /**
+   * The tour borrows this screen's scroller so it can bring a card below the fold into view
+   * before pointing at it. The offset is tracked here because scrollTo needs an absolute
+   * position and the tour only knows how far it wants to move.
+   */
+  const scrollRef = React.useRef<ScrollView>(null);
+  const scrollY = React.useRef(0);
+  React.useEffect(() => {
+    setScroller((dy) => scrollRef.current?.scrollTo({ y: Math.max(0, scrollY.current + dy), animated: true }));
+    return () => setScroller(null);
+  }, [setScroller]);
+  // First run only: showTour is a no-op once the tour has been finished or skipped. The delay lets
+  // the cards lay out and report where they are, so the first spotlight lands on a measured target.
+  React.useEffect(() => {
+    const timer = setTimeout(() => showTour('home'), 700);
+    return () => clearTimeout(timer);
+  }, [showTour]);
+
+  const today = useTodayAdventure();
+  const target = useCurrentTarget();
+  /**
+   * The active theme's visual configuration. Every illustration, card colour and corner mark on
+   * this screen comes from here — the screen never names a world, so a new theme is a new entry in
+   * src/adventure/themes.ts and this file does not change.
+   */
+  const adv = themeFor(world.id);
+  /** A theme's card, by slot. Saves repeating `adv.cards.x` at seven call sites. */
+  const card = (slot: CardSlot) => adv.cards[slot];
   const collection = useCollection();
   const { width, height } = useWindowDimensions();
 
@@ -102,13 +152,18 @@ export function ChildHomeScreen({ navigation }: RootScreenProps<'ChildHome'>) {
   const ink = night ? AdventureNight.ink : theme.colors.text;
   const inkMuted = night ? AdventureNight.inkMuted : theme.colors.textMuted;
 
-  const contentWidth = width - sizes.horizontalPadding * 2;
+  // Floored: see MIN_SUPPORTED_WIDTH. Every size on this screen is derived from this one, so a
+  // negative here is not a cosmetic problem — it is how the three explore icons ended up rendering
+  // as <svg width="-8"> and disappearing while their labels stayed put.
+  const contentWidth = Math.max(MIN_SUPPORTED_WIDTH, width) - sizes.horizontalPadding * 2;
   const half = (contentWidth - SPACING.md) / 2;
-  const exploreLabels = (['sectionMyDay', 'sectionSchool', 'sectionActivities', 'sectionFeelings'] as const).map((k) => t(k));
+  // My Day is NOT here: it has its own live NOW / NEXT card above, the one way into the day.
+  const exploreLabels = (['sectionSchool', 'sectionActivities', 'sectionFeelings'] as const).map((k) => t(k));
   const longestExplore = exploreLabels.reduce((a, b) => (b.length > a.length ? b : a));
   /**
-   * More to Explore: four compact cards in ONE row, dropping to two rows of two when four would
-   * squeeze the longest label ("Activities") below EXPLORE_LABEL_MIN.
+   * More to Explore: three compact cards in ONE row (School, Activities, Feelings), sharing the full
+   * width — dropping to one per row only if three would squeeze the longest label ("Activities")
+   * below EXPLORE_LABEL_MIN, so there is never a 2 + 1 row with an orphan.
    *
    * The question is asked of the FITTER, not of a width constant: the answer depends on the OS
    * font scale as much as the screen, and the old width-only rule said yes on a 375pt phone while
@@ -116,10 +171,10 @@ export function ChildHomeScreen({ navigation }: RootScreenProps<'ChildHome'>) {
    * for the true fit rather than the clamped one.
    */
   const exploreRoom = (cols: number) => (contentWidth - SPACING.sm * (cols - 1)) / cols - SPACING.xs * 2 - 4;
-  const exploreColumns = fitFontSize(longestExplore, exploreRoom(4), 14, 'line', 1) >= EXPLORE_LABEL_MIN ? 4 : 2;
+  const exploreColumns = fitFontSize(longestExplore, exploreRoom(exploreLabels.length), 14, 'line', 1) >= EXPLORE_LABEL_MIN ? exploreLabels.length : 1;
   const exploreWidth = (contentWidth - SPACING.sm * (exploreColumns - 1)) / exploreColumns;
   const exploreArt = Math.round(Math.min(44, exploreWidth * 0.5));
-  // One label size for all four, so the row reads evenly.
+  // One label size for all three, so the row reads evenly.
   const exploreLabelSize = exploreLabels.reduce((min, l) => Math.min(min, fitFontSize(l, exploreRoom(exploreColumns), 14, 'line', EXPLORE_LABEL_MIN)), 14);
 
   /**
@@ -156,7 +211,9 @@ export function ChildHomeScreen({ navigation }: RootScreenProps<'ChildHome'>) {
   const heroInner = contentWidth - SPACING.lg * 2 - 3;
   const heroArtW = Math.round(Math.min(122, Math.max(84, heroInner * 0.36)));
   const heroTextW = heroInner - heroArtW - SPACING.sm - SPACING.xs;
-  const headlineSize = fitFontSize(t('advLetsGo'), heroTextW, sizes.heading + 8, 'line', 18);
+  // Floor 16, not 18: LET'S GO! is all capitals, which are wider than the mixed-case average,
+  // and at 320pt with the largest font scale an 18pt floor does not fit beside the mascot.
+  const headlineSize = fitFontSize(t('advLetsGo'), heroTextW, sizes.heading + 8, 'line', 16);
   // Two lines, so the fitter is given two lines' worth of room.
   const taglineSize = fitFontSize(t('advTagline'), heroTextW * 2, 15, 'line', 12);
   const bubbleSize = fitFontSize(t('advPipLine'), heroArtW - SPACING.md * 2, 13, 'line', 9);
@@ -167,152 +224,37 @@ export function ChildHomeScreen({ navigation }: RootScreenProps<'ChildHome'>) {
 
   const go = (screen: Destination) => () => navigation.navigate(screen);
 
-  /**
-   * Cards are SOLID, not glass. A saturated fill separates a destination from the sky far more
-   * clearly than a translucent panel, which is what a child needs to see at a glance — and it is
-   * what makes the screen read as a game rather than a dashboard over a wallpaper.
-   */
-  const cardStyle = (c: AdventureKey) =>
-    night
-      ? {
-          backgroundColor: Adventure[c].to,
-          // A lit rim on top and sides, a darker "lip" underneath: the card reads as a raised,
-          // pressable game button rather than a flat panel.
-          borderColor: shade(Adventure[c].from, 1.35),
-          borderBottomColor: shade(Adventure[c].to, 0.68),
-        }
-      : { backgroundColor: Adventure[c].tint, borderColor: theme.colors.borderSoft };
 
-  /**
-   * A destination console. Narrow (half-width) cards stack: icon and arrow on top, the words
-   * underneath at full width, so a subtitle like "Trace letters, numbers and words" never has to
-   * squeeze beside the icon.
-   */
-  const Console = ({
-    title, subtitle, art, worldArt, color, width: w, onPress, badge, children, featured, decor,
-  }: {
-    /** The destination's illustrated game icon (components/adventure/GameIcon). */
-    title: string; subtitle: string; art: GameIconName; color: AdventureKey; width: number;
-    /** World artwork drawn instead of `art` (the Daily Mission follows the child's world). */
-    worldArt?: WorldArtName;
-    onPress: () => void; badge?: string; children?: React.ReactNode;
-    /** The core feature: a brighter rim, a stronger glow and a bigger icon, so it outranks its neighbours. */
-    featured?: boolean;
-    /** Two or three tiny themed marks (stars, letters, sound waves) in a free corner — never behind text. */
-    decor?: string[];
-  }) => {
-    const c = Adventure[color];
-    const stacked = w < 260;
-    // The illustration is a focal point of the card, so it is drawn larger than the old glyph plate.
-    const disc = featured ? 76 : stacked ? 62 : 68;
-    const textWidth = stacked ? w - SPACING.lg * 2 : w - SPACING.lg * 2 - disc - SPACING.md * 2 - 40;
-    // A narrow card keeps its title on ONE line ("Learn & Trace"), so it is fitted as a whole line.
-    const titleSize = fitFontSize(title, textWidth, featured ? sizes.tileLabel + 2 : sizes.tileLabel, stacked ? 'line' : 'word', 14);
-
-    // An illustrated game icon placed straight on the card — the object itself is colourful, so it
-    // needs no container.
-    const iconPlate = (
-      <View style={[styles.art, { width: disc, height: disc }]}>
-        {worldArt ? <WorldArt name={worldArt} size={disc} /> : <GameIcon name={art} size={disc} />}
-      </View>
-    );
-
-    const trailing = badge ? (
-      <View style={[styles.badge, night ? styles.badgeSolid : { backgroundColor: `${c.from}33`, borderColor: `${c.from}88` }]}>
-        <Text style={[styles.badgeText, { color: c.ink }]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={1}>
-          {badge}
-        </Text>
-      </View>
-    ) : (
-      <View
-        style={[
-          styles.arrow,
-          night ? [styles.gameArrow, { backgroundColor: shade(c.to, 0.78), shadowColor: shade(c.to, 0.45) }] : { backgroundColor: c.tint },
-        ]}
-      >
-        <Icon name="chevron-right" size={24} color={night ? '#FFFFFF' : c.ink} />
-      </View>
-    );
-
-    // A badge already occupies the top-right of a wide card, so a corner decoration there would
-    // eventually sit on top of it once the badge grows (a longer count, a larger font scale).
-    // Stacked cards put their decoration inline, so they are unaffected.
-    const decoration =
-      night && decor?.length && (stacked || !badge) ? (
-        <View style={stacked ? styles.decorInline : styles.decorCorner} pointerEvents="none">
-          {decor.map((d, i) => (
-            <Icon key={`${d}-${i}`} name={d} size={i === 0 ? 18 : 13} color="#FFFFFF" />
-          ))}
-        </View>
-      ) : null;
-
-    const words = (
-      <View style={stacked ? styles.consoleTextStacked : styles.consoleText}>
-        <Text
-          style={[styles.consoleTitle, { fontSize: titleSize, color: night ? '#FFFFFF' : ink }]}
-          maxFontSizeMultiplier={MAX_FONT_SCALE}
-          numberOfLines={stacked ? 1 : 2}
-          textBreakStrategy="simple"
-        >
-          {title}
-        </Text>
-        <Text style={[styles.consoleSub, { color: night ? 'rgba(255,255,255,0.94)' : inkMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={2}>
-          {subtitle}
-        </Text>
-      </View>
-    );
-
-    return (
-      <PressableScale onPress={onPress} accessibilityRole="button" accessibilityLabel={`${title}. ${subtitle}${badge ? `. ${badge}` : ''}`} hitSlop={4} style={{ width: w }}>
-        <View
-          style={[
-            styles.console,
-            cardStyle(color),
-            night && [styles.solidLift, { shadowColor: c.from }],
-            featured && night && styles.featuredLift,
-          ]}
-        >
-          {night ? (
-            <>
-              <GradientSurface from={c.from} to={c.to} direction="vertical" />
-              {/* Gloss that FADES out, instead of a hard-edged band across the middle. */}
-              <View style={styles.gloss} pointerEvents="none">
-                <GradientSurface from="#FFFFFF" to="#FFFFFF" direction="vertical" fromOpacity={0.34} toOpacity={0} />
-              </View>
-            </>
-          ) : null}
-          {stacked ? (
-            <View style={styles.stackTop}>
-              {iconPlate}
-              {decoration ?? <View style={styles.flex} />}
-              {trailing}
-            </View>
-          ) : null}
-          {stacked ? (
-            words
-          ) : (
-            <View style={styles.consoleHead}>
-              {iconPlate}
-              {words}
-              {trailing}
-            </View>
-          )}
-          {stacked ? null : decoration}
-          {children}
-        </View>
-      </PressableScale>
-    );
-  };
 
   return (
     <AdventureZone>
       <ScreenContainer background={night ? AdventureNight.bottom : undefined}>
-        {night ? <WorldBackground world={world.id} width={width} height={height} /> : null}
+        {night ? (
+          <>
+            <WorldBackground world={world.id} width={width} height={height} />
+            {/*
+              A scrim between the scenery and the cards.
+
+              The background is FIXED while the cards scroll over it, so a planet can come to rest
+              anywhere relative to anything — and a bright one landing under the CTA's corner reads
+              as part of the button rather than as sky behind it. Dimming the whole decorative layer
+              is better than moving planets, because there is no arrangement that is correct at
+              every scroll position.
+
+              It is deliberately weak: the scenery still reads as depth, it just stops competing
+              with the controls.
+            */}
+            <View style={styles.scrim} pointerEvents="none" />
+          </>
+        ) : null}
 
         <ScrollView
+          ref={scrollRef}
           style={styles.flex}
           contentContainerStyle={[styles.content, { paddingHorizontal: sizes.horizontalPadding }]}
           showsVerticalScrollIndicator={false}
+          scrollEventThrottle={16}
+          onScroll={(e) => { scrollY.current = e.nativeEvent.contentOffset.y; }}
         >
           {/* Flight HUD: who is flying, and what they have collected. */}
           <View style={hudStacked ? styles.hudStacked : styles.hud}>
@@ -347,7 +289,7 @@ export function ChildHomeScreen({ navigation }: RootScreenProps<'ChildHome'>) {
             <View style={styles.heroTop}>
               <View style={[styles.mascotWrap, { width: heroArtW }]}>
                 {night ? <HeroSparkles size={Math.min(heroArtW + 28, sizes.iconSize + 92)} /> : null}
-                <Mascot size={Math.min(heroArtW, sizes.iconSize + 64)} mood="cheer" space={night && world.id === 'space'} />
+                <ThemeMascot mascot={adv.mascot} size={Math.min(heroArtW, sizes.iconSize + 64)} space={night} />
                 {/* Pip speaks first — the app's whole point, said by the character. */}
                 <View style={[styles.bubble, night ? { backgroundColor: '#FFFFFF' } : { backgroundColor: theme.colors.surface, borderWidth: 1.5, borderColor: theme.colors.border }]}>
                   <Text style={[styles.bubbleText, { fontSize: bubbleSize }]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={1}>
@@ -442,48 +384,101 @@ export function ChildHomeScreen({ navigation }: RootScreenProps<'ChildHome'>) {
             ) : null}
           </View>
 
+          {/* The label and the destination are the same in every theme; only the art changes. */}
+          <TourTarget id="startAdventure">
           <AdventureButton
             label={t('advStart')}
-            sublabel={t('advContinue')}
+            sublabel={t('advTodayPlan', { n: today.activities, m: today.estimatedMinutes })}
             icon="rocket-launch-outline"
-            art="mission"
-            color="sun"
+            artNode={<Artwork art={adv.startArt} size={46} />}
+            color={adv.accent}
             onPress={go(startScreen)}
           />
+          </TourTarget>
 
-          {/* Speech Practice is the core feature, so it gets the full width and the syllables. */}
-          <Console
+          {/* My Day / Up next — a live status, not a grid card: now, next, and "it's time". */}
+          {myDay.total > 0 ? (
+            <MyDayUpcoming
+              state={myDay}
+              onOpen={go('MyDay')}
+              // A step's own activity (Homework → Lessons) if the parent linked one; otherwise My Day.
+              onOpenEntry={(e) => (e.item.linkedActivity ? go(e.item.linkedActivity)() : go('MyDay')())}
+              onGo={(e) => (e.item.linkedActivity ? go(e.item.linkedActivity)() : go('MyDay')())}
+            />
+          ) : null}
+
+          {/* Speech Practice is a core pillar: full width, and it says where the child GOT TO.
+              The BA–BU chips used to sit here. Five tappable sounds on the entry screen asks a
+              child to choose before anything has been explained; choosing a target is the first
+              task inside Sounds, which is where they now live. */}
+          <TourTarget id="speech">
+          <FeatureCard
             title={t('questSpeech')}
             subtitle={t('questSpeechSub')}
-            art="speech"
-            color="lagoon"
+            art={card('speech').art}
+            color={card('speech').color}
             width={contentWidth}
             featured
-            decor={['waveform', 'star-four-points', 'message-outline']}
+            decor={card('speech').decor}
             onPress={go('SpeechPractice')}
+            footer={
+              <View style={styles.continueRow}>
+                <Text
+                  style={[styles.continueText, { fontSize: sizes.body, color: night ? '#FFFFFF' : ink }]}
+                  maxFontSizeMultiplier={MAX_FONT_SCALE}
+                  numberOfLines={2}
+                >
+                  {t(target.fresh ? 'spStartWith' : 'spContinueWith', { sound: target.display })}
+                </Text>
+                <Text
+                  style={[styles.continueCount, { color: night ? 'rgba(255,255,255,0.92)' : inkMuted }]}
+                  maxFontSizeMultiplier={MAX_FONT_SCALE}
+                  numberOfLines={1}
+                >
+                  {t('spStepsOf', { done: target.stepsDone, total: target.totalSteps })}
+                </Text>
+              </View>
+            }
           >
-            <SyllableChips />
-          </Console>
+            <View style={[styles.continueTrack, { backgroundColor: night ? 'rgba(0,0,0,0.24)' : theme.colors.surfaceAlt }]}>
+              <View style={[styles.continueFill, { width: `${Math.round(target.progress * 100)}%` }]} />
+            </View>
+          </FeatureCard>
+          </TourTarget>
 
           <View style={styles.pair}>
-            <Console title={t('questTrace')} subtitle={t('questTraceSub')} art="trace" color="grape" width={half} decor={['alpha-a', 'alpha-b', 'star-four-points']} onPress={go('WritingPractice')} />
-            <Console title={t('questTalk')} subtitle={t('questTalkSub')} art="talk" color="sky" width={half} decor={['waveform', 'star-four-points']} onPress={go('Communicate')} />
+            <FeatureCard title={t('questTrace')} subtitle={t('questTraceSub')} {...card('trace')} width={half} onPress={go('WritingPractice')} />
+            <TourTarget id="talk">
+              <FeatureCard title={t('questTalk')} subtitle={t('questTalkSub')} {...card('talk')} width={half} onPress={go('Communicate')} />
+            </TourTarget>
           </View>
           <View style={styles.pair}>
-            <Console title={t('questWords')} subtitle={t('questWordsSub')} art="words" color="magenta" width={half} decor={['star-four-points', 'cards-outline']} onPress={go('Favorites')} />
-            <Console title={t('questPlay')} subtitle={t('questPlaySub')} art="play" color="coral" width={half} decor={['star-four-points', 'gamepad-variant-outline']} onPress={go('Learn')} />
+            <TourTarget id="words">
+              <FeatureCard title={t('questWords')} subtitle={t('questWordsSub')} {...card('words')} width={half} onPress={go('Favorites')} />
+            </TourTarget>
+            <TourTarget id="play">
+              <FeatureCard title={t('questPlay')} subtitle={t('questPlaySub')} {...card('play')} width={half} onPress={go('Learn')} />
+            </TourTarget>
           </View>
 
-          <Console title={t('questLessons')} subtitle={t('questLessonsSub')} art="lessons" color="grass" width={contentWidth} decor={['book-open-variant', 'star-four-points']} onPress={go('AdaptiveHome')} />
-          <Console
+          {/* Lessons and Listen & Talk are PAIRED, not full width. Full width is what makes a card
+              read as a pillar, and when eight cards all have it none of them do — which is most of
+              what made this screen feel like a list rather than a product with a point of view.
+              Two pillars keep it: today's adventure, and Speech Practice. */}
+          <View style={styles.pair}>
+            <TourTarget id="lessons">
+              <FeatureCard title={t('questLessons')} subtitle={t('questLessonsSub')} {...card('lessons')} width={half} onPress={go('AdaptiveHome')} />
+            </TourTarget>
+            <FeatureCard title={t('vcTitle')} subtitle={t('vcSubtitle')} {...card('voice')} width={half} onPress={go('VoiceComm')} />
+          </View>
+          <FeatureCard
             title={t('advDaily')}
             subtitle={t('advDailySub')}
-            art="mission"
-            worldArt={world.id === 'space' ? undefined : world.missionArt}
-            color="sun"
+            art={card('mission').art}
+            color={card('mission').color}
             width={contentWidth}
             badge={`${dailyDone} / ${DAILY_TARGET}`}
-            decor={['orbit', 'star-four-points', 'star-four-points']}
+            decor={card('mission').decor}
             onPress={go('SoundPractice')}
           >
             <View style={styles.missionFoot}>
@@ -508,21 +503,20 @@ export function ChildHomeScreen({ navigation }: RootScreenProps<'ChildHome'>) {
                 </View>
                 {/* The rocket rides the bar: progress a child can see, not just a number. */}
                 <View style={[styles.missionRocket, { left: `${Math.round((dailyDone / DAILY_TARGET) * 100)}%` }]} pointerEvents="none">
-                  {world.id === 'space' ? <GameIcon name="mission" size={30} /> : <WorldArt name={world.missionArt} size={30} />}
+                  <Artwork art={card('mission').art} size={30} />
                 </View>
               </View>
             </View>
-          </Console>
+          </FeatureCard>
 
           <Text style={[styles.sectionTitle, { color: ink }]} maxFontSizeMultiplier={MAX_FONT_SCALE} accessibilityRole="header">
             {t('advMore')}
           </Text>
           <View style={[styles.exploreGrid, { gap: SPACING.sm }]}>
             {([
-              { screen: 'MyDay', labelKey: 'sectionMyDay', subKey: 'exploreMyDaySub', art: 'myday', tone: EXPLORE_TONES.myday },
-              { screen: 'School', labelKey: 'sectionSchool', subKey: 'exploreSchoolSub', art: 'school', tone: EXPLORE_TONES.school },
-              { screen: 'Activities', labelKey: 'sectionActivities', subKey: 'exploreActivitiesSub', art: 'activities', tone: EXPLORE_TONES.activities },
-              { screen: 'Feelings', labelKey: 'sectionFeelings', subKey: 'exploreFeelingsSub', art: 'feelings', tone: EXPLORE_TONES.feelings },
+              { screen: 'School', labelKey: 'sectionSchool', subKey: 'exploreSchoolSub', slot: 'school', art: 'school', tone: EXPLORE_TONES.school },
+              { screen: 'Activities', labelKey: 'sectionActivities', subKey: 'exploreActivitiesSub', slot: 'activities', art: 'activities', tone: EXPLORE_TONES.activities, badge: 'exploreBadge' },
+              { screen: 'Feelings', labelKey: 'sectionFeelings', subKey: 'exploreFeelingsSub', slot: 'feelings', art: 'feelings', tone: EXPLORE_TONES.feelings },
             ] as const).map((m) => {
               const c = m.tone;
               return (
@@ -532,8 +526,12 @@ export function ChildHomeScreen({ navigation }: RootScreenProps<'ChildHome'>) {
                   accessibilityRole="button"
                   accessibilityLabel={`${t(m.labelKey)}. ${t(m.subKey)}`}
                   hitSlop={4}
-                  style={{ width: exploreWidth }}
+                  // A card with a badge sits above its neighbours (zIndex), or the next card in the row would
+                  // paint over the part of the sticker that overhangs the gap.
+                  style={{ width: exploreWidth, zIndex: 'badge' in m ? 2 : 0 }}
                 >
+                  {/* Shadow shell + clipping tile (iOS clips a shadow to its own overflow). */}
+                  <View style={[styles.exploreShell, { backgroundColor: night ? c.to : theme.colors.surface }]}>
                   <View
                     style={[
                       styles.explore,
@@ -545,12 +543,16 @@ export function ChildHomeScreen({ navigation }: RootScreenProps<'ChildHome'>) {
                     {night ? (
                       <>
                         <GradientSurface from={c.from} to={c.to} direction="vertical" />
-                        <View style={styles.exploreGloss} pointerEvents="none">
-                          <GradientSurface from="#FFFFFF" to="#FFFFFF" direction="vertical" fromOpacity={0.35} toOpacity={0} />
-                        </View>
+                        {/* Gloss: fades out 55% of the way down (a full-size surface — see GradientSurface). */}
+                        <GradientSurface from="#FFFFFF" to="#FFFFFF" direction="vertical" fromOpacity={0.35} toOpacity={0} toOffset={0.55} />
                       </>
                     ) : null}
-                    <GameIcon name={m.art} size={exploreArt} />
+                    {/* A theme may dress these four; one that says nothing keeps the shared set. */}
+                    {/* In a View, so on web it paints above the absolutely positioned gradient (a bare SVG
+                        would sit underneath it; on iOS/Android tree order already puts it on top). */}
+                    <View>
+                      <Artwork art={adv.explore?.[m.slot] ?? game(m.art)} size={exploreArt} />
+                    </View>
                     <Text
                       style={[styles.exploreTitle, { fontSize: exploreLabelSize, color: night ? c.ink : theme.colors.text }]}
                       maxFontSizeMultiplier={1.15}
@@ -562,21 +564,26 @@ export function ChildHomeScreen({ navigation }: RootScreenProps<'ChildHome'>) {
                       {t(m.labelKey)}
                     </Text>
                   </View>
+                  </View>
+                  {/* Decorative and untouchable: a tap on it is a tap on the card. Outside the clipping tile on purpose. */}
+                  {'badge' in m ? <DiscoveryBadge label={t(m.badge)} /> : null}
                 </PressableScale>
               );
             })}
           </View>
 
-          {/* School Mode stays quiet so it is never tapped by accident. */}
-          <PressableScale onPress={go('SchoolMode')} accessibilityRole="button" accessibilityLabel="School Mode" hitSlop={4}>
-            <View style={[styles.quiet, night ? { backgroundColor: AdventureNight.card, borderColor: AdventureNight.border } : { backgroundColor: theme.colors.surfaceAlt, borderColor: theme.colors.borderSoft }]}>
-              <GameIcon name="school" size={30} />
-              <Text style={[styles.quietText, { color: ink }]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={1}>School Mode</Text>
-              <Icon name="chevron-right" size={22} color={inkMuted} />
-            </View>
-          </PressableScale>
+          {/*
+            A standalone School Mode bar used to sit here, between the explore row and the nav. It
+            was removed as redundant: the explore row directly above it already has a School card,
+            so Home offered two school doors side by side and the quieter of the two led to the
+            busier screen. School Mode now opens from the top of the School screen -- one more tap,
+            but from where a child already is when they are thinking about school. Nothing was
+            merged or deleted: the screen, its route and its features are untouched, and Parent
+            Mode can still open the app straight into it (schoolModeAtStart).
+          */}
 
           {night ? (
+            <TourTarget id="parent">
             <SpaceNav
               width={contentWidth}
               items={[
@@ -587,6 +594,7 @@ export function ChildHomeScreen({ navigation }: RootScreenProps<'ChildHome'>) {
                 { key: 'parent', label: t('navParent'), icon: 'shield-account-outline', art: 'parent', onPress: go('ParentPin') },
               ]}
             />
+            </TourTarget>
           ) : (
             <PressableScale onPress={go('ParentPin')} accessibilityRole="button" accessibilityLabel={t('sectionParent')} hitSlop={4}>
               <View style={[styles.quiet, { backgroundColor: theme.colors.surfaceAlt, borderColor: theme.colors.borderSoft }]}>
@@ -617,8 +625,176 @@ function Capsule({ icon, tone, value, label, night, ink }: { icon: string; tone:
   );
 }
 
+/**
+ * A destination console. Narrow (half-width) cards stack: icon and arrow on top, the words
+ * underneath at full width, so a subtitle like "Trace letters, numbers and words" never has to
+ * squeeze beside the icon.
+ */
+/*
+ * FeatureCard is a MODULE-LEVEL component on purpose. It used to be declared inside the screen's
+ * render, which gives React a brand-new component type on every render of Home (stars loading,
+ * the collection count, the clock) — so every card was unmounted and rebuilt each time, losing its
+ * measured gradient and re-running its layout. Declared here, a card is created once and updated.
+ */
+function FeatureCard({
+  title, subtitle, art, color, width: w, onPress, badge, children, footer, featured, decor,
+}: {
+  /** The destination's illustration, from the active theme (game / themed / collectible art). */
+  title: string; subtitle: string; art: CardArt; color: AdventureKey; width: number;
+  onPress: () => void; badge?: string;
+  /** Full-width content under the head — a progress bar, a row of chips. */
+  children?: React.ReactNode;
+  /**
+   * Content that lines up with the TITLE rather than the card edge. A line of text starting
+   * under the icon while the title starts beside it reads as a mistake, because it is one.
+   * Anything full-bleed (a bar, a chip row) belongs in `children` instead.
+   */
+  footer?: React.ReactNode;
+  /** The core feature: a brighter rim, a stronger glow and a bigger icon, so it outranks its neighbours. */
+  featured?: boolean;
+  /** Two or three tiny themed marks (stars, letters, sound waves) in a free corner — never behind text. */
+  decor?: string[];
+}) {
+  const sizes = useSizes();
+  const theme = useTheme();
+  // Same rules the screen uses: high contrast opts out of the night sky.
+  const night = !theme.highContrast;
+  const ink = night ? AdventureNight.ink : theme.colors.text;
+  const inkMuted = night ? AdventureNight.inkMuted : theme.colors.textMuted;
+  const cardStyle = (k: AdventureKey) =>
+    night
+      ? {
+          backgroundColor: Adventure[k].to,
+          // A lit rim on top and sides, a darker "lip" underneath: a raised, pressable game button.
+          borderColor: shade(Adventure[k].from, 1.35),
+          borderBottomColor: shade(Adventure[k].to, 0.68),
+        }
+      : { backgroundColor: Adventure[k].tint, borderColor: theme.colors.borderSoft };
+  const c = Adventure[color];
+  const stacked = w < 260;
+  // The illustration is a focal point of the card, so it is drawn larger than the old glyph plate.
+  const disc = featured ? 76 : stacked ? 62 : 68;
+  const textWidth = stacked ? w - SPACING.lg * 2 : w - SPACING.lg * 2 - disc - SPACING.md * 2 - 40;
+  // A narrow card keeps its title on ONE line ("Learn & Trace"), so it is fitted as a whole line.
+  const titleSize = fitFontSize(title, textWidth, featured ? sizes.tileLabel + 2 : sizes.tileLabel, stacked ? 'line' : 'word', 14);
+
+  // An illustrated game icon placed straight on the card — the object itself is colourful, so it
+  // needs no container.
+  const iconPlate = (
+    <View style={[styles.art, { width: disc, height: disc }]}>
+      <Artwork art={art} size={disc} />
+    </View>
+  );
+
+  const trailing = badge ? (
+    <View style={[styles.badge, night ? styles.badgeSolid : { backgroundColor: `${c.from}33`, borderColor: `${c.from}88` }]}>
+      <Text style={[styles.badgeText, { color: c.ink }]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={1}>
+        {badge}
+      </Text>
+    </View>
+  ) : (
+    <CardActionButton color={color} night={night} />
+  );
+
+  // A badge already occupies the top-right of a wide card, so a corner decoration there would
+  // eventually sit on top of it once the badge grows (a longer count, a larger font scale).
+  // Stacked cards put their decoration inline, so they are unaffected.
+  const decoration =
+    night && decor?.length && (stacked || !badge) ? (
+      <View style={stacked ? styles.decorInline : styles.decorCorner} pointerEvents="none">
+        {decor.map((d, i) => (
+          <Icon key={`${d}-${i}`} name={d} size={i === 0 ? 18 : 13} color="#FFFFFF" />
+        ))}
+      </View>
+    ) : null;
+
+  const words = (
+    <View style={stacked ? styles.consoleTextStacked : styles.consoleText}>
+      <Text
+        style={[styles.consoleTitle, { fontSize: titleSize, color: night ? '#FFFFFF' : ink }]}
+        maxFontSizeMultiplier={MAX_FONT_SCALE}
+        numberOfLines={stacked ? 1 : 2}
+        textBreakStrategy="simple"
+      >
+        {title}
+      </Text>
+      <Text style={[styles.consoleSub, { color: night ? 'rgba(255,255,255,0.94)' : inkMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={2}>
+        {subtitle}
+      </Text>
+    </View>
+  );
+
+  return (
+    <PressableScale onPress={onPress} accessibilityRole="button" accessibilityLabel={`${title}. ${subtitle}${badge ? `. ${badge}` : ''}`} hitSlop={4} style={{ width: w }}>
+      {/*
+        Two layers, because iOS clips a view's shadow to its own overflow:hidden. The SHELL casts
+        the shadow (and Android elevation) and is never clipped; the card inside clips its
+        gradient to the rounded corners. One layer looked right on web and Android and lost its
+        glow entirely on an iPhone.
+      */}
+      <View
+        style={[
+          styles.consoleShell,
+          { backgroundColor: cardStyle(color).backgroundColor },
+          night && [styles.solidLift, { shadowColor: c.from }],
+          featured && night && styles.featuredGlow,
+        ]}
+      >
+      <View style={[styles.console, cardStyle(color), featured && night && styles.featuredRim]}>
+        {night ? (
+          <>
+            <GradientSurface from={c.from} to={c.to} direction="vertical" />
+            {/* Gloss: fades out 60% of the way down (a full-size surface — see GradientSurface). */}
+            <GradientSurface from="#FFFFFF" to="#FFFFFF" direction="vertical" fromOpacity={0.34} toOpacity={0} toOffset={0.6} />
+          </>
+        ) : null}
+        {stacked ? (
+          <View style={styles.stackTop}>
+            {iconPlate}
+            {decoration ?? <View style={styles.flex} />}
+            {trailing}
+          </View>
+        ) : null}
+        {stacked ? (
+          words
+        ) : (
+          <View style={styles.consoleHead}>
+            {iconPlate}
+            {words}
+            {trailing}
+          </View>
+        )}
+        {stacked ? null : decoration}
+        {footer ? <View style={stacked ? undefined : { marginLeft: disc + SPACING.md }}>{footer}</View> : null}
+        {children}
+      </View>
+      </View>
+    </PressableScale>
+  );
+}
+
+/**
+ * CardActionButton — the round arrow on a card. A FIXED size (not a percentage, not "auto") with
+ * flexShrink 0, so no row can squeeze it into an oval on any platform; the chevron is centred by
+ * alignItems/justifyContent. It is a visual cue only — the whole card is the touch target.
+ */
+function CardActionButton({ color, night }: { color: AdventureKey; night: boolean }) {
+  const c = Adventure[color];
+  return (
+    <View
+      style={[styles.arrow, night ? [styles.gameArrow, { backgroundColor: shade(c.to, 0.78), shadowColor: shade(c.to, 0.45) }] : { backgroundColor: c.tint }]}
+      accessibilityElementsHidden
+      importantForAccessibility="no"
+    >
+      <Icon name="chevron-right" size={24} color={night ? '#FFFFFF' : c.ink} />
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   flex: { flex: 1 },
+  // Veils the scenery so a planet never reads as part of a card. See the comment at its use.
+  scrim: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(8,12,38,0.42)' },
   // lg between blocks: at md the hero, the CTA and the Speech card read as one crowded stack.
   content: { paddingVertical: SPACING.md, gap: SPACING.lg, paddingBottom: SPACING.xl * 2 },
   hud: { flexDirection: 'row', alignItems: 'center', gap: HUD_GAP },
@@ -646,6 +822,15 @@ const styles = StyleSheet.create({
   meterValue: { fontFamily: Fonts.bold, fontSize: 13 },
   track: { height: 12, borderRadius: 999, overflow: 'hidden' },
   fill: { height: '100%', borderRadius: 999, overflow: 'hidden' },
+  // The shadow layer (never clipped) and the card (clips its gradient). See FeatureCard.
+  consoleShell: {
+    flexGrow: 1,
+    borderRadius: AdventureRadius.card,
+    shadowOpacity: 0.28,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 4,
+  },
   console: {
     flexGrow: 1,
     overflow: 'hidden',
@@ -655,16 +840,26 @@ const styles = StyleSheet.create({
     padding: SPACING.lg,
     gap: SPACING.md,
     minHeight: 104,
-    shadowOpacity: 0.28,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 4,
   },
   consoleHead: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md },
   // The illustration stands on the card; a soft drop shadow lifts it off the colour.
-  art: { alignItems: 'center', justifyContent: 'center', shadowColor: '#0B1030', shadowOpacity: 0.28, shadowRadius: 6, shadowOffset: { width: 0, height: 4 } },
-  gloss: { position: 'absolute', top: 0, left: 0, right: 0, height: '60%' },
-  arrow: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
+  // The Speech Practice card's continuation line: where the child got to, not a set of choices.
+  // Wraps instead of truncating: on a narrow phone the step count drops under the words.
+  continueRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', columnGap: SPACING.sm, rowGap: 2 },
+  continueText: { fontFamily: Fonts.black, flexShrink: 1, minWidth: 0 },
+  continueCount: { fontFamily: Fonts.bold, fontSize: 13, flexShrink: 0 },
+  continueTrack: { height: 10, borderRadius: 999, overflow: 'hidden', marginTop: 6 },
+  continueFill: { height: '100%', borderRadius: 999, backgroundColor: '#FFFFFF' },
+  /**
+   * No shadow on the illustration's CONTAINER.
+   *
+   * A shadow on a box that has no background is drawn around the BOX, not around the drawing
+   * inside it — so a 62pt square halo appeared behind every illustration and read as a frame, as
+   * though each one were a sticker placed on the card. The artwork already carries its own soft
+   * ground ellipse, which is the only shadow it should have: beneath the object, not around it.
+   */
+  art: { alignItems: 'center', justifyContent: 'center' },
+  arrow: { width: 38, height: 38, borderRadius: 19, flexShrink: 0, alignItems: 'center', justifyContent: 'center' },
   // A small game control: darker plate, white rim, white chevron, a drop shadow.
   gameArrow: { borderWidth: 2, borderColor: 'rgba(255,255,255,0.75)', shadowOpacity: 0.5, shadowRadius: 5, shadowOffset: { width: 0, height: 3 }, elevation: 4 },
   badgeSolid: { backgroundColor: '#FFFFFF', borderColor: '#FFFFFF' },
@@ -733,7 +928,8 @@ const styles = StyleSheet.create({
   // Deeper lift on a solid card, so it sits above the sky rather than in it.
   solidLift: { shadowOpacity: 0.38, shadowRadius: 14, shadowOffset: { width: 0, height: 8 }, elevation: 8 },
   // Speech Practice: the strongest glow on the screen (glow is used selectively, not everywhere).
-  featuredLift: { borderWidth: 2.5, borderBottomWidth: 6, shadowOpacity: 0.7, shadowRadius: 22, elevation: 12 },
+  featuredRim: { borderWidth: 2.5, borderBottomWidth: 6 },
+  featuredGlow: { shadowOpacity: 0.7, shadowRadius: 22, elevation: 12 },
   badgeText: { fontFamily: Fonts.black, fontSize: 13 },
   pair: { flexDirection: 'row', gap: SPACING.md },
   sectionTitle: { fontFamily: Fonts.black, fontSize: 17, marginTop: SPACING.xs, marginBottom: -SPACING.xs },
@@ -751,13 +947,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
+  },
+  exploreShell: {
+    borderRadius: 18,
     shadowColor: '#0A0E2C',
     shadowOpacity: 0.28,
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 3 },
     elevation: 3,
   },
-  exploreGloss: { position: 'absolute', top: 0, left: 0, right: 0, height: '55%' },
   exploreTitle: { fontFamily: Fonts.black, textAlign: 'center', alignSelf: 'stretch' },
   quiet: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, minHeight: MIN_CHILD_TARGET - 8, paddingHorizontal: SPACING.lg, borderRadius: AdventureRadius.card, borderWidth: 1.5 },
   quietText: { flex: 1, fontFamily: Fonts.extrabold, fontSize: 15 },

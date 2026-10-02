@@ -7,7 +7,8 @@ import { useSettings } from '@/context/SettingsContext';
 import { useSizes } from '@/hooks';
 import type { ParentScreenProps } from '@/navigation/types';
 import { soundPracticeAudio } from '@/services/soundPracticeAudio';
-import { SOUND_EXERCISES } from '@/soundpractice/content';
+import { SOUND_EXERCISES, phonemeAssetPath } from '@/soundpractice/content';
+import type { SoundExercise } from '@/soundpractice/types';
 import { PHRASES } from '@/speechpractice/content';
 import { SPOKEN_OVERRIDES, syllablePronunciation, type SpokenForm } from '@/speechpractice/pronunciationDictionary';
 import {
@@ -32,6 +33,11 @@ interface Row {
   guide: string;
   /** The dictionary default first, then its tested alternatives. */
   forms: SpokenForm[];
+  /**
+   * An isolated sound: no voice form can say a phoneme, so it has no forms — Play goes through
+   * playPhoneme (the recording, or the development fallback) exactly as the child hears it.
+   */
+  sound?: SoundExercise;
 }
 
 const KINDS: { value: Kind; label: string }[] = [
@@ -81,9 +87,11 @@ export function PronunciationTestScreen({ navigation }: ParentScreenProps<'Pronu
       case 'sound':
         return SOUND_EXERCISES.map((s) => ({
           key: modelKey('sound', s.id),
-          display: s.sound,
-          guide: `The sound on its own, as in "${s.exampleWord}" — never the letter name.`,
-          forms: [{ text: `${s.cue}. ${s.cue}.`, locale: 'en-US' }],
+          display: `${s.letter}   ${s.phoneme}`,
+          ipa: `${s.exampleWord} ${s.exampleIpa}`,
+          guide: `The sound ${s.phoneme} on its own, as at the start of "${s.exampleWord}" — never the letter name, and no vowel after it. A device voice cannot say this, so it needs a recording.`,
+          forms: [],
+          sound: s,
         }));
       case 'word':
         return vocabInCategory(vocabCategory).map((v) => {
@@ -181,19 +189,36 @@ export function PronunciationTestScreen({ navigation }: ParentScreenProps<'Pronu
           const used = inUse(row);
           const changed = !!overrides[overrideKey(set, row.key)];
           const previewing = !!form && !!used && !same(form, used);
+          const recorded = row.sound ? soundPracticeAudio.hasPhonemeRecording(row.sound.id, settings) : false;
           return (
             <View key={`${set}-${row.key}`} style={[styles.row, changed && styles.rowChanged]}>
               <Text style={[styles.display, { fontSize: sizes.heading }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>{row.display}</Text>
-              <Field label="Spoken" value={form ? `"${form.text}"  ·  ${form.locale}` : '— not spoken'} strong />
+              {row.sound ? (
+                <Field
+                  label="Audio"
+                  value={recorded ? 'Recording of the sound' : `MISSING — add ${phonemeAssetPath(row.sound.id)}. Until then the voice says "${row.sound.exampleWord}" instead (development fallback).`}
+                  strong
+                />
+              ) : (
+                <Field label="Spoken" value={form ? `"${form.text}"  ·  ${form.locale}` : '— not spoken'} strong />
+              )}
               {row.ipa ? <Field label="IPA" value={row.ipa} /> : null}
               <Field label="Guide" value={row.guide} />
-              <Text style={[styles.state, changed && styles.stateChanged]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
+              {row.sound ? null : <Text style={[styles.state, changed && styles.stateChanged]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
                 {previewing ? `Trying ${row.forms.findIndex((f) => form && same(f, form)) + 1} of ${row.forms.length} — not saved yet` : changed ? 'Changed on this phone' : 'Dictionary default'}
-              </Text>
+              </Text>}
               {/* Full-width buttons stacked: half-width buttons were too narrow for "Try alternative"
                   on a phone, and a wrapping row spilled over the next card. */}
               <View style={styles.buttonStack}>
-                <BigButton label="Play" icon="volume-high" variant="secondary" compact minHeight={56} disabled={!form} onPress={() => play(form)} />
+                <BigButton
+                  label="Play"
+                  icon="volume-high"
+                  variant="secondary"
+                  compact
+                  minHeight={56}
+                  disabled={!form && !row.sound}
+                  onPress={() => (row.sound ? void soundPracticeAudio.playPhoneme(row.sound, settings) : play(form))}
+                />
                 {row.forms.length > 1 ? (
                   <BigButton label="Try alternative" icon="refresh" variant="outline" compact minHeight={56} onPress={() => tryAlternative(row)} />
                 ) : null}

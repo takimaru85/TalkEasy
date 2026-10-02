@@ -14,20 +14,34 @@ export type PracticeLevel = 'sound' | 'syllable' | 'word' | 'phrase';
 
 export const PRACTICE_LEVELS: PracticeLevel[] = ['sound', 'syllable', 'word', 'phrase'];
 
+/**
+ * One practice sound, as THREE separate things that must never be confused:
+ *
+ *   letter   "G"      what the child SEES — a spelling, never given to a voice engine as the model
+ *   phoneme  /ɡ/      what the child HEARS and practises — the speech sound itself, no added vowel
+ *   example  "Goat"   a real word that starts with the phoneme, spoken as a whole word
+ *
+ * A text-to-speech engine cannot say a phoneme: given "G" it says the letter name "gee", and given
+ * a respelling it adds a vowel ("guh" is /ɡə/, not /ɡ/). So the phoneme is played ONLY from a
+ * recording — see services/soundPracticeAudio.ts `playPhoneme`.
+ */
 export interface SoundExercise {
   /** Stable key used in the database and for model-audio lookup — never translated. */
   id: string;
-  /** The letter shown to the child, e.g. "B". */
-  sound: string;
+  /** The letter shown to the child, e.g. "G". Display only. */
+  letter: string;
   /**
-   * How the isolated sound should be spoken. Text-to-speech says the letter *name* for "B"
-   * ("bee"), which is not the sound a child is practising — so the model is driven by this
-   * spelled-out cue ("buh") instead. Replaced by a recorded file when one exists.
+   * The target speech sound in IPA between slashes: "/ɡ/" (U+0261, the IPA script g). Chosen by
+   * the curriculum, never inferred from the letter name — "A" here is /æ/ as in apple, not "ay".
    */
-  cue: string;
-  /** A word that starts with the sound, used to anchor the cue ("buh, like ball"). */
+  phoneme: string;
+  /** A consonant or a vowel: a speaker models them differently (a stop cannot be held). */
+  phonemeKind: 'consonant' | 'vowel';
+  /** A familiar word that BEGINS with the phoneme ("Goat"). Spoken as a whole word. */
   exampleWord: string;
-  /** Offline-safe picture, in keeping with the rest of the app. */
+  /** Its pronunciation (General American), starting with the phoneme: "/ɡoʊt/". */
+  exampleIpa: string;
+  /** Offline-safe picture of the example word, in keeping with the rest of the app. */
   emoji: string;
   syllables: string[];
   words: string[];

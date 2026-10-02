@@ -1,6 +1,8 @@
 import React from 'react';
 import { ScrollView, StyleSheet, Text } from 'react-native';
 import { BigButton, ChildScreen, EmptyState, SectionTitle } from '@/components/common';
+import { MissionCard } from '@/components/adventure';
+import { useI18n } from '@/i18n';
 import { SubjectCard } from '@/components/school';
 import { Colors } from '@/constants/colors';
 import { DAY_NAMES, SECTION_EMOJI } from '@/constants/school';
@@ -16,6 +18,7 @@ import { Fonts, useTheme } from '@/theme';
  */
 export function SchoolScreen({ navigation }: RootScreenProps<'School'>) {
   const sizes = useSizes();
+  const { t } = useI18n();
   const theme = useTheme();
   const { dayOfWeek, time } = useToday();
   const { data: subjects, loading } = useSubjects();
@@ -26,8 +29,34 @@ export function SchoolScreen({ navigation }: RootScreenProps<'School'>) {
   const current = schedule.find((s) => s.startTime <= time && (!s.endTime || s.endTime >= time));
 
   return (
-    <ChildScreen title="School" emoji={SECTION_EMOJI.school} art="school">
+    <ChildScreen title="School" subtitle={t('schoolSubtitle')} emoji={SECTION_EMOJI.school} art="school">
       <ScrollView contentContainerStyle={[styles.content, { paddingHorizontal: sizes.horizontalPadding }]}>
+        {/*
+          School Mode opens from the TOP, above the timetable, and that order is the point.
+          School Mode is where the quick words live -- "I need help", "Bathroom", "I do not
+          understand" -- the things a child needs DURING a lesson, in a hurry. Everything below
+          this card is browsing: what is on today, which subjects there are, what is due. Putting
+          the urgent thing under the browsing would mean scrolling past a timetable to ask to
+          leave the room.
+
+          It is also the ONLY way into School Mode from inside the app: the standalone bar on the
+          Home screen was removed as redundant (the explore row already has a School card one tap
+          from the same place), so this card must stay here and stay easy to find. check:headers
+          asserts it, because an entry point nothing opens is not an entry point.
+
+          It echoes the destination rather than describing it afresh -- the same art disc and the
+          same subtitle string the School Mode header itself uses -- so the screen a child lands
+          on looks like the card they just tapped.
+        */}
+        <MissionCard
+          title="School Mode"
+          subtitle={t('schoolModeSubtitle')}
+          art="school"
+          color="sky"
+          onPress={() => navigation.navigate('SchoolMode')}
+          accessibilityLabel={`School Mode. ${t('schoolModeSubtitle')}.`}
+        />
+
         <SectionTitle title={`Today · ${DAY_NAMES[dayOfWeek].long}`} emoji="📆" />
         {schedule.length === 0 ? (
           <Text style={[styles.empty, { fontSize: sizes.body, color: theme.colors.textMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>

@@ -1,7 +1,8 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
-import { MAX_FONT_SCALE } from '@/constants/sizes';
+import { MAX_FONT_SCALE, SPACING } from '@/constants/sizes';
+import { fitFontSize } from '@/utils/fitText';
 import { Fonts } from '@/theme';
 import { Adventure, AdventureNight } from '@/theme/adventure';
 
@@ -19,22 +20,30 @@ interface Props {
  * density, costs nothing to ship, and scales with the child's text-size setting instead of
  * pixellating. The two-tone split is what makes it a mark rather than a title: "Talk" is the
  * thing the child does, "Easy" is the promise.
+ *
+ * "Talk" and "Easy" are TWO SIBLING Texts, not two coloured spans inside one Text with
+ * numberOfLines={1}. Android measures nested spans of a custom font with letter spacing a few
+ * pixels narrower than it draws them, and a one-line Text then drops the glyph that "doesn't fit"
+ * — it showed "TalkEas" on Android phones and tablets while the browser showed "TalkEasy". Each
+ * single-style Text is measured exactly, nothing limits the line count, and the size is fitted
+ * to the screen width up front (adjustsFontSizeToFit is ignored by Android here anyway).
  */
 export function TalkEasyLogo({ size, tagline }: Props) {
-  const rocket = size * 0.62;
+  const { width } = useWindowDimensions();
+  // Room for the word beside the rocket, with the screen's side padding either side.
+  const room = width - SPACING.lg * 4 - size * 0.62;
+  const fontSize = fitFontSize('TalkEasy', room, size, 'line', Math.round(size * 0.6));
+  const rocket = fontSize * 0.62;
+  const wordStyle = [styles.word, { fontSize, lineHeight: Math.round(fontSize * 1.12) }];
 
   return (
     <View style={styles.wrap} accessibilityRole="header" accessibilityLabel={`TalkEasy${tagline ? `. ${tagline}` : ''}`}>
       <View style={styles.row}>
-        <Text
-          style={[styles.word, { fontSize: size, lineHeight: size * 1.12 }]}
-          maxFontSizeMultiplier={MAX_FONT_SCALE}
-          numberOfLines={1}
-          adjustsFontSizeToFit
-          minimumFontScale={0.6}
-        >
-          <Text style={styles.talk}>Talk</Text>
-          <Text style={styles.easy}>Easy</Text>
+        <Text style={[wordStyle, styles.talk]} maxFontSizeMultiplier={MAX_FONT_SCALE} accessible={false}>
+          Talk
+        </Text>
+        <Text style={[wordStyle, styles.easy]} maxFontSizeMultiplier={MAX_FONT_SCALE} accessible={false}>
+          Easy
         </Text>
 
         <Svg width={rocket} height={rocket} viewBox="0 0 40 40" accessible={false} style={styles.rocket}>
@@ -73,7 +82,7 @@ const styles = StyleSheet.create({
     textShadowRadius: 8,
   },
   talk: { color: '#FFFFFF' },
-  easy: { color: Adventure.sun.from },
+  easy: { color: Adventure.sun.from, paddingRight: 2 },
   rocket: { marginLeft: -2, marginTop: -2 },
   tagline: { fontFamily: Fonts.bold, color: AdventureNight.inkMuted, letterSpacing: 0.3, textShadowColor: 'rgba(5,8,30,0.7)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 4 },
 });

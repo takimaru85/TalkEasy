@@ -48,12 +48,12 @@ export function SoundPracticeScreen({ navigation }: RootScreenProps<'SoundPracti
               key={ex.id}
               onPress={() => navigation.navigate('SoundPracticeDetail', { soundId: ex.id })}
               accessibilityRole="button"
-              accessibilityLabel={`${ex.sound}. ${t('soundPracticeCta')}`}
+              accessibilityLabel={`${ex.letter}. ${t('soundPracticeCta')}`}
               style={{ width: tileWidth }}
             >
               <Card color={theme.colors.primarySoft} style={[styles.tile, { minHeight: Math.max(sizes.tileHeight, 124) }]}>
                 <Text style={[styles.letter, { fontSize: sizes.heading + 22, color: theme.colors.text }]} allowFontScaling={false}>
-                  {ex.sound}
+                  {ex.letter}
                 </Text>
                 <Text style={styles.tileEmoji} allowFontScaling={false}>{ex.emoji}</Text>
                 <Text style={[styles.practice, { color: theme.night ? 'rgba(255,255,255,0.9)' : theme.colors.textMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>

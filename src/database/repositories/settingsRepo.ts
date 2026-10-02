@@ -58,6 +58,7 @@ export const settingsRepo = {
       // An unknown code (e.g. a language dropped in a later version) falls back to US English.
       language: LOCALE_CODES.includes(map.get('language') as LocaleCode) ? (map.get('language') as LocaleCode) : DEFAULT_SETTINGS.language,
       speechPracticeHidden: map.get('speechPracticeHidden') ?? DEFAULT_SETTINGS.speechPracticeHidden,
+      toursDone: map.get('toursDone') ?? DEFAULT_SETTINGS.toursDone,
       speechPronunciationOverrides: map.get('speechPronunciationOverrides') || DEFAULT_SETTINGS.speechPronunciationOverrides,
       // Unknown values (e.g. a world removed in a later version) fall back safely.
       adventureTheme: (() => {
@@ -69,6 +70,12 @@ export const settingsRepo = {
         return isWorldId(v) ? v : DEFAULT_SETTINGS.adventureWorld;
       })(),
       speechPronunciationSet: isPronunciationSet(map.get('speechPronunciationSet')) ? (map.get('speechPronunciationSet') as AppSettings['speechPronunciationSet']) : DEFAULT_SETTINGS.speechPronunciationSet,
+      // Stored as JSON and validated where it is read (subscription/access.ts parseStatus), so a
+      // corrupted or hand-edited value can only ever result in Free.
+      therapyGoals: map.get('therapyGoals') ?? DEFAULT_SETTINGS.therapyGoals,
+      therapyHidden: map.get('therapyHidden') ?? DEFAULT_SETTINGS.therapyHidden,
+      therapySafetyAcceptedAt: map.get('therapySafetyAcceptedAt') ?? DEFAULT_SETTINGS.therapySafetyAcceptedAt,
+      subscriptionStatus: map.get('subscriptionStatus') ?? DEFAULT_SETTINGS.subscriptionStatus,
     };
   },
 

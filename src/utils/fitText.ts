@@ -8,6 +8,27 @@ import { MAX_FONT_SCALE } from '@/constants/sizes';
 const CHAR_EM = 0.64;
 
 /**
+ * Average glyph width for TEXT IN CAPITALS, which is materially wider than mixed case — there are
+ * no narrow x-height letters and no descenders to pull the average down.
+ *
+ * Measured the hard way: "START ADVENTURE" was being fitted with the mixed-case average, came out
+ * a third too big for its button, and shipped as "START ADVENTU…". Every all-caps label in the app
+ * had the same latent bug; the short ones ("LET'S GO!") happened to fit anyway.
+ */
+const CAPS_EM = 0.74;
+
+/** Capitals-only text, ignoring digits, spaces and punctuation. Two letters or more. */
+function isAllCaps(text: string): boolean {
+  const letters = text.replace(/[^A-Za-z]/g, '');
+  return letters.length >= 2 && letters === letters.toUpperCase();
+}
+
+/** The glyph-width fraction to use for this text. */
+export function emFor(text: string): number {
+  return isAllCaps(text) ? CAPS_EM : CHAR_EM;
+}
+
+/**
  * The largest font size (≤ `base`) at which `text` fits in `width` pixels.
  *
  * Android ignores `adjustsFontSizeToFit` in many layouts and breaks a too-wide word mid-word
@@ -19,7 +40,7 @@ export function fitFontSize(text: string, width: number, base: number, mode: 'li
   if (width <= 0 || !text) return base;
   const scale = Math.min(PixelRatio.getFontScale(), MAX_FONT_SCALE);
   const chars = mode === 'line' ? text.length : Math.max(...text.split(/\s+/).map((w) => w.length));
-  const fits = width / (Math.max(chars, 1) * CHAR_EM * scale);
+  const fits = width / (Math.max(chars, 1) * emFor(text) * scale);
   return Math.max(min, Math.min(base, Math.floor(fits)));
 }
 
@@ -33,5 +54,5 @@ export function fitFontSize(text: string, width: number, base: number, mode: 'li
  */
 export function textWidth(text: string, fontSize: number): number {
   const scale = Math.min(PixelRatio.getFontScale(), MAX_FONT_SCALE);
-  return text.length * CHAR_EM * fontSize * scale;
+  return text.length * emFor(text) * fontSize * scale;
 }

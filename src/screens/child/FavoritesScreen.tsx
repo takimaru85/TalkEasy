@@ -36,7 +36,7 @@ export function FavoritesScreen(_props: RootScreenProps<'Favorites'>) {
     ) : null;
 
   return (
-    <ChildScreen title={`⭐ ${t('favTitle', { name: displayName })}`} subtitle={t('favSub')}>
+    <ChildScreen title={t('favTitle', { name: displayName })} subtitle={t('favSub')} emoji="⭐" art="words">
       <PhraseBanner phrase={lastPhrase} onRepeat={repeat} />
       {!loading && favorites.length === 0 && extraMostUsed.length === 0 ? (
         <EmptyState icon="star" title="No favorites yet" message="A parent can star buttons in Parent Mode." />

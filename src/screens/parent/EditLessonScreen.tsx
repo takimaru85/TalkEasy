@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { BigButton, ChoiceRow, DateField, FormField, Icon, ListRow, ScreenContainer, ScreenHeader, SectionTitle } from '@/components/common';
 import { ACTIVITY_TYPE_META, ALL_ANSWER_METHODS, ANSWER_METHOD_META, type ActivityType, type AnswerMethod, type Choice, type LessonActivity, type LessonActivityInput, type MatchPair } from '@/adaptive/types';
+import { CONTENT_LANGUAGES, DEFAULT_CONTENT_LANGUAGE } from '@/services/contentLanguage';
 import { Colors } from '@/constants/colors';
 import { MAX_FONT_SCALE, MIN_PARENT_TARGET, SPACING } from '@/constants/sizes';
 import { lessonsRepo } from '@/database';
@@ -62,6 +63,8 @@ export function EditLessonScreen({ navigation, route }: ParentScreenProps<'EditL
   const [content, setContent] = useState('');
   const [vocab, setVocab] = useState('');
   const [objectives, setObjectives] = useState('');
+  // The language the lesson is WRITTEN in — what its voice will be. Not the app's language.
+  const [language, setLanguage] = useState<string>(DEFAULT_CONTENT_LANGUAGE);
   const [date, setDate] = useState<string | null>(null);
   const [active, setActive] = useState(true);
   const [hydrated, setHydrated] = useState(isNew);
@@ -77,6 +80,7 @@ export function EditLessonScreen({ navigation, route }: ParentScreenProps<'EditL
       setContent(existing.content);
       setVocab(existing.vocabulary.join('\n'));
       setObjectives(existing.objectives);
+      setLanguage(existing.language);
       setDate(existing.assignedDate);
       setActive(existing.isActive);
       setHydrated(true);
@@ -87,7 +91,7 @@ export function EditLessonScreen({ navigation, route }: ParentScreenProps<'EditL
 
   const saveLesson = async () => {
     if (!title.trim()) return alertMessage('Please give the lesson a title.');
-    const input = { subjectId, title, gradeLevel: grade, content, vocabulary: vocab.split('\n').map((v) => v.trim()).filter(Boolean), objectives, assignedDate: date, isActive: active };
+    const input = { subjectId, title, gradeLevel: grade, content, vocabulary: vocab.split('\n').map((v) => v.trim()).filter(Boolean), objectives, language, assignedDate: date, isActive: active };
     if (isNew) {
       const id = await lessonsRepo.create(input);
       navigation.replace('EditLesson', { lessonId: id });
@@ -131,6 +135,17 @@ export function EditLessonScreen({ navigation, route }: ParentScreenProps<'EditL
             value={subjectId === null ? 'none' : String(subjectId)}
             onChange={(v) => setSubjectId(v === 'none' ? null : Number(v))}
             choices={[...subjects.map((s) => ({ value: String(s.id), label: s.name })), { value: 'none', label: 'Other' }]}
+          />
+          {/*
+            Which language the lesson is READ ALOUD in. It sits by the subject because that is
+            what decides it: a Filipino lesson needs a Filipino voice, and an English voice
+            reading Filipino says "Mga" as the letters M, G, A.
+          */}
+          <ChoiceRow
+            label="Spoken language"
+            value={language}
+            onChange={setLanguage}
+            choices={[{ value: DEFAULT_CONTENT_LANGUAGE, label: 'English' }, ...CONTENT_LANGUAGES.map((l) => ({ value: l.tag, label: l.label }))]}
           />
           <FormField label="Lesson title" value={title} onChangeText={setTitle} placeholder='e.g. "What plants need"' maxLength={80} />
           <FormField label="Grade level" value={grade} onChangeText={setGrade} placeholder="Grade 2" maxLength={30} />

@@ -3,7 +3,9 @@ import { setAudioModeAsync, setIsAudioActiveAsync } from 'expo-audio';
 import { Platform } from 'react-native';
 import { DEFAULT_LOCALE_CODE, getLocale } from '@/i18n/registry';
 import type { AppSettings } from '@/types/models';
-import { forEnglishVoice, isEnglishVoice } from './pronunciationLexicon';
+import { contentLanguage } from './contentLanguage';
+import { forEnglishVoice, forEnglishVoiceSpeakingFilipino, isEnglishVoice } from './pronunciationLexicon';
+import { voiceFor } from './voiceCatalog';
 
 /**
  * Thin wrapper around expo-speech.
@@ -144,9 +146,19 @@ export async function setRecordingMode(enabled: boolean): Promise<void> {
 export interface SpeakOptions {
   rate?: number;
   pitch?: number;
+  /** 0..1. Only Voice & Communication's loud / soft models use anything but 1. */
+  volume?: number;
   voice?: string | null;
   /** BCP-47 tag for the engine, e.g. 'fil-PH'. Ignored when an explicit voice is chosen. */
   language?: string | null;
+  /**
+   * Text already respelled for the chosen voice; skips the lexicon pass.
+   *
+   * Set by `speakText`, which knows both the content language and which voice the device actually
+   * found, and so can pick the right lexicon. Every other caller leaves it unset and keeps the
+   * previous behaviour exactly.
+   */
+  spoken?: string;
 }
 
 /**
@@ -167,10 +179,10 @@ export async function speak(text: string, options: SpeakOptions = {}): Promise<v
     // An English voice reads Filipino words with English rules ("Ate" → "ate"); give it a
     // pronunciation-safe spelling instead. A chosen Filipino voice reads them correctly as written.
     const englishVoice = options.voice ? !/(^|[^a-z])(fil|tl)([-_]|$)/i.test(options.voice) : isEnglishVoice(language);
-    Speech.speak(englishVoice ? forEnglishVoice(trimmed) : trimmed, {
+    Speech.speak(options.spoken ?? (englishVoice ? forEnglishVoice(trimmed) : trimmed), {
       rate: clamp(options.rate ?? 1, 0.5, 1.5),
       pitch: clamp(options.pitch ?? 1, 0.5, 2),
-      volume: 1,
+      volume: clamp(options.volume ?? 1, 0.1, 1),
       voice: options.voice ?? undefined,
       // Only pass a language when no explicit voice is chosen; some Android engines
       // refuse to speak if they have no voice for the requested language.
@@ -202,6 +214,94 @@ export async function speak(text: string, options: SpeakOptions = {}): Promise<v
   }
 }
 
+/** One piece of an utterance, spoken with its own voice settings. */
+export interface SpeakSegment {
+  text: string;
+  rate?: number;
+  pitch?: number;
+  volume?: number;
+  /** Silence after this segment, in ms. How a phrase gets its rhythm. */
+  gapMs?: number;
+}
+
+/**
+ * Speaks segments one after another, each with its own pitch, rate and loudness, and RESOLVES
+ * WHEN THE LAST ONE FINISHES.
+ *
+ * Why this exists: `speak` resolves immediately and every call cancels the one before it, which
+ * is right for tapping Talk cards and wrong for building a shape out of a sentence. Voice &
+ * Communication needs to say "you are going" level and then "home" a third higher, because that
+ * is the only way an off-the-shelf engine can demonstrate a rising or falling ending at all —
+ * expo-speech has no pitch contour, only a pitch per utterance.
+ *
+ * That makes these models an APPROXIMATION of the pattern, and they are only ever the model. The
+ * app still never analyses the child's voice, so there is nothing here to compare an attempt
+ * against; a real recording, when one exists, is always preferred over this.
+ *
+ * Cancellation is not an error: starting another model mid-sequence stops this one, and the
+ * promise simply resolves.
+ */
+export async function speakSegments(segments: SpeakSegment[], options: SpeakOptions = {}): Promise<void> {
+  const seq = ++utteranceSeq;
+  try {
+    await ensureAudioActive();
+    await Speech.stop();
+  } catch {
+    // A failure to stop is not a reason to stay silent.
+  }
+
+  for (const segment of segments) {
+    if (seq !== utteranceSeq) return; // superseded
+    const text = segment.text.trim();
+    if (!text) continue;
+    const language = options.voice ? undefined : options.language ?? Platform.select({ ios: 'en-US', default: undefined });
+    const englishVoice = options.voice ? !/(^|[^a-z])(fil|tl)([-_]|$)/i.test(options.voice) : isEnglishVoice(language);
+
+    await new Promise<void>((resolve) => {
+      let settled = false;
+      const done = () => {
+        if (settled) return;
+        settled = true;
+        resolve();
+      };
+      try {
+        speechStatus.requested += 1;
+        Speech.speak(englishVoice ? forEnglishVoice(text) : text, {
+          rate: clamp((options.rate ?? 1) * (segment.rate ?? 1), 0.5, 1.5),
+          pitch: clamp((options.pitch ?? 1) * (segment.pitch ?? 1), 0.5, 2),
+          volume: clamp(segment.volume ?? options.volume ?? 1, 0.1, 1),
+          voice: options.voice ?? undefined,
+          language,
+          onStart: () => {
+            if (speechStatus.available) return;
+            speechStatus.available = true;
+            speechStatus.lastError = null;
+            emit();
+          },
+          onDone: () => {
+            speechStatus.completed += 1;
+            emit();
+            done();
+          },
+          onStopped: done,
+          onError: (err: Error) => {
+            const message = err?.message ?? '';
+            if (seq === utteranceSeq && !isCancellation(message)) setError(message.trim());
+            done();
+          },
+        });
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Speech unavailable');
+        done();
+      }
+    });
+
+    if (segment.gapMs && seq === utteranceSeq) {
+      await new Promise((r) => setTimeout(r, segment.gapMs));
+    }
+  }
+}
+
 export function speakWithSettings(text: string, settings: AppSettings): Promise<void> {
   const locale = getLocale(settings.language);
   return speak(text, {
@@ -211,6 +311,58 @@ export function speakWithSettings(text: string, settings: AppSettings): Promise<
     // US English keeps the previous behaviour exactly (no tag on Android, where an engine can
     // refuse a language it has no voice for). A parent who picks another language has opted in,
     // so its tag is passed through and the engine speaks it properly.
+    language: settings.language === DEFAULT_LOCALE_CODE ? undefined : locale.speechTag,
+  });
+}
+
+/**
+ * THE ONE WAY TO SPEAK CONTENT, in the language that content is written in.
+ *
+ * Every screen that reads a lesson, a word or a question aloud goes through here, passing the
+ * language the content carries. A Filipino lesson sounds Filipino; an English one is unchanged.
+ * Nothing guesses from the text itself — guessing is how "Mga hayop" ends up being read as the
+ * letters M, G, A by whatever voice happened to be configured.
+ *
+ * What it does, in order:
+ *   1. English (or no language): hands straight to `speak`, so existing screens behave identically.
+ *   2. Otherwise asks the DEVICE which voice it really has for that language (voiceCatalog).
+ *   3. A real voice exists -> name it explicitly and speak the text exactly as written, because a
+ *      Filipino voice reads Filipino spelling correctly and respelling it would make it worse.
+ *   4. No such voice -> keep the app's own voice and give it a pronunciation-safe respelling
+ *      (pronunciationLexicon). This is a fallback and is never presented as the real thing; the
+ *      `[voices]` line in development says plainly which of the two happened.
+ *
+ * The display text is never changed — only what the engine is handed.
+ */
+export async function speakText(text: string, language: string | null | undefined, options: SpeakOptions = {}): Promise<void> {
+  const lang = contentLanguage(language);
+  if (!lang) return speak(text, options); // English content: unchanged, including the caller's voice
+
+  const trimmed = text.trim();
+  if (!trimmed) return;
+  const choice = await voiceFor(lang.tag);
+
+  if (choice.matched) {
+    return speak(trimmed, { ...options, voice: choice.voice, language: choice.language, spoken: trimmed });
+  }
+  // No voice for this language on this device. The app's configured voice reads a respelling,
+  // which at least makes the word recognisable to a child who knows it.
+  const spoken = lang.tag === 'fil-PH' ? forEnglishVoiceSpeakingFilipino(trimmed) : forEnglishVoice(trimmed);
+  return speak(trimmed, { ...options, spoken });
+}
+
+/**
+ * `speakText` with the parent's rate, pitch and voice from Settings.
+ *
+ * The content language wins over the app language: the app is English-only, and a Filipino lesson
+ * is Filipino whatever the interface is set to.
+ */
+export function speakContent(text: string, language: string | null | undefined, settings: AppSettings): Promise<void> {
+  const locale = getLocale(settings.language);
+  return speakText(text, language, {
+    rate: settings.speechRate,
+    pitch: settings.speechPitch,
+    voice: settings.speechVoice,
     language: settings.language === DEFAULT_LOCALE_CODE ? undefined : locale.speechTag,
   });
 }

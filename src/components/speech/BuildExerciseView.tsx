@@ -88,7 +88,7 @@ export function BuildExerciseView({ exercise, kit }: { exercise: BuildExercise; 
       ) : !word ? (
         <>
           <SectionTitle title={t('spChoosePicture')} emoji="🖼️" />
-          <ChoiceGrid>
+          <ChoiceGrid columns={layout.columns}>
             {exercise.cards.map((card) => (
               <ChoiceCard
                 key={card.id}

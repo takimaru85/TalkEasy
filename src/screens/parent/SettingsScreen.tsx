@@ -246,6 +246,11 @@ export function SettingsScreen({ navigation }: ParentScreenProps<'Settings'>) {
               TalkEasy works fully offline. It has no account, no internet features, no analytics, and never
               sends any data off this device. Uninstalling the app deletes its data.
             </Text>
+            <Text style={styles.hint} maxFontSizeMultiplier={MAX_FONT_SCALE}>
+              Microphone: in Sound Practice and Speech Practice, "Hear yourself" records the attempt so it can
+              be played straight back, then deletes it. It is never scored, never turned into text, and never
+              saved. "Say the answer" in Learning turns speech into text on this device and records nothing.
+            </Text>
           </Section>
 
           <Section title="About">

@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { activityArtFor } from '@/speechpractice/stageArt';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { BigButton, Card, ChildScreen, IconTile, PressableScale, ProgressBar } from '@/components/common';
 import { ExerciseView, type PracticeKit } from '@/components/speech';
@@ -158,7 +159,7 @@ export function SpeechActivityScreen({ route, navigation }: RootScreenProps<'Spe
   if (pickingCategory) {
     const tileWidth = `${Math.floor(100 / sizes.gridColumns) - 2}%` as const;
     return (
-      <ChildScreen title={t(def.titleKey)} emoji={def.icon} emojiTint={def.tint} back>
+      <ChildScreen title={t(def.titleKey)} colorArt={activityArtFor(def.id)} emoji={def.icon} emojiTint={def.tint} back>
         <ScrollView contentContainerStyle={[styles.content, { paddingHorizontal: sizes.horizontalPadding }]}>
           <Text style={[styles.lead, { fontSize: sizes.body + 2, color: theme.colors.textMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
             {t('spChooseGroup')}
@@ -215,7 +216,7 @@ export function SpeechActivityScreen({ route, navigation }: RootScreenProps<'Spe
   const last = index + 1 >= exercises.length;
 
   return (
-    <ChildScreen title={title} emoji={def.icon} emojiTint={def.tint} back>
+    <ChildScreen title={title} colorArt={activityArtFor(def.id)} emoji={def.icon} emojiTint={def.tint} back>
       <ScrollView ref={scroll} style={styles.flex} contentContainerStyle={[styles.content, { paddingHorizontal: sizes.horizontalPadding }]}>
         {wordsLoading ? null : exercises.length === 0 ? (
           <Card>

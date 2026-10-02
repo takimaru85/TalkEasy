@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { SettingsProvider, useSettings } from '@/context/SettingsContext';
 import { ProfileProvider, useProfile } from '@/context/ProfileContext';
+import { SubscriptionProvider } from '@/context/SubscriptionContext';
 import { I18nProvider } from '@/i18n';
 import { ThemeProvider, useAppFonts } from '@/theme';
 import { getDb } from '@/database';
@@ -41,9 +42,11 @@ export default function App() {
         <SettingsProvider>
           <I18nProvider>
             <ProfileProvider>
-              <ThemeProvider>
-                <NavigatorWhenLoaded />
-              </ThemeProvider>
+              <SubscriptionProvider>
+                <ThemeProvider>
+                  <NavigatorWhenLoaded />
+                </ThemeProvider>
+              </SubscriptionProvider>
             </ProfileProvider>
           </I18nProvider>
         </SettingsProvider>
