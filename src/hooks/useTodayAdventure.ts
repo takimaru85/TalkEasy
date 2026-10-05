@@ -1,6 +1,8 @@
 import { speechPracticeRepo } from '@/database';
 import { buildSession, sessionSeed } from '@/practice/session';
 import { SOUND_TARGETS, TARGET_STEPS } from '@/speechpractice/targets';
+import { evaluateMap, type MapStageState } from '@/adventure/adventureMap';
+import { useAchievements } from './useAchievements';
 import { useDbQuery } from './useDbQuery';
 
 /**
@@ -32,6 +34,8 @@ export interface CurrentTarget {
   totalSteps: number;
   /** 0..1, for the bar. */
   progress: number;
+  /** Every sound has had all its steps practised. The card then says so instead of "carry on" at 6 of 6. */
+  allDone: boolean;
   /** Nothing practised yet anywhere — the card invites a start rather than a continuation. */
   fresh: boolean;
 }
@@ -68,5 +72,42 @@ export function useCurrentTarget(): CurrentTarget {
     totalSteps: total,
     progress: total > 0 ? done / total : 0,
     fresh: (data ?? []).length === 0,
+    allDone: SOUND_TARGETS.every((t) => (steps.get(t.id) ?? 0) >= total),
   };
+}
+
+export interface AdventureMap {
+  stages: MapStageState[];
+  /** The sound to open for the Word Builder stage. */
+  targetId: string;
+  /** Raw counts (not capped at a stage goal) for things that react to a change, like the Space Pet. */
+  sounds: number;
+  exercises: number;
+  /** Every query behind the stages has answered at least once; until then the counts are zeros. */
+  ready: boolean;
+}
+
+/** The four map stages, from counted practice (useAchievements) and the per-sound step counts. */
+export function useAdventureMap(): AdventureMap {
+  const { metrics, loading: metricsLoading } = useAchievements();
+  const { data, loading: stepsLoading } = useDbQuery<{ target: string; steps: number }[]>(
+    () => speechPracticeRepo.targetSteps(),
+    [],
+    ['speechPractice'],
+  );
+  const { data: plainWords, loading: wordsLoading } = useDbQuery<number>(() => speechPracticeRepo.plainWords(), 0, ['speechPractice']);
+  const { data: soundsExplored, loading: soundsLoading } = useDbQuery<number>(
+    () => speechPracticeRepo.soundsExplored(),
+    0,
+    ['soundPractice', 'speechPractice', 'voicePractice'],
+  );
+  const current = useCurrentTarget();
+  const targetSteps = (data ?? []).reduce((n, r) => n + Math.min(r.steps, TARGET_STEPS.length), 0);
+  const stages = evaluateMap({
+    wordsPractised: plainWords,
+    soundsPractised: soundsExplored,
+    speechExercises: metrics.speechExercises,
+    targetSteps,
+  });
+  return { stages, targetId: current.id, sounds: soundsExplored, exercises: metrics.speechExercises, ready: !metricsLoading && !stepsLoading && !wordsLoading && !soundsLoading };
 }

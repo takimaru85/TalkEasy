@@ -16,7 +16,6 @@ ok(normalizeAnswer('  Sun-light!! ') === 'sun light', 'punctuation stripped');
 ok(matchesFreeAnswer('Plants need sunlight to grow.', ['sunlight']), 'sentence contains answer');
 ok(matchesFreeAnswer('ten', ['10']), 'number word equals digit');
 ok(!matchesFreeAnswer('sun', ['sunlight']), 'partial word does not match');
-ok(matchesFreeAnswer('Sampu', ['10']), 'Filipino number word');
 ok(!matchesFreeAnswer('', ['10']), 'empty never matches');
 
 const act: LessonActivity = {

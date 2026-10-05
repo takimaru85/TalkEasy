@@ -9,21 +9,19 @@
  * it ("BO" → "beau"). The raw syllable is never sent to the engine. A recording, if one exists
  * (modelAudio.ts / a parent's), still takes priority over the dictionary.
  *
- * Pronunciation sets are explicit because the same letters are different sounds in different
- * languages. "fil" is the abakada (BA BE BI BO BU — A "ah", E "eh", I "ee", O "oh", U "oo") and is
- * the default, because that is what a consonant-vowel syllable drill teaches. "en" reads the same
- * letters with English letter names. Both are spoken by the app's English voice; a grown-up
- * switches set in Parent Mode → Pronunciation test.
+ * TalkEasy is English-only, so there is ONE pronunciation set, "en": the letters read with English
+ * values (BE "bee", BI "bye"). It is still a set (a keyed table) rather than a constant so a
+ * language could be added as data, and so a saved value from an older version that is no longer a
+ * set (the removed Filipino "fil") simply falls back to this one.
  */
 
-export type PronunciationSet = 'en' | 'fil';
+export type PronunciationSet = 'en';
 
 export const PRONUNCIATION_SETS: { key: PronunciationSet; name: string }[] = [
-  { key: 'fil', name: 'Filipino (Ba Be Bi Bo Bu)' },
   { key: 'en', name: 'English letter names' },
 ];
 
-export const DEFAULT_PRONUNCIATION_SET: PronunciationSet = 'fil';
+export const DEFAULT_PRONUNCIATION_SET: PronunciationSet = 'en';
 
 export function isPronunciationSet(value: string | null | undefined): value is PronunciationSet {
   return PRONUNCIATION_SETS.some((s) => s.key === value);
@@ -46,14 +44,6 @@ const CONSONANT_IPA: Record<SyllableConsonant, string> = {
  * whoever records the model. These are the decisions — change them here, nowhere else.
  */
 export const VOWEL_MODEL: Record<PronunciationSet, Record<Vowel, { ipa: string; like: string }>> = {
-  // Filipino (abakada): five pure vowels, identical in every syllable.
-  fil: {
-    a: { ipa: 'a', like: 'a in "mama"' },
-    e: { ipa: 'ɛ', like: 'e in "bed"' },
-    i: { ipa: 'i', like: 'ee in "see"' },
-    o: { ipa: 'o', like: 'o in "oh"' },
-    u: { ipa: 'u', like: 'oo in "boot"' },
-  },
   // English: A is the open "ah" (MA "mah", as in mama); E, I, O, U say their long sound (BE "bee",
   // BI "bye", BO "beau", BU "boo").
   en: {

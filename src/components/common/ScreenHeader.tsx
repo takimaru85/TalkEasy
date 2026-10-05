@@ -97,7 +97,7 @@ export function ScreenHeader({ title, onBack, backIcon = 'arrow-left', backLabel
           {title}
         </Text>
         {subtitle ? (
-          <Text style={[styles.subtitle, { color: theme.colors.textMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={2}>
+          <Text style={[styles.subtitle, { color: theme.colors.textMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={3}>
             {subtitle}
           </Text>
         ) : null}

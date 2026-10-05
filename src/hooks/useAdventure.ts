@@ -37,7 +37,10 @@ export interface AdventureProgress {
   progress: number;
   /** Consecutive days up to today (or yesterday, so a streak survives until bedtime). */
   streak: number;
+  /** The balance on the Home counter (earned minus spent). */
   totalStars: number;
+  /** Everything ever earned. Level and badges count from this, so spending never lowers them. */
+  lifetimeStars: number;
   earnedToday: number;
 }
 
@@ -83,9 +86,10 @@ export function useAdventure(): AdventureProgress {
   const { data: dates } = useDbQuery(() => rewardsRepo.getEarnedDates(), NO_DATES, ['rewards']);
 
   return {
-    ...levelFor(stars.total),
+    ...levelFor(stars.lifetime),
     streak: streakFrom(dates),
     totalStars: stars.total,
+    lifetimeStars: stars.lifetime,
     earnedToday: stars.earnedToday,
   };
 }

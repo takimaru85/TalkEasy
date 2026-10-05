@@ -1,10 +1,11 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState, useRef } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { BigButton, ChildScreen, CompletionView, PressableScale } from '@/components/common';
 import { MissionCard } from '@/components/adventure';
 import { MAX_FONT_SCALE, MIN_CHILD_TARGET, SPACING } from '@/constants/sizes';
-import { useAwardStars, useSizes } from '@/hooks';
+import { useClaimStars, useSizes } from '@/hooks';
+import { claimKey } from '@/rewards/verification';
 import { useI18n } from '@/i18n';
 import type { RootScreenProps } from '@/navigation/types';
 import { Fonts, useTheme } from '@/theme';
@@ -30,7 +31,9 @@ export function PracticeSessionScreen({ route, navigation }: RootScreenProps<'Pr
   const sizes = useSizes();
   const theme = useTheme();
   const { t } = useI18n();
-  const awardStars = useAwardStars();
+  const claim = useClaimStars();
+  // One id per session: the claim key, so finishing twice (or reopening) is one claim.
+  const sessionId = useRef(Date.now()).current;
   const night = !!theme.night;
 
   const plan = useMemo(() => buildSession(sessionSeed()), []);
@@ -55,11 +58,14 @@ export function PracticeSessionScreen({ route, navigation }: RootScreenProps<'Pr
   );
 
   const finish = async () => {
+    if (finished) return; // a second tap on Finish / Stop must not start a second claim
     setFinished(true);
-    // The reward is for turning up, not for finishing everything — a child who stops early still
-    // earns it. Awarding on completion only would punish exactly the child who needed to stop.
-    const amount = await awardStars('activity', 'Practice session').catch(() => 0);
-    setStars(amount);
+    // The reward needs at least ONE completed practice step: the screen can be opened and closed without
+    // earning anything, but a child who does one step and then needs to stop still earns it (so does a child
+    // who cannot finish them all). Nothing here judges how the child spoke.
+    if (done < 1) return;
+    const r = await claim('practice', claimKey.practice(sessionId), 'Practice session').catch(() => ({ stars: 0 }));
+    setStars(r.stars);
   };
 
   const startStep = (index: number) => {

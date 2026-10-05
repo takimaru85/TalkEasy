@@ -17,7 +17,7 @@ import { Fonts, Radius, useTheme } from '@/theme';
 import { fitFontSize } from '@/utils/fitText';
 
 /** The drawing and colour of each shipped subject, so the six cards are told apart at a glance. */
-const SUBJECT_COLOR: Record<string, AdventureKey> = { english: 'sky', math: 'grass', filipino: 'sun', science: 'reef', ap: 'tangerine', esp: 'grape' };
+const SUBJECT_COLOR: Record<string, AdventureKey> = { english: 'sky', math: 'grass', science: 'reef', ap: 'tangerine', esp: 'grape' };
 const FALLBACK_COLORS: AdventureKey[] = ['sky', 'grass', 'sun', 'reef', 'tangerine', 'grape'];
 
 /** Learn: pick a subject. Favourite subjects come first and carry a ⭐ so they are easy to find. */

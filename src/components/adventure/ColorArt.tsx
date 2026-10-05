@@ -1,7 +1,9 @@
 import React, { useId } from 'react';
-import Svg, { Defs, Ellipse, LinearGradient, Stop } from 'react-native-svg';
+import Svg, { Circle, Defs, Ellipse, LinearGradient, Stop } from 'react-native-svg';
+import { SVG_DECORATIVE } from '@/utils/svgA11y';
 import type { ActivityCategory } from '@/types/models';
 import { GameIcon } from './GameIcon';
+import { useIconSet } from './useIconSet';
 import { drawCategory, type CategoryArtName } from './art/categoryArt';
 import { drawSubject, type SubjectArtName } from './art/subjectArt';
 import { drawLevel, type LevelArtName } from './art/levelArt';
@@ -41,6 +43,9 @@ export type ColorArtName =
 export function ColorArt({ name, size }: { name: ColorArtName; size: number }) {
   // Gradient ids resolve document-wide in react-native-svg, so every instance needs its own.
   const base = `ca${useId().replace(/[^a-zA-Z0-9]/g, '')}`;
+  // Space Explorer puts every list illustration in orbit: a faint ring and a tiny moon behind the drawing, so
+  // the whole set shares one motif without redrawing a hundred pictures. Other themes draw the plain art.
+  const space = useIconSet() === 'space';
   // The same last line of defence as Artwork: an SVG handed a negative size draws nothing, silently.
   const safe = Number.isFinite(size) && size > 0 ? size : 1;
 
@@ -70,8 +75,14 @@ export function ColorArt({ name, size }: { name: ColorArtName; size: number }) {
   };
   const drawn = resolve(alias[name] ?? name, grad, g);
   return (
-    <Svg width={safe} height={safe} viewBox="0 0 64 64" accessible={false} pointerEvents="none">
+    <Svg width={safe} height={safe} viewBox="0 0 64 64" {...SVG_DECORATIVE} pointerEvents="none">
       <Defs>{drawn.defs}</Defs>
+      {space ? (
+        <>
+          <Ellipse cx={32} cy={33} rx={30} ry={11} fill="none" stroke="#8BF0FF" strokeWidth={1.4} strokeDasharray="3 3" opacity={0.4} transform="rotate(-22 32 33)" />
+          <Circle cx={57.5} cy={21.5} r={2.4} fill="#FFE066" opacity={0.95} />
+        </>
+      ) : null}
       <Ellipse cx={32} cy={59.5} rx={18} ry={2.6} fill="#000000" opacity={0.2} />
       {drawn.art}
     </Svg>

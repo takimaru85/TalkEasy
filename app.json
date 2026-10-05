@@ -2,23 +2,18 @@
   "expo": {
     "name": "TalkEasy",
     "slug": "talkeasy",
-    "version": "2.1.0",
+    "version": "2.2.1",
     "description": "TalkEasy by IB Golden — an offline communication, school and learning companion for children.",
     "orientation": "default",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "backgroundColor": "#FFFFFF",
-    "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#FFFFFF"
-    },
     "updates": {
       "enabled": false,
       "checkAutomatically": "NEVER"
     },
     "ios": {
-      "supportsTablet": true,
+      "supportsTablet": false,
       "bundleIdentifier": "com.ibgolden.talkeasy",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
@@ -35,7 +30,16 @@
       "predictiveBackGestureEnabled": false,
       "permissions": [
         "android.permission.MODIFY_AUDIO_SETTINGS"
-      ]
+      ],
+      "blockedPermissions": [
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.SYSTEM_ALERT_WINDOW",
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.READ_MEDIA_VIDEO",
+        "android.permission.READ_MEDIA_AUDIO"
+      ],
+      "allowBackup": false
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -55,7 +59,7 @@
         {
           "photosPermission": "TalkEasy uses your photos only to attach a picture to an assignment or activity. Pictures stay on this device.",
           "cameraPermission": "TalkEasy uses the camera only to photograph an assignment or activity. Photos stay on this device.",
-          "microphonePermission": false
+          "microphonePermission": "TalkEasy uses the microphone only when your child records a practice attempt or taps 'Say the answer'. The picture picker itself never records audio."
         }
       ],
       "expo-document-picker",
@@ -63,15 +67,24 @@
       [
         "expo-speech-recognition",
         {
-          "microphonePermission": "TalkEasy uses the microphone when the child taps 'Say the answer', which turns speech into text on this device, and when they record a practice attempt to hear it back. A practice recording stays on this device and is deleted after playback.",
-          "speechRecognitionPermission": "TalkEasy turns the child's spoken answer into text on this device. Nothing is sent anywhere.",
+          "microphonePermission": "TalkEasy uses the microphone when the child taps 'Say the answer', which turns speech into text, and when they record a practice attempt to hear it back. A practice recording stays on this device and is deleted after playback.",
+          "speechRecognitionPermission": "TalkEasy turns the child's spoken answer into text. Where your phone supports it, this happens on the device. If it does not, your phone's own speech service (Apple or Google) may process the audio over the internet to do so. TalkEasy itself never saves or sends the audio.",
           "androidSpeechServicePackages": [
             "com.google.android.as",
             "com.google.android.tts"
           ]
         }
       ],
-      "expo-asset"
+      "expo-asset",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#F7F8FB"
+        }
+      ]
     ],
     "extra": {
       "eas": {

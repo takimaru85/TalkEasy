@@ -1,5 +1,6 @@
 import React, { useId } from 'react';
 import Svg, { Circle, Defs, Ellipse, G, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
+import { SVG_DECORATIVE } from '@/utils/svgA11y';
 import type { WorldArtName } from '@/adventure/worlds';
 
 /**
@@ -627,7 +628,7 @@ export function WorldArt({ name, size, locked }: Props) {
   );
 
   return (
-    <Svg width={size} height={size} viewBox="0 0 64 64" accessible={false} pointerEvents="none">
+    <Svg width={size} height={size} viewBox="0 0 64 64" {...SVG_DECORATIVE} pointerEvents="none">
       <Defs>{layers.map((l, i) => <React.Fragment key={i}>{l.defs}</React.Fragment>)}</Defs>
       {/* A prize not found yet is a faded ghost of itself: the shape is there, the colour is not. */}
       {locked ? <G opacity={0.3}>{content}</G> : content}

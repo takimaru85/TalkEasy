@@ -24,8 +24,8 @@ import { alertMessage } from '@/utils/confirm';
  * fails for perfectly ordinary reasons — handwriting, a crease, a shadow — and a parent who cannot
  * get the words in has no feature at all.
  *
- * READ ALOUD goes through `speakContent`, the same language-aware path lessons use, so a Filipino
- * worksheet is read by a Filipino voice where the device has one and a pronunciation-safe fallback
+ * READ ALOUD goes through `speakContent`, the same language-aware path lessons use, so a worksheet
+ * in another language is read by a voice for it where the device has one and a pronunciation-safe fallback
  * where it does not. Nothing here is a second TTS implementation.
  */
 export function ScanReviewScreen({ route, navigation }: RootScreenProps<'ScanReview'>) {

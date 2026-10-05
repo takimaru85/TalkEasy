@@ -1,6 +1,9 @@
 import React, { useId } from 'react';
 import Svg, { Circle, Defs, Ellipse, G, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
+import { SVG_DECORATIVE } from '@/utils/svgA11y';
 import { Adventure } from '@/theme/adventure';
+import { useActiveAvatar } from '@/context/ShopThemeContext';
+import { AvatarArt } from './AvatarArt';
 
 export type MascotMood = 'happy' | 'cheer' | 'listening';
 
@@ -9,6 +12,8 @@ interface Props {
   mood?: MascotMood;
   /** Explorer kit: helmet dome, headset and the TalkEasy badge. */
   space?: boolean;
+  /** Always draw Pip, never the equipped avatar (the first-run tour introduces Pip by name). */
+  pip?: boolean;
 }
 
 /**
@@ -26,15 +31,19 @@ interface Props {
  * `mood` is the only expression control: 'happy' at rest, 'cheer' when celebrating (arms up,
  * wider smile), 'listening' while the child speaks (open mouth, attentive eyes).
  */
-export function Mascot({ size, mood = 'happy', space }: Props) {
+export function Mascot({ size, mood = 'happy', space, pip }: Props) {
+  // The designated mascot spots show the companion the child chose (the free Astro Explorer by default);
+  // `pip` keeps the original character where the app introduces it.
+  const avatar = useActiveAvatar();
   // Unique per instance: react-native-svg resolves gradients by id document-wide, so two mascots
   // on one screen sharing an id would make the second one take the first one's fill.
   const id = useId().replace(/:/g, '');
   const body = `body-${id}`;
   const cheer = mood === 'cheer';
+  if (!pip) return <AvatarArt id={avatar} size={size} />;
 
   return (
-    <Svg width={size} height={size} viewBox="0 0 100 100" accessible={false}>
+    <Svg width={size} height={size} viewBox="0 0 100 100" {...SVG_DECORATIVE}>
       <Defs>
         <LinearGradient id={body} x1="0" y1="0" x2="1" y2="1">
           <Stop offset="0" stopColor={Adventure.reef.from} />

@@ -1,11 +1,14 @@
 import React from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { ChildScreen, Icon, PressableScale } from '@/components/common';
 import { GameButton } from '@/components/adventure/GameButton';
 import { GradientSurface } from '@/components/adventure/GradientSurface';
+import { SpaceCollectionGrid } from '@/components/adventure/SpaceCollectionGrid';
+import { useSpaceCollection } from '@/context/CollectionContext';
+import type { Destination } from '@/collection/registry';
 import { WorldArt } from '@/components/adventure/WorldArt';
 import type { CollectedItem, CollectionMetrics } from '@/adventure/worlds';
-import { MAX_FONT_SCALE, MIN_CHILD_TARGET, SPACING } from '@/constants/sizes';
+import { MAX_FONT_SCALE, MIN_CHILD_TARGET, MIN_SUPPORTED_WIDTH, SPACING } from '@/constants/sizes';
 import { useAdventureWorld, useCollection, useSizes, useSpeak } from '@/hooks';
 import { useI18n } from '@/i18n';
 import type { RootScreenProps } from '@/navigation/types';
@@ -21,11 +24,36 @@ import { Adventure, AdventureRadius, AdventureShadow, Fonts, shade, useTheme } f
 export function CollectionScreen({ navigation }: RootScreenProps<'Collection'>) {
   const sizes = useSizes();
   const theme = useTheme();
+  // Floored: the window reports 0 on a first frame. On a narrow phone the banner art and padding shrink
+  // so the title, count, bar and button keep their room.
+  const { width } = useWindowDimensions();
+  const narrow = Math.max(MIN_SUPPORTED_WIDTH, width) - sizes.horizontalPadding * 2 < 330;
   const { t } = useI18n();
   const { speakFeedback } = useSpeak();
   const { childChooses } = useAdventureWorld();
   const { world, items, found } = useCollection();
   const c = Adventure[world.color];
+  // Space has the full collection (46 collectibles in six categories); the other worlds keep their own five.
+  const isSpace = world.id === 'space';
+  const space = useSpaceCollection();
+  const shownFound = isSpace ? space.state.found : found;
+  const shownTotal = isSpace ? space.state.total : items.length;
+
+  /** Where a locked collectible sends the child. */
+  const goDestination = (d: Destination) => {
+    switch (d) {
+      case 'speech': return navigation.navigate('SpeechPractice');
+      case 'trace': return navigation.navigate('WritingPractice');
+      case 'learn': return navigation.navigate('Learn');
+      case 'lessons': return navigation.navigate('AdaptiveHome');
+      case 'mission': return navigation.navigate('SoundPractice');
+      case 'talk': return navigation.navigate('Communicate');
+      case 'myday': return navigation.navigate('MyDay');
+      case 'activities': return navigation.navigate('Activities');
+      case 'voice': return navigation.navigate('VoiceComm');
+      case 'progress': return navigation.navigate('MyProgress');
+    }
+  };
 
   /** Where each milestone is earned. */
   const goTo = (metric: keyof CollectionMetrics) => {
@@ -52,7 +80,7 @@ export function CollectionScreen({ navigation }: RootScreenProps<'Collection'>) 
     <ChildScreen title={t('advMyCollection')} subtitle={t('advMyCollectionSub')} emoji="🏆" art="progress" back>
       <ScrollView contentContainerStyle={[styles.content, { paddingHorizontal: sizes.horizontalPadding }]}>
         {/* The world banner: emblem, collection name, how many found. */}
-        <View style={[styles.banner, theme.night ? [AdventureShadow, { backgroundColor: c.to, borderColor: shade(c.from, 1.3), borderBottomColor: shade(c.to, 0.66) }] : { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+        <View style={[styles.banner, narrow && styles.bannerNarrow, theme.night ? [AdventureShadow, { backgroundColor: c.to, borderColor: shade(c.from, 1.3), borderBottomColor: shade(c.to, 0.66) }] : { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
           {theme.night ? (
             <>
               <GradientSurface from={c.from} to={c.to} direction="vertical" />
@@ -61,20 +89,20 @@ export function CollectionScreen({ navigation }: RootScreenProps<'Collection'>) 
             </>
           ) : null}
           <View style={styles.bannerRow}>
-            <WorldArt name={world.emblem} size={84} />
+            <WorldArt name={world.emblem} size={narrow ? 60 : 84} />
             <View style={styles.bannerText}>
               <Text style={[styles.bannerTitle, { fontSize: sizes.tileLabel + 1, color: theme.night ? '#FFFFFF' : theme.colors.text }]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={2}>
                 {world.collectionName}
               </Text>
               <Text style={[styles.bannerSub, { color: theme.night ? 'rgba(255,255,255,0.92)' : theme.colors.textMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
-                {t('advFoundOf', { n: found, total: items.length })}
+                {t('advFoundOf', { n: shownFound, total: shownTotal })}
               </Text>
               <View
                 style={[styles.track, { backgroundColor: theme.night ? 'rgba(0,0,0,0.25)' : theme.colors.surfaceAlt }]}
                 accessibilityRole="progressbar"
-                accessibilityValue={{ min: 0, max: items.length, now: found }}
+                accessibilityValue={{ min: 0, max: shownTotal, now: shownFound }}
               >
-                <View style={[styles.fill, { width: `${Math.max(4, Math.round((found / items.length) * 100))}%` }]} />
+                <View style={[styles.fill, { width: `${Math.max(4, Math.round((shownFound / Math.max(1, shownTotal)) * 100))}%` }]} />
               </View>
             </View>
           </View>
@@ -83,7 +111,7 @@ export function CollectionScreen({ navigation }: RootScreenProps<'Collection'>) 
           ) : null}
         </View>
 
-        {items.map((item) => (
+        {isSpace ? <SpaceCollectionGrid onGo={goDestination} /> : items.map((item) => (
           <PressableScale
             key={item.id}
             onPress={() => onItem(item)}
@@ -151,8 +179,9 @@ export function CollectionScreen({ navigation }: RootScreenProps<'Collection'>) 
 const styles = StyleSheet.create({
   content: { paddingVertical: SPACING.sm, gap: SPACING.sm + 2, paddingBottom: SPACING.xl },
   banner: { borderRadius: AdventureRadius.hero, borderWidth: 1.5, borderBottomWidth: 6, padding: SPACING.md, gap: SPACING.md, overflow: 'hidden', marginBottom: SPACING.xs },
+  bannerNarrow: { padding: SPACING.sm + 2, gap: SPACING.sm },
   bannerRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md },
-  bannerText: { flex: 1, gap: 4 },
+  bannerText: { flex: 1, minWidth: 0, gap: 4 },
   bannerTitle: { fontFamily: Fonts.black, textShadowColor: 'rgba(0,0,0,0.25)', textShadowOffset: { width: 0, height: 1.5 }, textShadowRadius: 2 },
   bannerSub: { fontFamily: Fonts.bold, fontSize: 15 },
   track: { height: 12, borderRadius: 999, overflow: 'hidden', marginTop: 2 },

@@ -5,6 +5,8 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { SettingsProvider, useSettings } from '@/context/SettingsContext';
 import { ProfileProvider, useProfile } from '@/context/ProfileContext';
 import { SubscriptionProvider } from '@/context/SubscriptionContext';
+import { ShopThemeProvider } from '@/context/ShopThemeContext';
+import { CollectionProvider } from '@/context/CollectionContext';
 import { I18nProvider } from '@/i18n';
 import { ThemeProvider, useAppFonts } from '@/theme';
 import { getDb } from '@/database';
@@ -13,6 +15,7 @@ import { prepareAudioSession } from '@/services/speech';
 import { useOrientationLock } from '@/hooks/useOrientationLock';
 import { Colors } from '@/constants/colors';
 import { BRAND } from '@/constants/brand';
+import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 
 type BootState = { status: 'loading' } | { status: 'ready' } | { status: 'error'; message: string };
 
@@ -37,14 +40,20 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
+      {/* The default bar is dark-on-light for the loading and error pages; every ScreenContainer sets its own. */}
       <StatusBar style="dark" />
+      <ErrorBoundary>
       {boot.status === 'ready' && fontsReady ? (
         <SettingsProvider>
           <I18nProvider>
             <ProfileProvider>
               <SubscriptionProvider>
                 <ThemeProvider>
-                  <NavigatorWhenLoaded />
+                  <ShopThemeProvider>
+                    <CollectionProvider>
+                      <NavigatorWhenLoaded />
+                    </CollectionProvider>
+                  </ShopThemeProvider>
                 </ThemeProvider>
               </SubscriptionProvider>
             </ProfileProvider>
@@ -63,6 +72,7 @@ export default function App() {
           <Text style={styles.message}>by {BRAND.publisher}</Text>
         </View>
       )}
+      </ErrorBoundary>
     </SafeAreaProvider>
   );
 }

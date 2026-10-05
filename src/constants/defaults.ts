@@ -294,7 +294,6 @@ export const DEFAULT_REWARDS: { title: string; icon: string; stars: number }[] =
 
 export const DEFAULT_SUBJECTS: { name: string; icon: string; color: string }[] = [
   { name: 'English', icon: '📖', color: c('blue') },
-  { name: 'Filipino', icon: '🇵🇭', color: c('yellow') },
   { name: 'Mathematics', icon: '🔢', color: c('green') },
   { name: 'Science', icon: '🔬', color: c('teal') },
   { name: 'Araling Panlipunan', icon: '🏘️', color: c('orange') },
@@ -313,7 +312,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   buttonSize: 'large',
   textSize: 'large',
   hapticsEnabled: true,
-  parentPin: '1234',
+  // '' = no PIN yet: Parent Mode makes the grown-up create one on first entry (services/pin.ts).
+  parentPin: '',
   schoolModeAtStart: false,
   learningDifficulty: 'easy',
   confirmComplete: false,
@@ -324,7 +324,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   language: 'en-US',
   speechPracticeHidden: '',
   toursDone: '',
-  speechPronunciationSet: 'fil',
+  speechPronunciationSet: 'en',
   speechPronunciationOverrides: '{}',
   adventureTheme: 'child',
   adventureWorld: '',
@@ -332,6 +332,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   therapyHidden: '',
   // Never pre-accepted. A grown-up sees the notice before the first therapy activity.
   therapySafetyAcceptedAt: '',
+  shopHint: '',
+  petCosmetics: '',
   // Free until something says otherwise. Never default anyone into Plus.
   subscriptionStatus: '',
 };

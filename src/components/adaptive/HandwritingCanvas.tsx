@@ -12,6 +12,7 @@ import { layoutSchoolText } from '@/adaptive/schoolText';
 import { CAP_HEIGHT, strokesFor } from '@/adaptive/strokeOrder';
 import { StrokeArrows, type Point } from './StrokeArrows';
 import { useI18n } from '@/i18n';
+import { EMPTY_TRACE_MESSAGE, isMeaningfulTrace, pathLength } from '@/rewards/verification';
 import type { LetterStyle } from '@/i18n/types';
 
 export type Guide =
@@ -47,6 +48,7 @@ export function HandwritingCanvas({ guide, onDone, strokeWidth = 14, onStrokeWid
   const [size, setSize] = useState({ w: 0, h: height });
   const [strokes, setStrokes] = useState<Stroke[]>([]);
   const [current, setCurrent] = useState<Stroke>('');
+  const [hint, setHint] = useState('');
   const currentRef = useRef('');
   const startedAt = useRef<number | null>(null);
   // The responder is built once, so it reads the callback through a ref and never goes stale.
@@ -69,6 +71,7 @@ export function HandwritingCanvas({ guide, onDone, strokeWidth = 14, onStrokeWid
         onPanResponderGrant: (e) => {
           // Switch the screen's scrolling off NOW, at touch-down, before the finger has moved at all.
           drawingCb.current?.(true);
+          setHint('');
           if (startedAt.current === null) startedAt.current = Date.now();
           const { locationX: x, locationY: y } = e.nativeEvent;
           currentRef.current = `M ${x.toFixed(1)} ${y.toFixed(1)}`;
@@ -99,7 +102,16 @@ export function HandwritingCanvas({ guide, onDone, strokeWidth = 14, onStrokeWid
   const onLayout = (e: LayoutChangeEvent) => setSize({ w: e.nativeEvent.layout.width, h: height });
   const clear = () => setStrokes([]);
   const undo = () => setStrokes((s) => s.slice(0, -1));
-  const done = () => onDone({ strokes: strokes.length, durationMs: startedAt.current ? Date.now() - startedAt.current : 0 });
+  const done = () => {
+    // An empty canvas, or nothing but taps, is not a try: Done explains what to do and nothing advances. This is
+    // not a test of accuracy (a wobbly trace is still a trace) — only that the child traced.
+    if (!isMeaningfulTrace(strokes.map(pathLength))) {
+      setHint(EMPTY_TRACE_MESSAGE);
+      return;
+    }
+    setHint('');
+    onDone({ strokes: strokes.length, durationMs: startedAt.current ? Date.now() - startedAt.current : 0 });
+  };
 
   // On the night sky the guide is a soft periwinkle and the stroke-order marks a friendly orange:
   // clear on white, warmer than the old warning red, and still quiet next to the child's own ink.
@@ -154,6 +166,10 @@ export function HandwritingCanvas({ guide, onDone, strokeWidth = 14, onStrokeWid
         <BigButton label="Done" icon="check-bold" variant="success" minHeight={MIN_CHILD_TARGET} compact onPress={done} style={[styles.tool, styles.toolWide]} />
       </View>
       )}
+
+      {hint ? (
+        <Text style={styles.hint} accessibilityLiveRegion="polite" maxFontSizeMultiplier={MAX_FONT_SCALE}>{hint}</Text>
+      ) : null}
 
       {onStrokeWidthChange && night ? (
         <View style={styles.penRow}>
@@ -318,6 +334,7 @@ function renderGuide(guide: Guide, w: number, h: number, color: string, letterSt
 const WEB_NO_SCROLL = { touchAction: 'none', userSelect: 'none' } as unknown as ViewStyle;
 
 const styles = StyleSheet.create({
+  hint: { color: '#FFD84D', fontWeight: '800', fontSize: 16, textAlign: 'center' },
   webNoScroll: WEB_NO_SCROLL,
   wrap: { gap: SPACING.md },
   canvas: { borderRadius: Radius.lg, overflow: 'hidden' },

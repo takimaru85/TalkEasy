@@ -1,5 +1,4 @@
 import { ENGLISH } from './content/english';
-import { FILIPINO } from './content/filipino';
 import { MATH } from './content/math';
 import { SCIENCE } from './content/science';
 import { AP } from './content/ap';
@@ -10,7 +9,7 @@ import type { LearningActivity, LearningSubject, LearningSubjectKey } from './ty
  * Registry of Grade 2 learning content. Order here is the order shown to the child.
  * Adding a subject or activity = add it to the content files and this list; nothing else.
  */
-export const LEARNING_SUBJECTS: LearningSubject[] = [ENGLISH, FILIPINO, MATH, SCIENCE, AP, ESP];
+export const LEARNING_SUBJECTS: LearningSubject[] = [ENGLISH, MATH, SCIENCE, AP, ESP];
 
 export const LEARNING_SUBJECT_MAP: Record<LearningSubjectKey, LearningSubject> = Object.fromEntries(
   LEARNING_SUBJECTS.map((s) => [s.key, s]),

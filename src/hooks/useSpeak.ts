@@ -60,8 +60,8 @@ export function useSpeak() {
    * Speaks text that belongs to CONTENT, in the language that content is written in.
    *
    * Same silencing rule as speakFeedback, but the voice follows the material rather than the app:
-   * a lesson titled "Mga hayop" is Filipino wherever it is read out, including from a list of
-   * lessons, and an English voice reads that title as the letters M, G, A. Pass '' (or nothing)
+   * a lesson written in another language is read in it wherever it is read out, including from a
+   * list of lessons. Pass '' (or nothing)
    * for English and this behaves exactly like speakFeedback.
    */
   const speakInLanguage = useCallback(

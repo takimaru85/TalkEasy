@@ -1,5 +1,6 @@
 import React, { useId } from 'react';
 import Svg, { Defs, Ellipse, G, LinearGradient, Stop } from 'react-native-svg';
+import { SVG_DECORATIVE } from '@/utils/svgA11y';
 import type { CardSlot, ThemeArtName } from '@/adventure/themes';
 import { drawDino, drawRexy } from './art/dinoArt';
 import { drawAnimal, drawLeo } from './art/animalArt';
@@ -40,7 +41,7 @@ export function ThemeArt({ name, size }: Props) {
   const shadow = name.endsWith('-hero') ? { cy: 95, rx: 22 } : { cy: 59.5, rx: 18 };
 
   return (
-    <Svg width={size} height={size} viewBox={box} accessible={false} pointerEvents="none">
+    <Svg width={size} height={size} viewBox={box} {...SVG_DECORATIVE} pointerEvents="none">
       <Defs>{drawn.defs}</Defs>
       <Ellipse cx={32} cy={shadow.cy} rx={shadow.rx} ry={2.6} fill="#000000" opacity={0.2} />
       {drawn.art}

@@ -539,6 +539,101 @@ export const MIGRATIONS: Migration[] = [
       UPDATE therapy_activities SET category = 'exercise' WHERE category = 'therapy';
     `,
   },
+  {
+    version: 17,
+    // The Rewards Shop. What a child OWNS is one row per item; what it COST is already in the star
+    // ledger as a negative `star_events` row (source 'shop'), so there is no second balance to drift.
+    // The PRIMARY KEY on item_id is what stops a double tap buying the same item twice. The
+    // catalogue itself is code (`shop/catalog.ts`), not rows.
+    sql: `
+      CREATE TABLE IF NOT EXISTS shop_purchases (
+        item_id      TEXT PRIMARY KEY,
+        cost         INTEGER NOT NULL,
+        purchased_at TEXT    NOT NULL
+      );
+    `,
+  },
+  {
+    version: 18,
+    // Real-money purchases and equipping, on the SAME inventory table.
+    //  - `source` says how an item was obtained ('stars' | 'google' | 'apple'); existing rows are stars.
+    //  - `order_id` is the STORE's own order id for a cash purchase. The unique index is what makes a
+    //    replayed purchase (restore, second device) unable to grant twice. Star rows leave it NULL.
+    //  - `shop_equipped` is what the child has chosen to wear, one row per slot, so a choice survives a
+    //    restart and an item that is not owned can never be equipped.
+    sql: `
+      ALTER TABLE shop_purchases ADD COLUMN source   TEXT NOT NULL DEFAULT 'stars';
+      ALTER TABLE shop_purchases ADD COLUMN order_id TEXT;
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_shop_purchases_order ON shop_purchases(order_id) WHERE order_id IS NOT NULL;
+      CREATE TABLE IF NOT EXISTS shop_equipped (
+        slot    TEXT PRIMARY KEY,
+        item_id TEXT NOT NULL
+      );
+    `,
+  },
+  {
+    version: 19,
+    // Verified completion and one-claim-per-completion rewards.
+    //  - `reward_claims` is the audit trail: one row per task completion, keyed by a UNIQUE `claim_key`,
+    //    with the kind, the amount, and a status ('awaiting_parent' | 'credited' | 'declined').
+    //  - `star_events.claim_key` ties the ledger row to its claim; the partial UNIQUE index means the same
+    //    completion cannot put stars in the ledger twice even if the claim logic were wrong. Existing and
+    //    manual events leave it NULL.
+    sql: `
+      CREATE TABLE IF NOT EXISTS reward_claims (
+        claim_key   TEXT PRIMARY KEY,
+        kind        TEXT    NOT NULL,
+        reason      TEXT    NOT NULL DEFAULT '',
+        amount      INTEGER NOT NULL,
+        status      TEXT    NOT NULL,
+        created_at  TEXT    NOT NULL,
+        resolved_at TEXT
+      );
+      CREATE INDEX IF NOT EXISTS idx_reward_claims_status ON reward_claims(status, created_at);
+      ALTER TABLE star_events ADD COLUMN claim_key TEXT;
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_star_events_claim ON star_events(claim_key) WHERE claim_key IS NOT NULL;
+    `,
+  },
+  {
+    version: 20,
+    // The Space Collection: what a child has FOUND, and when.
+    //  - one row per collectible (or category trophy), PRIMARY KEY item_id, so nothing is counted twice;
+    //  - rows are only ever added, so an item can never be taken back;
+    //  - `backfilled` marks items that were already earned before this table existed (their date is unknown);
+    //  - `seen` is whether the child has looked at a new discovery yet.
+    // The five original collectibles were DERIVED from practice and stored nowhere; the first sync records the
+    // ones already earned, so nothing a child found is lost.
+    sql: `
+      CREATE TABLE IF NOT EXISTS collectible_discoveries (
+        item_id       TEXT PRIMARY KEY,
+        discovered_at TEXT    NOT NULL,
+        seen          INTEGER NOT NULL DEFAULT 0,
+        backfilled    INTEGER NOT NULL DEFAULT 0
+      );
+    `,
+  },
+  {
+    version: 21,
+    // TalkEasy is English-only and a fresh install seeds no Filipino subject or lesson, but phones that
+    // installed an older build still carry the one built-in Filipino lesson ("Mga hayop (Animals)") and
+    // its "Filipino" subject, which now read as out of place on Home.
+    //
+    // Removes ONLY what TalkEasy itself shipped: the built-in lesson (is_builtin = 1, so a lesson a
+    // grown-up typed under that title survives), then the "Filipino" subject if nothing else is attached
+    // to it (no lessons, assignments, events, schedule or materials). A subject a family really uses
+    // stays. Nothing is re-created: seeding does not write either row.
+    sql: `
+      DELETE FROM lessons WHERE title = 'Mga hayop (Animals)' AND is_builtin = 1;
+
+      DELETE FROM subjects
+       WHERE LOWER(name) = 'filipino'
+         AND NOT EXISTS (SELECT 1 FROM lessons         WHERE subject_id = subjects.id)
+         AND NOT EXISTS (SELECT 1 FROM assignments     WHERE subject_id = subjects.id)
+         AND NOT EXISTS (SELECT 1 FROM school_events   WHERE subject_id = subjects.id)
+         AND NOT EXISTS (SELECT 1 FROM subject_schedule WHERE subject_id = subjects.id)
+         AND NOT EXISTS (SELECT 1 FROM subject_materials WHERE subject_id = subjects.id);
+    `,
+  },
 ];
 
 export const CURRENT_SCHEMA_VERSION = MIGRATIONS[MIGRATIONS.length - 1].version;

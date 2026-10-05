@@ -5,6 +5,7 @@
 // colour (a child would have to tell them apart by icon alone), when a themed art name has no
 // drawing behind it, or when a screen starts naming a world instead of reading its theme.
 import { readFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import {
   CARD_SLOTS,
   EXPLORE_SLOTS,
@@ -24,6 +25,9 @@ import { WRITING_LEVELS } from '../src/adaptive/handwriting';
 import { THERAPY_ACTIVITIES } from '../src/therapy/content';
 import { BADGES } from '../src/adventure/badges';
 import { LEARNING_SUBJECTS } from '../src/learning';
+import { PREMIUM_THEMES, DEFAULT_THEME, THEME_SLOT } from '../src/shop/themes';
+import { SPACE_AVATARS } from '../src/shop/avatars';
+import { SHOP_ITEMS, methodsFor } from '../src/shop/catalog';
 import { LEARN_ACTIVITY_ART, LEARN_SUBJECT_ART } from '../src/learning/activityArt';
 import { BADGE_ART } from '../src/adventure/badgeArt';
 import { ACTIVITY_ART, STAGE_ART } from '../src/speechpractice/stageArt';
@@ -241,6 +245,105 @@ ok(Object.keys(ACTIVITY_ART).every((id) => SPEECH_STAGES.some((st) => st.members
   ok(lsub.includes('colorArt={LEARN_ACTIVITY_ART[a.key]}') && lsub.includes('colorArt={LEARN_SUBJECT_ART[subject.key]}'), 'the subject screen draws the subject and each activity');
   ok(lact.includes('colorArt={LEARN_ACTIVITY_ART[activity.key]}'), 'the activity screen header wears the activity drawing');
   ok(lhome.includes('colorArt={art}'), 'the Play & Learn cards draw each subject');
+}
+// ---- Premium themes: configured, dark enough for white text, drawn, and applied from ONE place --------
+{
+  const sources = readFileSync('src/components/adventure/themeBackgrounds.ts', 'utf8');
+  const seen = new Map<string, string>();
+  /** The file is registered with a static require, exists, is a 941 x 1672 WebP, and is not a copy of another theme's. */
+  const checkPicture = (file: string, who: string): boolean => {
+    const path = `assets/backgrounds/${file}`;
+    if (!sources.includes(`'${file}': require('../../../assets/backgrounds/${file}')`)) return false;
+    let buf: Buffer;
+    try { buf = readFileSync(path); } catch { return false; }
+    if (buf.toString('ascii', 0, 4) !== 'RIFF' || buf.toString('ascii', 8, 12) !== 'WEBP' || buf.toString('ascii', 12, 16) !== 'VP8X') return false;
+    const w = 1 + buf.readUIntLE(24, 3);
+    const h = 1 + buf.readUIntLE(27, 3);
+    if (w !== 941 || h !== 1672) return false;
+    const hash = createHash('sha1').update(buf).digest('hex');
+    if (seen.has(hash)) return false; // two themes sharing one picture would be a silent substitution
+    seen.set(hash, who);
+    return true;
+  };
+  ok(checkPicture(DEFAULT_THEME.background.file, 'space-default'), 'Space Explorer: its supplied picture is registered, on disk, 941 x 1672 and its own');
+  const lum = (hex: string) => {
+    const n = parseInt(hex.slice(1), 16);
+    const c = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((v) => { const s = v / 255; return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4; });
+    return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+  };
+  const scene = readFileSync('src/components/adventure/ThemeScene.tsx', 'utf8');
+  const bg = readFileSync('src/components/adventure/WorldBackground.tsx', 'utf8');
+  ok(DEFAULT_THEME.name === 'Space Explorer', 'the free default theme is Space Explorer');
+  ok(new Set(PREMIUM_THEMES.map((t) => t.id)).size === PREMIUM_THEMES.length && new Set(PREMIUM_THEMES.map((t) => t.itemId)).size === PREMIUM_THEMES.length, 'theme ids are unique');
+  for (const t of PREMIUM_THEMES) {
+    ok(t.itemId === `theme-${t.id}`, `${t.id}: item id follows the theme id`);
+    ok(t.stars === undefined || (Number.isInteger(t.stars) && t.stars > 0), `${t.id}: star price is a positive whole number when set`);
+    ok(t.stars !== undefined || t.cash, `${t.id}: can be had some way`);
+    ok(SHOP_ITEMS.some((i) => i.id === t.itemId && i.themeId === t.id && i.category === 'themes' && methodsFor(i).length > 0), `${t.id}: is a shop item in the Themes category`);
+    // Either the SUPPLIED picture (a registered file on disk) or, for the older vector worlds, a drawn scene.
+    ok(!!t.background && checkPicture(t.background.file, t.id), `${t.id}: has its supplied background picture (registered, on disk, 941 x 1672, its own)`);
+    ok(!t.background || (t.background.scrim >= 0 && t.background.scrim <= 0.6), `${t.id}: the readability veil is subtle (0 to 0.6)`);
+    // The sky sits under white text and glass cards: it must stay dark, like every free world.
+    ok(lum(t.palette.top) < 0.06 && lum(t.palette.bottom) < 0.03, `${t.id}: the sky is dark enough for white text`);
+  }
+  ok(PREMIUM_THEMES.some((t) => t.stars !== undefined && t.cash) && PREMIUM_THEMES.some((t) => t.stars !== undefined && !t.cash), 'themes cover stars-only and stars-or-cash');
+  ok(bg.includes('useActiveShopTheme()') && bg.includes('<ThemeScene'), 'every child screen and Home get the active theme through WorldBackground');
+  ok(readFileSync('src/components/common/ScreenContainer.tsx', 'utf8').includes('<WorldBackground'), 'ScreenContainer draws its sky through WorldBackground');
+  ok(readFileSync('src/screens/child/ChildHomeScreen.tsx', 'utf8').includes('<WorldBackground'), 'Home draws its sky through WorldBackground');
+  ok(!/ThemeScene|useActiveShopTheme/.test(readFileSync('src/screens/child/ChildHomeScreen.tsx', 'utf8')), 'no screen names a premium theme');
+  ok(THEME_SLOT === 'theme', 'the theme slot is stable');
+  const sc = readFileSync('src/context/ShopThemeContext.tsx', 'utf8');
+  ok(sc.includes('activeThemeFrom'), 'the provider only activates an OWNED theme');
+}
+// ---- Space avatars and the four space themes -----------------------------------------------------------------------
+{
+  const art = readFileSync('src/components/adventure/AvatarArt.tsx', 'utf8');
+  const avSources = readFileSync('src/components/adventure/avatarImages.ts', 'utf8');
+  const avSeen = new Set<string>();
+  const checkAvatarPicture = (file: string, who: string): boolean => {
+    if (!avSources.includes(`'${file}': require('../../../assets/avatars/${file}')`)) return false;
+    let buf: Buffer;
+    try { buf = readFileSync(`assets/avatars/${file}`); } catch { return false; }
+    if (buf.toString('ascii', 0, 4) !== 'RIFF' || buf.toString('ascii', 8, 12) !== 'WEBP' || buf.toString('ascii', 12, 16) !== 'VP8X') return false;
+    if (1 + buf.readUIntLE(24, 3) !== 512 || 1 + buf.readUIntLE(27, 3) !== 512) return false;
+    const hash = createHash('sha1').update(buf).digest('hex');
+    if (avSeen.has(hash)) return false; // two avatars sharing one picture would be a silent substitution
+    avSeen.add(hash);
+    return !!who;
+  };
+  ok(art.includes('AVATAR_SOURCES') && art.includes('resizeMode="contain"'), 'avatars draw the official picture, contained (never stretched or cropped)');
+  for (const a of SPACE_AVATARS) {
+    if (a.image) ok(checkAvatarPicture(a.image, a.id), `${a.name}: official picture ${a.image} is registered, on disk, 512 x 512 WebP and its own`);
+    else console.log(`NOTE ${a.name}: no official picture supplied yet — shows the temporary stand-in (assets/avatars/${a.id}.webp)`);
+    ok(a.free || (Number.isInteger(a.stars) && (a.stars as number) > 0), `${a.name}: priced, or the free starter`);
+    ok(a.free || SHOP_ITEMS.some((i) => i.avatarId === a.id && i.category === 'avatars'), `${a.name} is a shop item`);
+  }
+  ok(['Astro Explorer', 'Cosmo Robot', 'Luna Alien', 'Rocket Buddy', 'Galaxy Cat'].every((n) => SPACE_AVATARS.some((a) => a.name === n)), 'the five requested avatars exist');
+  const spaceThemes = PREMIUM_THEMES.filter((t) => t.family === 'space').map((t) => t.name);
+  ok(['Moon Base', 'Nebula Dreams', 'Planet Explorer', 'Cosmic Adventure'].every((n) => spaceThemes.includes(n)), 'the four space themes exist');
+  const mascot = readFileSync('src/components/adventure/Mascot.tsx', 'utf8');
+  ok(mascot.includes('useActiveAvatar()') && mascot.includes('<AvatarArt'), 'the mascot spots draw the equipped avatar');
+  ok(readFileSync('src/components/onboarding/TourOverlay.tsx', 'utf8').includes('pip'), 'the first-run tour still introduces Pip');
+}
+
+// ---- Space Explorer icon set: every destination the Space theme draws has a space drawing ----------------
+{
+  const spaceSrc = readFileSync('src/components/adventure/art/spaceArt.tsx', 'utf8');
+  const list = /SPACE_ICON_NAMES = \[([\s\S]*?)\] as const/.exec(spaceSrc)?.[1] ?? '';
+  const drawn = [...list.matchAll(/'([a-z]+)'/g)].map((m) => m[1]);
+  ok(drawn.length >= 12, 'the Space icon set lists its icons');
+  for (const n of drawn) ok(new RegExp(`case '${n}':`).test(spaceSrc), `spaceArt draws '${n}'`);
+  const space = themeFor('space');
+  const used = new Set<string>();
+  for (const slot of CARD_SLOTS) { const art = space.cards[slot].art; if (art.kind === 'game') used.add(art.name); }
+  if (space.startArt.kind === 'game') used.add(space.startArt.name);
+  for (const slot of EXPLORE_SLOTS) { const art = space.explore?.[slot]; if (art && art.kind === 'game') used.add(art.name); }
+  for (const n of used) ok(drawn.includes(n), `Space Home draws '${n}' with the space icon, not the classic one`);
+  const gi = readFileSync('src/components/adventure/GameIcon.tsx', 'utf8');
+  ok(gi.includes('useIconSet()') && gi.includes('drawSpace('), 'GameIcon picks the space set through useIconSet');
+  ok(readFileSync('src/components/adventure/ColorArt.tsx', 'utf8').includes('useIconSet()'), 'ColorArt puts its list drawings in orbit through useIconSet');
+  const hook = readFileSync('src/components/adventure/useIconSet.ts', 'utf8');
+  ok(hook.includes("family === 'space' ? 'space' : 'classic'") && hook.includes("=== 'space' ? 'space' : 'classic'"), 'a non-space premium theme or another world keeps the classic set, so no rockets on an Ocean screen');
 }
 const counts = `${WORLD_IDS.length} themes, ${CARD_SLOTS.length} cards each`;
 console.log(problems === 0 ? `Themes OK — ${counts}` : `${problems} problem(s)`);

@@ -9,9 +9,11 @@ import { requireOptionalNativeModule } from 'expo-modules-core';
  * is missing. Without it, `isSpeechRecognitionAvailable()` is false and the UI falls back to the
  * parent-assisted oral answer.
  *
- * Recognition is requested with `requiresOnDeviceRecognition` where supported, so audio is
- * processed on the phone and never stored — only the transcript text reaches the app, and only
- * the final answer text is saved.
+ * Recognition is requested with `requiresOnDeviceRecognition` ONLY where the phone supports it, so there
+ * audio is processed on the phone. On a phone without on-device recognition the system's own speech
+ * service (Apple or Google) may process the audio online; TalkEasy cannot prevent that, so every
+ * privacy statement says so. TalkEasy itself never stores or sends the audio — only the transcript
+ * text reaches the app, and only the final answer text is saved.
  */
 interface SpeechNativeModule {
   start: (options: Record<string, unknown>) => void;

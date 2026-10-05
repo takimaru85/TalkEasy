@@ -4,7 +4,9 @@ import { BigButton, FormField, ListRow, ProgressBar, ScreenContainer, ScreenHead
 import { MAX_FONT_SCALE, MIN_PARENT_TARGET, SPACING } from '@/constants/sizes';
 import { useProfile } from '@/context/ProfileContext';
 import { rewardsRepo } from '@/database';
-import { useRewardList, useSizes, useStarHistory, useStarSummary } from '@/hooks';
+import { useAwaitingClaims, useRewardList, useShopEquipped, useShopOwned, useSizes, useStarHistory, useStarSummary } from '@/hooks';
+import { SHOP_ITEMS } from '@/shop/catalog';
+import { formatDateTime as fmtTime } from '@/utils/date';
 import type { ParentScreenProps } from '@/navigation/types';
 import { Fonts, Radius, useTheme } from '@/theme';
 import type { Reward } from '@/types/models';
@@ -14,8 +16,9 @@ import { formatDateTime } from '@/utils/date';
 const REWARD_EMOJI = ['🎮', '🍪', '🎨', '📺', '🧸', '🍦', '🎈', '🚗', '📚', '🎵', '⚽', '🌟'];
 
 /**
- * Rewards: the star balance, the reward list (define / edit / delete / "give"), and a way to
- * add or remove stars by hand. Kept positive — stars are only ever spent on a chosen reward.
+ * Rewards: the star balance, the reward list (define / edit / delete / "give"), and the read-only shop
+ * summary. There is NO control to add or remove stars by hand: stars come only from verified activity
+ * (or a confirmed task below) and are spent only on a chosen reward or in the Shop.
  */
 export function ManageRewardsScreen({ navigation }: ParentScreenProps<'ManageRewards'>) {
   const sizes = useSizes();
@@ -24,12 +27,15 @@ export function ManageRewardsScreen({ navigation }: ParentScreenProps<'ManageRew
   const { data: rewards } = useRewardList();
   const { data: summary } = useStarSummary();
   const { data: history } = useStarHistory(15);
+  const { data: waiting } = useAwaitingClaims();
+  const { data: ownedItems } = useShopOwned();
+  const { data: wornItems } = useShopEquipped();
+  const { data: shopHistory } = useStarHistory(200);
 
   const [editing, setEditing] = useState<Reward | 'new' | null>(null);
   const [title, setTitle] = useState('');
   const [icon, setIcon] = useState('🎁');
   const [stars, setStars] = useState('10');
-  const [manual, setManual] = useState('');
 
   const startNew = () => { setTitle(''); setIcon('🎁'); setStars('10'); setEditing('new'); };
   const startEdit = (r: Reward) => { setTitle(r.title); setIcon(r.icon); setStars(String(r.starsRequired)); setEditing(r); };
@@ -47,13 +53,6 @@ export function ManageRewardsScreen({ navigation }: ParentScreenProps<'ManageRew
     if (await confirm(`Give "${r.title}"?`, `${r.starsRequired} stars will be used.`, 'Give reward')) await rewardsRepo.redeem(r);
   };
 
-  const addManual = async (sign: 1 | -1) => {
-    const n = Math.abs(Number(manual) || 0);
-    if (!n) return alertMessage('Type how many stars.');
-    await rewardsRepo.addStars(sign * n, sign > 0 ? 'Bonus from parent' : 'Adjusted by parent', 'manual');
-    setManual('');
-  };
-
   return (
     <ScreenContainer>
       <ScreenHeader title={`${displayName}'s stars`} onBack={() => navigation.goBack()} />
@@ -66,6 +65,57 @@ export function ManageRewardsScreen({ navigation }: ParentScreenProps<'ManageRew
           {summary.nextReward ? (
             <ProgressBar value={Math.min(1, summary.total / summary.nextReward.starsRequired)} label={`${Math.min(summary.total, summary.nextReward.starsRequired)} / ${summary.nextReward.starsRequired}`} color={theme.colors.selected} accessibilityLabel={`Progress to ${summary.nextReward.title}`} />
           ) : null}
+
+          {/* Tasks the app cannot see (activities done away from the screen, homework). The star is only
+              credited here, by a grown-up, once. Parent Mode is already behind the Parent PIN. */}
+          <SectionTitle title="Waiting for you" emoji="⏳" trailing={waiting.length ? String(waiting.length) : undefined} />
+          {waiting.length === 0 ? (
+            <Text style={[styles.label, { fontSize: sizes.body, color: theme.colors.textMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
+              Nothing to check right now. When {displayName} finishes an activity or homework away from the screen, it will appear here.
+            </Text>
+          ) : (
+            waiting.map((w) => (
+              <View key={w.key} style={[styles.panel, { backgroundColor: theme.colors.surfaceAlt, borderColor: theme.colors.borderSoft }]}>
+                <Text style={[styles.label, { fontSize: sizes.body + 1, color: theme.colors.text }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
+                  {w.reason} · {w.amount} {w.amount === 1 ? 'star' : 'stars'}
+                </Text>
+                <View style={styles.stats}>
+                  <BigButton label="Confirm" icon="check-bold" variant="success" minHeight={MIN_PARENT_TARGET} onPress={() => rewardsRepo.confirmClaim(w.key)} style={styles.half} />
+                  <BigButton label="Not this time" variant="outline" minHeight={MIN_PARENT_TARGET} onPress={() => rewardsRepo.declineClaim(w.key)} style={styles.half} />
+                </View>
+              </View>
+            ))
+          )}
+
+          {/* Read-only: what the Rewards Shop has done. Prices and balances are not editable here. */}
+          <SectionTitle title="Rewards Shop" emoji="🛍️" />
+          <View style={[styles.panel, { backgroundColor: theme.colors.surfaceAlt, borderColor: theme.colors.borderSoft }]}>
+            {[
+              ['Stars earned in total', summary.lifetime],
+              ['Stars available now', summary.total],
+              ['Stars spent', Math.max(0, summary.lifetime - summary.total)],
+            ].map(([label, value]) => (
+              <Text key={label as string} style={[styles.label, { fontSize: sizes.body, color: theme.colors.text }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>{label}: {value}</Text>
+            ))}
+            <Text style={[styles.label, { fontSize: sizes.body, color: theme.colors.text }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
+              Buddies unlocked: {['Astro Explorer (starter)', ...SHOP_ITEMS.filter((i) => i.avatarId && ownedItems.includes(i.id)).map((i) => i.name)].join(', ')}
+            </Text>
+            <Text style={[styles.label, { fontSize: sizes.body, color: theme.colors.text }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
+              Themes unlocked: {['Space Explorer (free)', ...SHOP_ITEMS.filter((i) => i.themeId && ownedItems.includes(i.id)).map((i) => i.name)].join(', ')}
+            </Text>
+            <Text style={[styles.label, { fontSize: sizes.body, color: theme.colors.textMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
+              In use: {SHOP_ITEMS.filter((i) => Object.values(wornItems).includes(i.id)).map((i) => i.name).join(', ') || 'the free defaults'}
+            </Text>
+            {shopHistory.filter((e) => e.source === 'shop').length === 0 ? (
+              <Text style={[styles.label, { fontSize: sizes.body, color: theme.colors.textMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>No redemptions yet.</Text>
+            ) : (
+              shopHistory.filter((e) => e.source === 'shop').slice(0, 10).map((e) => (
+                <Text key={e.id} style={[styles.label, { fontSize: sizes.body - 1, color: theme.colors.textMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
+                  {fmtTime(e.createdAt)} · {e.reason.replace(/^Shop: /, '')} · {Math.abs(e.amount)} stars
+                </Text>
+              ))
+            )}
+          </View>
 
           <SectionTitle title="Rewards" emoji="🎁" />
           {editing ? (
@@ -102,13 +152,6 @@ export function ManageRewardsScreen({ navigation }: ParentScreenProps<'ManageRew
             />
           ))}
 
-          <SectionTitle title="Bonus stars" emoji="✨" />
-          <View style={styles.row}>
-            <View style={styles.grow}><FormField label="How many" value={manual} onChangeText={setManual} keyboardType="number-pad" maxLength={3} placeholder="1" /></View>
-            <BigButton label="Add" icon="plus" variant="success" minHeight={MIN_PARENT_TARGET} compact onPress={() => addManual(1)} style={styles.small} />
-            <BigButton label="Remove" icon="minus" variant="outline" minHeight={MIN_PARENT_TARGET} compact onPress={() => addManual(-1)} style={styles.small} />
-          </View>
-
           <SectionTitle title="History" emoji="🕒" />
           {history.length === 0 ? <Text style={[styles.hint, { color: theme.colors.textMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>No stars yet.</Text> : null}
           {history.map((h) => (
@@ -121,6 +164,7 @@ export function ManageRewardsScreen({ navigation }: ParentScreenProps<'ManageRew
 }
 
 const styles = StyleSheet.create({
+  half: { flex: 1 },
   flex: { flex: 1 },
   list: { padding: SPACING.lg, gap: SPACING.md, paddingBottom: SPACING.xl * 2 },
   stats: { flexDirection: 'row', gap: SPACING.sm },

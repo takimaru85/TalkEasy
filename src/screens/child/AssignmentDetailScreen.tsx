@@ -10,7 +10,9 @@ import { MAX_FONT_SCALE, RADIUS, SPACING } from '@/constants/sizes';
 import { useSettings } from '@/context/SettingsContext';
 import { assignmentsRepo } from '@/database';
 import { useProfile } from '@/context/ProfileContext';
-import { useAssignment, useAwardStars, useSizes, useSpeak, useToday } from '@/hooks';
+import { useAssignment, useClaimStatus, useClaimStars, useSizes, useSpeak, useToday } from '@/hooks';
+import { rewardsRepo } from '@/database';
+import { AWAITING_MESSAGE, claimKey } from '@/rewards/verification';
 import type { RootScreenProps } from '@/navigation/types';
 import { confirm } from '@/utils/confirm';
 import { describeDueDate, formatShortDate } from '@/utils/date';
@@ -24,7 +26,8 @@ export function AssignmentDetailScreen({ navigation, route }: RootScreenProps<'A
   const { data: a } = useAssignment(route.params.assignmentId);
   const { speakPhrase, speakFeedback } = useSpeak();
   const { displayName } = useProfile();
-  const award = useAwardStars();
+  const claim = useClaimStars();
+  const { data: claimStatus } = useClaimStatus(claimKey.assignment(route.params.assignmentId));
 
   const theme = useTheme();
   const pal = useCardPalette(a?.status === 'done' ? '#ECEEF2' : a?.subject?.color ?? '#FFF3A8');
@@ -41,11 +44,16 @@ export function AssignmentDetailScreen({ navigation, route }: RootScreenProps<'A
       if (!ok) return;
     }
     await assignmentsRepo.setStatus(a.id, done ? 'todo' : 'done');
+    const key = claimKey.assignment(a.id);
     if (!done) {
-      const stars = await award('assignment', a.title);
-      speakFeedback(`Finished! Great job, ${displayName}!${stars > 0 ? ` ${stars} stars.` : ''}`);
+      // Homework happens off the screen: the star waits for a grown-up to confirm it in Parent Mode.
+      const r = await claim('assignment', key, a.title);
+      speakFeedback(r.outcome === 'awaiting_parent' ? `Finished! ${AWAITING_MESSAGE}` : `Finished! Great job, ${displayName}!${r.stars > 0 ? ` ${r.stars} stars.` : ''}`);
       navigation.goBack();
-    } else speakPhrase('Not finished yet.');
+    } else {
+      await rewardsRepo.withdrawClaim(key); // un-ticking while it waits takes it off the grown-up's list
+      speakPhrase('Not finished yet.');
+    }
   };
 
   return (
@@ -60,7 +68,7 @@ export function AssignmentDetailScreen({ navigation, route }: RootScreenProps<'A
             {KIND_META[a.kind].label} · {a.dueDate ? `Due ${describeDueDate(a.dueDate, isoDate)} (${formatShortDate(a.dueDate)})` : 'No due date'}
           </Text>
           <Text style={[styles.line, styles.status, { fontSize: sizes.body + 2, color: pal.inkMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
-            {done ? 'Completed' : STATUS_META[a.status].childLabel}
+            {done ? (claimStatus === 'awaiting_parent' ? 'Completed · waiting for a grown-up to check' : 'Completed') : STATUS_META[a.status].childLabel}
           </Text>
         </View>
 

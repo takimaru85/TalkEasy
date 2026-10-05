@@ -1,6 +1,6 @@
 # TalkEasy Privacy Policy
 
-**Effective Date:** September 30, 2026
+**Effective Date:** October 5, 2026
 
 ## Introduction
 
@@ -34,7 +34,7 @@ TalkEasy does not automatically collect analytics events, usage statistics, adve
 
 TalkEasy uses the microphone in two different ways, and they handle audio differently. Both are optional, both happen only after a deliberate tap, and neither transmits anything.
 
-- **Microphone audio, momentarily, for speech-to-text.** When your child taps a "Say the answer" control in the Learning section, the device microphone is activated and the audio is converted to text using the device's own on-device speech recognizer. The audio itself is **not recorded, saved, or transmitted** — only the resulting text answer is kept, in the same place as any other typed answer.
+- **Microphone audio, momentarily, for speech-to-text.** When your child taps a "Say the answer" control in the Learning section, the device microphone is activated and the audio is converted to text by your phone's speech recognizer. On phones that support it this happens **on the device**; on phones that do not, the phone's own speech service (Apple or Google) may process the audio over the internet under its own terms. TalkEasy itself **does not record, save, or send** the audio, and has no servers — only the resulting text answer is kept, in the same place as any other typed answer.
 - **A short temporary voice recording, so your child can hear themselves.** In Sound Practice and Speech Practice, tapping the microphone records the attempt to a temporary file in the app's cache area on the device, so that tapping "Hear yourself" can play it back. That file is **deleted as soon as it is no longer needed** — when the next attempt starts, when the child moves on, or when the screen closes — so at most one clip exists at a time. It is never transcribed, never scored, never copied into the app's permanent storage, never written to the database, and never transmitted. The app records only that an attempt happened and how long it lasted.
 - **App version**, read locally from the app's own configuration to display it in Settings → About. This is not transmitted anywhere.
 
@@ -45,7 +45,7 @@ TalkEasy requests the minimum Android permissions needed for the features descri
 | Permission | Purpose |
 |---|---|
 | Modify audio settings | Lets TalkEasy briefly lower other audio while it speaks a phrase aloud, and play speech reliably. |
-| Microphone | Used in two places, each only after your child taps a microphone control: to turn a spoken answer into text on the device ("Say the answer" in Learning), and to record a short practice attempt in Sound Practice or Speech Practice so it can be played straight back. The practice clip is temporary and is deleted after playback. |
+| Microphone | Used in two places, each only after your child taps a microphone control: to turn a spoken answer into text ("Say the answer" in Learning), and to record a short practice attempt in Sound Practice or Speech Practice so it can be played straight back. The practice clip is temporary and is deleted after playback. |
 | Camera | Used only when a parent taps "Take photo" to attach a picture to an assignment, activity, communication button, or the child's profile. |
 | Photos / media library | Used only when a parent taps "Choose photo" to pick an existing picture for the same purposes. |
 
@@ -55,7 +55,7 @@ TalkEasy does not request permission for contacts, location, calendar, phone, SM
 
 Microphone access supports two optional features, and it is worth being precise about the difference, because one of them does briefly create an audio file on your device.
 
-**1. "Say the answer" (Adaptive Learning) — no recording is created.** Speech recognition is performed **on the device**, using the operating system's built-in recognizer; TalkEasy does not use any cloud speech API. No audio file is created, and only the resulting text is kept. If on-device recognition is not available on a particular build (for example, when running inside Expo Go for development/testing), the feature falls back to a parent confirming the child's spoken answer themselves — again, without recording anything.
+**1. "Say the answer" (Adaptive Learning) — no recording is created.** Speech recognition is performed by the operating system's built-in recognizer. **Where your phone supports on-device recognition, TalkEasy requires it and the audio stays on the device.** On a phone without it, the system's own speech service (Apple or Google) may process the audio over the internet under its own privacy terms; TalkEasy does not choose or control that service, does not use any speech service of its own, and never saves or sends the audio itself. No audio file is created, and only the resulting text is kept. If speech recognition is not available at all (for example in a development build), the feature falls back to a parent confirming the child's spoken answer themselves — again, without recording anything.
 
 **2. "Hear yourself" (Sound Practice and Speech Practice) — a temporary recording is created, then deleted.** The whole point of this feature is that a child can say a sound and immediately hear their own voice back, so the attempt has to be captured to play it. What TalkEasy does with it:
 
@@ -106,7 +106,7 @@ The one exception to "remains for as long as the app is installed" is the practi
 
 ## Data Security
 
-Because TalkEasy has no server component and makes no network requests, there is no data-in-transit or server-side breach risk for the information you enter into the app. Data at rest is protected by your device's own operating-system-level app sandboxing (each app's storage is isolated from other apps) and by whatever device-level security you use (such as a screen lock). TalkEasy additionally provides an in-app 4-digit "Parent Mode" PIN to keep the parent/management screens separate from the child's screens on a shared device; this PIN is a convenience feature for a shared family device, not a strong security mechanism, and it does not encrypt the underlying data.
+Because TalkEasy has no server component and makes no network requests of its own (the one exception is the phone's own speech service, described under "Microphone" above), there is no data-in-transit or server-side breach risk for the information you enter into the app. Data at rest is protected by your device's own operating-system-level app sandboxing (each app's storage is isolated from other apps) and by whatever device-level security you use (such as a screen lock). TalkEasy additionally provides an in-app 4-digit "Parent Mode" PIN to keep the parent/management screens separate from the child's screens on a shared device; this PIN is a convenience feature for a shared family device, not a strong security mechanism, and it does not encrypt the underlying data.
 
 ## Children's Privacy
 

@@ -14,6 +14,7 @@ import type { RotationMode, SizeOption } from '@/types/models';
 import { alertMessage } from '@/utils/confirm';
 import { BRAND } from '@/constants/brand';
 import { Fonts } from '@/theme';
+import { isValidPinFormat, isWeakPin, makePinRecord } from '@/services/pin';
 
 const RATE_CHOICES = [
   { value: '0.7', label: 'Slow' },
@@ -48,9 +49,10 @@ export function SettingsScreen({ navigation }: ParentScreenProps<'Settings'>) {
     choices.reduce((best, c) => (Math.abs(Number(c.value) - n) < Math.abs(Number(best.value) - n) ? c : best)).value;
 
   const savePin = async () => {
-    if (!/^\d{4}$/.test(pin1)) return alertMessage('PIN must be exactly 4 digits.');
+    if (!isValidPinFormat(pin1)) return alertMessage('PIN must be exactly 4 digits.');
+    if (isWeakPin(pin1)) return alertMessage('Please choose a PIN that is harder to guess (not 1234 or four of the same digit).');
     if (pin1 !== pin2) return alertMessage('The two PINs do not match.');
-    await updateSetting('parentPin', pin1);
+    await updateSetting('parentPin', makePinRecord(pin1));
     setPin1('');
     setPin2('');
     alertMessage('PIN updated.');
@@ -234,7 +236,7 @@ export function SettingsScreen({ navigation }: ParentScreenProps<'Settings'>) {
 
           <Section title="Parent PIN">
             <Text style={styles.hint} maxFontSizeMultiplier={MAX_FONT_SCALE}>
-              The PIN protects Parent Mode. The default is 1234 — please change it.
+              The PIN protects Parent Mode. Change it any time here.
             </Text>
             <FormField label="New PIN (4 digits)" value={pin1} onChangeText={setPin1} keyboardType="number-pad" maxLength={4} secureTextEntry />
             <FormField label="Repeat new PIN" value={pin2} onChangeText={setPin2} keyboardType="number-pad" maxLength={4} secureTextEntry />
@@ -249,7 +251,7 @@ export function SettingsScreen({ navigation }: ParentScreenProps<'Settings'>) {
             <Text style={styles.hint} maxFontSizeMultiplier={MAX_FONT_SCALE}>
               Microphone: in Sound Practice and Speech Practice, "Hear yourself" records the attempt so it can
               be played straight back, then deletes it. It is never scored, never turned into text, and never
-              saved. "Say the answer" in Learning turns speech into text on this device and records nothing.
+              saved. "Say the answer" in Learning turns speech into text and records nothing. It runs on this device where the phone supports that; otherwise your phone's own speech service (Apple or Google) may process the audio online. TalkEasy never saves or sends it.
             </Text>
           </Section>
 

@@ -16,6 +16,8 @@ export type DbTopic =
   | 'learning'
   | 'profile'
   | 'rewards'
+  | 'claims'
+  | 'collection'
   | 'recent'
   | 'lessons'
   | 'adaptive'

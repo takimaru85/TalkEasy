@@ -1,4 +1,5 @@
 import * as Speech from 'expo-speech';
+import { pickBestVoice } from './voicePick';
 import { contentLanguage, voiceSpeaks, type ContentLanguage } from './contentLanguage';
 
 /**
@@ -7,8 +8,8 @@ import { contentLanguage, voiceSpeaks, type ContentLanguage } from './contentLan
  * THE POINT: asking an engine for `fil-PH` is a REQUEST, not a guarantee. Android engines vary —
  * some speak the language, some silently fall back to the default voice, and some refuse to speak
  * at all when they have no voice for the tag. iOS differs again. So the app LOOKS at what is
- * installed before it decides, and the rest of the app gets an honest answer: either a Filipino
- * voice identifier, or `matched: false` meaning "there is no Filipino voice here — read it with
+ * installed before it decides, and the rest of the app gets an honest answer: either a
+ * voice identifier, or `matched: false` meaning "there is no voice for it here — read it with
  * the fallback spelling and do not pretend otherwise".
  *
  * The voice list is fetched once and cached. On some Android devices it is empty until the TTS
@@ -78,7 +79,7 @@ function logCatalogue(list: DeviceVoice[]): void {
 
 function contentLanguagesInUse(): ContentLanguage[] {
   // Imported lazily through contentLanguage() to keep this module's imports to the two it needs.
-  return (['fil-PH', 'es-ES'] as const).map(contentLanguage).filter((l): l is ContentLanguage => l !== null);
+  return (['es-ES'] as const).map(contentLanguage).filter((l): l is ContentLanguage => l !== null);
 }
 
 /**
@@ -100,13 +101,13 @@ export async function voiceFor(tag: string | null | undefined): Promise<VoiceCho
   const match = voices.find((v) => voiceSpeaks(language, v.language));
   const choice: VoiceChoice = match
     ? { voice: match.identifier, language: match.language, matched: true }
-    : // No voice for it here. Pass no tag: an engine with no Filipino voice may refuse the tag
+    : // No voice for it here. Pass no tag: an engine with no voice for the language may refuse the tag
       // outright and say nothing, and silence is worse than an English voice reading a
       // pronunciation-safe respelling, which is what the caller does on `matched: false`.
       { voice: null, language: null, matched: false };
 
   // Only remembered once the engine has given a real list; otherwise the first call on a cold
-  // engine would pin "no Filipino voice" for the rest of the session.
+  // engine would pin "no voice" for the rest of the session.
   if (voices.length > 0) resolved.set(language.tag, choice);
   return choice;
 }
@@ -115,4 +116,19 @@ export async function voiceFor(tag: string | null | undefined): Promise<VoiceCho
 export function refreshVoiceCatalogue(): void {
   cached = null;
   resolved.clear();
+  bestByTag.clear();
+}
+
+const bestByTag = new Map<string, string | null>();
+
+/**
+ * The most natural installed offline voice for an English tag, or null to keep the engine default.
+ * Only used when the parent has not chosen a voice. Cached once the device has given a real list.
+ */
+export async function bestEnglishVoice(tag: string): Promise<string | null> {
+  if (bestByTag.has(tag)) return bestByTag.get(tag) ?? null;
+  const voices = await loadVoices();
+  const pick = pickBestVoice(voices, tag);
+  if (voices.length > 0) bestByTag.set(tag, pick);
+  return pick;
 }

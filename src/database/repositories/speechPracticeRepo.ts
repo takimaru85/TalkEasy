@@ -1,6 +1,7 @@
 import { getDb, nowIso } from '../db';
 import { notify } from '../events';
 import { WORD_ACTIVITIES } from '@/speechpractice/activities';
+import { PLAIN_WORDS_SQL, SOUND_EXPLORER_SQL } from '@/adventure/adventureMap';
 import type { ActivityPracticeRow, PracticeDay, SpeechEventInput, SpeechPracticeStats } from '@/speechpractice/types';
 
 /**
@@ -91,7 +92,26 @@ export const speechPracticeRepo = {
               COUNT(DISTINCT CASE WHEN item <> '' THEN item END) AS words
          FROM speech_practice_events`,
     );
-    return { exercises: row?.exercises ?? 0, activities: row?.activities ?? 0, words: row?.words ?? 0 };
+    // `words` above also counts the target journey's step keys (`ba:listen`); use the plain count.
+    return { exercises: row?.exercises ?? 0, activities: row?.activities ?? 0, words: await this.plainWords() };
+  },
+
+  /**
+   * Different real words/items practised, all time — WITHOUT the target journey's scoped step keys
+   * (`ba:listen`), which `lifetime().words` counts as words. The Adventure Map's First Words stage
+   * uses this so the Word Builder stage cannot fill it.
+   */
+  async plainWords(): Promise<number> {
+    const db = await getDb();
+    const row = await db.getFirstAsync<{ n: number }>(PLAIN_WORDS_SQL);
+    return row?.n ?? 0;
+  },
+
+  /** Different sounds practised across the Sounds hub — see SOUND_EXPLORER_SQL for the sources. */
+  async soundsExplored(): Promise<number> {
+    const db = await getDb();
+    const row = await db.getFirstAsync<{ n: number }>(SOUND_EXPLORER_SQL);
+    return row?.n ?? 0;
   },
 
   async todayStats(): Promise<SpeechPracticeStats> {

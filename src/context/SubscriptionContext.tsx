@@ -13,6 +13,7 @@ import {
   type StorePrices,
   type SubscriptionStatus,
 } from '@/subscription';
+import { PLUS_GATING_ENABLED } from '@/subscription/release';
 
 interface SubscriptionContextValue {
   /** The stored record. */
@@ -67,7 +68,8 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
   const status = useMemo(() => parseStatus(settings.subscriptionStatus), [settings.subscriptionStatus]);
   // Re-derived whenever the record changes. An expiry that passes mid-session is picked up the next
   // time anything touches settings, which is soon enough for a plan measured in months.
-  const plan = useMemo(() => currentPlan(status, new Date()), [status]);
+  // Billing is not connected in this release, so nothing is gated (see subscription/release.ts).
+  const plan = useMemo(() => (PLUS_GATING_ENABLED ? currentPlan(status, new Date()) : 'plus'), [status]);
 
   useEffect(() => {
     let alive = true;

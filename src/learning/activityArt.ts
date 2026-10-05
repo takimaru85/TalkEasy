@@ -8,7 +8,6 @@ import type { ColorArtName } from '@/components/adventure/ColorArt';
  */
 export const LEARN_SUBJECT_ART: Record<string, ColorArtName> = {
   english: 'subject:english',
-  filipino: 'subject:filipino',
   math: 'subject:math',
   science: 'subject:science',
   ap: 'subject:social',
@@ -21,10 +20,6 @@ export const LEARN_ACTIVITY_ART: Record<string, ColorArtName> = {
   'english.picture_match': 'learn:english_picture_match',
   'english.sentences': 'learn:english_sentences',
   'english.reading': 'category:reading',
-  'filipino.vocabulary': 'learn:filipino_vocabulary',
-  'filipino.word_recognition': 'learn:filipino_word_recognition',
-  'filipino.sentences': 'learn:filipino_sentences',
-  'filipino.reading': 'category:reading',
   'math.number_recognition': 'subject:math',
   'math.counting': 'learn:math_counting',
   'math.addition': 'learn:math_addition',

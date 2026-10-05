@@ -32,6 +32,7 @@ export const ACTIVITY_PICTURES: Record<string, string> = {
   'pet time': 'pet-time',
   'sunshine time': 'sunshine-time',
   'water the plants': 'water-plants',
+  'kitchen helper': 'kitchen-helper',
 };
 
 /** Every one of these pictures is landscape, 1536 x 1024. `check:db` compares this with the files. */

@@ -22,9 +22,11 @@ import { acceptedAnswers, choicesForLevel, matchesFreeAnswer, orderedMethods } f
 import { ASSISTANCE_META, type AnswerMethod, type LessonActivity } from '@/adaptive/types';
 import { MAX_FONT_SCALE, SPACING, TAP_GUARD_MS } from '@/constants/sizes';
 import { useProfile } from '@/context/ProfileContext';
+import { earnLabel } from '@/rewards/earnLabel';
+import { claimKey } from '@/rewards/verification';
 import { useSettings } from '@/context/SettingsContext';
 import { adaptiveProgressRepo } from '@/database';
-import { useAwardStars, useCompletedActivityIds, useLesson, useLessonActivities, useSizes, useSpeak } from '@/hooks';
+import { useClaimStars, useCompletedActivityIds, useLesson, useLessonActivities, useSizes, useSpeak } from '@/hooks';
 import type { RootScreenProps } from '@/navigation/types';
 import { speakContent, speakWithSettings, stopSpeaking } from '@/services/speech';
 import { Fonts, Radius, useTheme } from '@/theme';
@@ -46,7 +48,9 @@ export function AdaptiveLessonScreen({ navigation, route }: RootScreenProps<'Ada
   const { data: activities, loading } = useLessonActivities(lessonId);
   const { data: completedIds } = useCompletedActivityIds(lessonId);
   const { speakFeedback } = useSpeak();
-  const award = useAwardStars();
+  const claim = useClaimStars();
+  // One id per play of this lesson: the claim key, so finishing twice is still one claim.
+  const playId = useRef(Date.now());
   const level = ASSISTANCE_META[profile.assistanceLevel];
 
   const [phase, setPhase] = useState<Phase>('intro');
@@ -63,6 +67,8 @@ export function AdaptiveLessonScreen({ navigation, route }: RootScreenProps<'Ada
   const [strokeWidth, setStrokeWidth] = useState(14);
   const lastTap = useRef(0);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // The lesson's stars are claimed once: the finishing timer can be reached twice, and stars are spendable now.
+  const claimedFor = useRef<number | null>(null);
 
   const activity = queue?.[index];
   const methods = useMemo(() => (activity ? orderedMethods(activity, profile.preferredMethod, profile.assistanceLevel) : []), [activity, profile.preferredMethod, profile.assistanceLevel]);
@@ -85,10 +91,9 @@ export function AdaptiveLessonScreen({ navigation, route }: RootScreenProps<'Ada
   // strings from the interface and belong in the app's own voice.
   //
   // `sayContent` is the LESSON talking — its title, its explanation, its vocabulary, its
-  // questions and hints. Those are spoken in the language the lesson is WRITTEN in, so a
-  // Filipino lesson sounds Filipino. Anything carrying lesson text goes through here, including
-  // the sentences that wrap a lesson word in an English frame ("The answer is Pusa"), because
-  // reading that word with an English voice is the very thing this is here to stop.
+  // questions and hints. Those are spoken in the language the lesson is WRITTEN in. Anything
+  // carrying lesson text goes through here, including the sentences that wrap a lesson word in an
+  // English frame ("The answer is …"), so that word is not read with the wrong voice.
   const say = useCallback((text: string, force = false) => (force || settings.soundEnabled ? speakWithSettings(text, settings) : Promise.resolve()), [settings]);
   const lessonLanguage = lesson?.language ?? '';
   const sayContent = useCallback(
@@ -138,7 +143,10 @@ export function AdaptiveLessonScreen({ navigation, route }: RootScreenProps<'Ada
       if (!queue) return;
       if (index + 1 >= queue.length) {
         setPhase('summary');
-        const stars = await award('learning', lesson?.title ?? 'Lesson');
+        if (claimedFor.current === lessonId) return;
+        claimedFor.current = lessonId;
+        // Reached only after the last question in the lesson's queue was answered.
+        const stars = (await claim('lesson', claimKey.lesson(lessonId, playId.current), lesson?.title ?? 'Lesson')).stars;
         setBurst((b) => b + 1);
         say(`You completed the lesson, ${displayName}!${stars > 0 ? ` ${stars} star${stars === 1 ? '' : 's'}.` : ''}`);
       } else {
@@ -217,7 +225,7 @@ export function AdaptiveLessonScreen({ navigation, route }: RootScreenProps<'Ada
 
   if (phase === 'intro') {
     return (
-      <ChildScreen title={lesson.subjectName} emoji={lesson.subjectIcon} back>
+      <ChildScreen title={lesson.subjectName} subtitle={earnLabel(profile.rewards.starsPerLearningSession) || undefined} emoji={lesson.subjectIcon} back>
         <ScrollView contentContainerStyle={[styles.content, { paddingHorizontal: sizes.horizontalPadding }]}>
           <Card color={lesson.subjectColor}>
             <Text style={[styles.title, { fontSize: sizes.heading, color: theme.colors.text }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>{lesson.title}</Text>

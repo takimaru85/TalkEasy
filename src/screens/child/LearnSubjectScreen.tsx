@@ -1,6 +1,8 @@
 import React from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { ChildScreen, EmptyState, Glyph, Icon, PressableScale } from '@/components/common';
+import { useProfile } from '@/context/ProfileContext';
+import { earnLabel } from '@/rewards/earnLabel';
 import { MissionCard } from '@/components/adventure/MissionCard';
 import { LEARN_ACTIVITY_ART, LEARN_SUBJECT_ART } from '@/learning/activityArt';
 import { MAX_FONT_SCALE, SPACING } from '@/constants/sizes';
@@ -27,6 +29,8 @@ export function LearnSubjectScreen({ navigation, route }: RootScreenProps<'Learn
   const { data: configs } = useLearningConfigs();
   const { data: best } = useLearningBest();
   const { speakFeedback } = useSpeak();
+  const { profile } = useProfile();
+  const earn = earnLabel(profile.rewards.starsPerLearningSession, profile.rewards.starsPerPerfectSession);
 
   if (!subject) return <ChildScreen title="Learn" back />;
   const activities = subject.activities.filter((a) => configs.get(a.key)?.isEnabled ?? true);
@@ -40,7 +44,7 @@ export function LearnSubjectScreen({ navigation, route }: RootScreenProps<'Learn
           {activities.map((a, i) => theme.night ? (
             <MissionCard
               key={a.key}
-              eyebrow={stars(best.get(a.key)) || undefined}
+              eyebrow={stars(best.get(a.key)) || earn || undefined}
               title={a.title}
               subtitle={a.description}
               glyph={a.emoji}

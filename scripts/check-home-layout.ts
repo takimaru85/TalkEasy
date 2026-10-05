@@ -46,6 +46,8 @@ const SCALES = [1, MAX_FONT_SCALE];
 const HORIZONTAL_PADDING = SPACING.lg;
 const CAPSULE_FIXED = 9 * 2 + 1.5 * 2 + 15 + 4;
 const HUD_GAP = 6;
+/** Mirrors SHOP_EXTRA on the star capsule (divider + gaps + 18pt icon), plus the word SHOP at 13pt. */
+const SHOP_EXTRA = 1 + 8 + 8 + 18 + 4;
 const NAME_MIN = 96;
 const EXPLORE_LABEL_MIN = 10;
 const NAV_LABEL_MIN = 9;
@@ -110,7 +112,7 @@ for (const width of WIDTHS) {
       const where = (what: string) => `${width}pt @${scale}x/${textSize}: ${what}`;
 
       // ---- HUD: one row only while the name keeps a readable strip ---------------------------
-      const capsules = WORST_STATS.reduce((w, n) => w + CAPSULE_FIXED + wide(String(n), 14), 0) + HUD_GAP * 2;
+      const capsules = WORST_STATS.reduce((w, n) => w + CAPSULE_FIXED + wide(String(n), 14), 0) + SHOP_EXTRA + wide('SHOP', 13) + HUD_GAP * 2;
       const nameRoom = contentWidth - AVATAR - HUD_GAP * 2 - 6 - capsules;
       const hudStacked = nameRoom < NAME_MIN;
       ok(hudStacked || nameRoom >= NAME_MIN, where('the HUD keeps the name readable or stacks'));
@@ -310,6 +312,26 @@ for (const width of WIDTHS) {
   const footer = readFileSync('src/components/adventure/GalaxyFooter.tsx', 'utf8');
   ok(footer.includes('pointerEvents="none"') && footer.includes('importantForAccessibility="no-hide-descendants"'), 'the moon and clouds are a backdrop: no touches, hidden from screen readers');
   ok(screen.indexOf('<GalaxyFooter />') < screen.indexOf('<ScrollView'), 'the backdrop comes before the content in the tree, so the content paints over it');
+}
+
+// ---- the Shop discovery hint: shown a few times, never again once dismissed or visited ----
+{
+  const { SHOP_HINT_DONE, SHOP_HINT_MAX_VIEWS, afterShopHintShown, shouldShowShopHint } = require('../src/adventure/shopHint');
+  let saved = '';
+  let shown = 0;
+  for (let open = 0; open < 10; open++) {
+    if (shouldShowShopHint(saved)) {
+      shown++;
+      saved = afterShopHintShown(saved);
+    }
+  }
+  ok(shown === SHOP_HINT_MAX_VIEWS && saved === SHOP_HINT_DONE, 'the shop hint is shown ' + shown + ' times, then stops');
+  ok(!shouldShowShopHint(SHOP_HINT_DONE) && afterShopHintShown(SHOP_HINT_DONE) === SHOP_HINT_DONE, 'a finished hint stays finished');
+  const fs2 = require('node:fs');
+  const home = fs2.readFileSync('src/screens/child/ChildHomeScreen.tsx', 'utf8');
+  const shop = fs2.readFileSync('src/screens/child/RewardsShopScreen.tsx', 'utf8');
+  ok(/shopLabel=\{t\('shopLabel'\)\}/.test(home) && /navigate\('RewardsShop'\)/.test(home), 'the star capsule is the SHOP button and opens the Shop');
+  ok(shop.includes("updateSetting('shopHint', 'done')"), 'visiting the Shop ends the hint for good');
 }
 console.log(
   problems === 0

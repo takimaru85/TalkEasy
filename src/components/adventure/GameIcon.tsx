@@ -1,5 +1,8 @@
 import React, { useId } from 'react';
+import { drawSpace, SPACE_ICON_NAMES, type SpaceIconName } from './art/spaceArt';
+import { useIconSet } from './useIconSet';
 import Svg, { Circle, Defs, Ellipse, G, LinearGradient, Path, Rect, Stop, Text as SvgText } from 'react-native-svg';
+import { SVG_DECORATIVE } from '@/utils/svgA11y';
 
 /**
  * TalkEasy's illustrated game icons — original artwork, drawn as SVG.
@@ -74,10 +77,22 @@ export function GameIcon({ name, size }: { name: GameIconName; size: number }) {
   const shadow = <Ellipse cx={32} cy={59.5} rx={17} ry={2.6} fill="#000000" opacity={0.2} />;
   const star = (cx: number, cy: number, r: number, color = '#FFE066') => <Path d={sparkle(cx, cy, r)} fill={color} />;
 
-  let art: React.ReactNode;
-  let defs: React.ReactNode;
+  let art: React.ReactNode = null;
+  let defs: React.ReactNode = null;
 
-  switch (name) {
+  // Space Explorer draws its own set for the destinations; anything it does not cover (the Talk vocabulary
+  // cards, the trophy) keeps the classic drawing below.
+  const iconSet = useIconSet();
+  const spaceDrawn = iconSet === 'space' && (SPACE_ICON_NAMES as readonly string[]).includes(name) ? drawSpace(name as SpaceIconName, grad, g) : null;
+  if (spaceDrawn) {
+    defs = spaceDrawn.defs;
+    art = (
+      <>
+        {shadow}
+        {spaceDrawn.art}
+      </>
+    );
+  } else switch (name) {
     case 'speech':
     case 'practice':
       defs = (
@@ -705,7 +720,7 @@ export function GameIcon({ name, size }: { name: GameIconName; size: number }) {
   }
 
   return (
-    <Svg width={size} height={size} viewBox="0 0 64 64" accessible={false} pointerEvents="none">
+    <Svg width={size} height={size} viewBox="0 0 64 64" {...SVG_DECORATIVE} pointerEvents="none">
       <Defs>{defs}</Defs>
       {art}
     </Svg>

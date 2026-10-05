@@ -2,6 +2,7 @@ import React, { useId } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Svg, { Circle, Defs, Ellipse, LinearGradient, Path, Stop } from 'react-native-svg';
 import { sparklePath } from './art/kit';
+import { useBackgroundIsPicture } from './useIconSet';
 
 /**
  * A moon, soft purple clouds, a small planet and a few stars along the bottom of a screen.
@@ -13,6 +14,8 @@ import { sparklePath } from './art/kit';
  */
 export function GalaxyFooter() {
   const id = `gf${useId().replace(/[^a-zA-Z0-9]/g, '')}`;
+  // Over a supplied background picture this footer would only hide part of the artwork (and sit under text).
+  if (useBackgroundIsPicture()) return null;
   return (
     <View style={styles.box} pointerEvents="none" accessible={false} importantForAccessibility="no-hide-descendants">
       <Svg width="100%" height="100%" viewBox="0 0 390 170" preserveAspectRatio="xMidYMax slice">

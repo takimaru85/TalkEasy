@@ -390,7 +390,7 @@ export interface Reward {
   createdAt: string;
 }
 
-export type StarSource = 'learning' | 'routine' | 'activity' | 'assignment' | 'manual' | 'reward';
+export type StarSource = 'learning' | 'routine' | 'activity' | 'assignment' | 'manual' | 'reward' | 'shop';
 
 export interface StarEvent {
   id: number;
@@ -402,7 +402,10 @@ export interface StarEvent {
 }
 
 export interface StarSummary {
+  /** The balance: everything earned minus everything spent. This is the number on the Home counter. */
   total: number;
+  /** Everything ever earned, never reduced by spending: levels and badges count from this, so buying a sticker cannot lower a level. */
+  lifetime: number;
   earnedToday: number;
   /** Next reward not yet affordable, or null when every reward is reachable. */
   nextReward: Reward | null;
@@ -474,7 +477,7 @@ export interface AppSettings {
   toursDone: string;
   /** Speech Practice pronunciation set (see speechpractice/pronunciation.ts). English only for now. */
   /** Vowel values for the syllable drill. Source of truth: speechpractice/pronunciation.ts. */
-  speechPronunciationSet: 'en' | 'fil';
+  speechPronunciationSet: 'en';
   /**
    * Per-device pronunciation corrections chosen in Parent Mode → Pronunciation test:
    * JSON { "en|syllable:bo": { text, locale } }. Defaults live in speechpractice/pronunciationDictionary.ts.
@@ -498,6 +501,10 @@ export interface AppSettings {
    * invisible furniture, and storing when it was seen leaves the door open to showing it again.
    */
   therapySafetyAcceptedAt: string;
+  /** The Rewards Shop discovery hint on Home: '' (never shown), a count of times shown, or 'done' (dismissed or the Shop was visited). */
+  shopHint: string;
+  /** The Space Pet's worn cosmetics as a comma list of ids (see adventure/pet.ts). Only appearance; '' = none. */
+  petCosmetics: string;
   /**
    * The family's TalkEasy Plus entitlement, as JSON (see src/subscription).
    *

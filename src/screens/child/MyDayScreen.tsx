@@ -10,7 +10,8 @@ import { MAX_FONT_SCALE, SPACING } from '@/constants/sizes';
 import { useProfile, personalize } from '@/context/ProfileContext';
 import { useSettings } from '@/context/SettingsContext';
 import { routinesRepo } from '@/database';
-import { useActiveRoutine, useAwardStars, useMyDay, useSizes, useSpeak } from '@/hooks';
+import { useActiveRoutine, useClaimStars, useMyDay, useSizes, useSpeak, useToday } from '@/hooks';
+import { claimKey } from '@/rewards/verification';
 import type { RootScreenProps } from '@/navigation/types';
 import { Fonts, Radius, useTheme, shade } from '@/theme';
 import type { RoutineItem, RoutineSegment } from '@/types/models';
@@ -46,7 +47,8 @@ export function MyDayScreen({ navigation }: RootScreenProps<'MyDay'>) {
   const statusOf = new Map(day.entries.map((e) => [e.item.id, e] as const));
   const { speakPhrase, speakFeedback } = useSpeak();
   const { t, tContent } = useI18n();
-  const award = useAwardStars();
+  const claim = useClaimStars();
+  const { isoDate } = useToday();
   const [burst, setBurst] = useState(0);
 
   const done = day.done;
@@ -67,7 +69,8 @@ export function MyDayScreen({ navigation }: RootScreenProps<'MyDay'>) {
     }
     await routinesRepo.setItemDone(item.id, !item.isDone);
     if (!item.isDone) {
-      const stars = await award('routine', item.label);
+      // Self-reported, so it cannot be verified; the key makes un-ticking and re-ticking pay once per day.
+      const stars = (await claim('routine', claimKey.routine(item.id, isoDate), item.label)).stars;
       const finishedAll = day.entries.filter((e) => e.status !== 'completed' && e.status !== 'skipped').length === 1;
       if (finishedAll) {
         setBurst((b) => b + 1);

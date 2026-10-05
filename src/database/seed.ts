@@ -82,9 +82,7 @@ export async function seedIfNeeded(db: SQLiteDatabase): Promise<void> {
         `INSERT INTO lessons (subject_id, title, grade_level, content, vocabulary_json, objectives, language, assigned_date, sort_order, is_builtin, is_active, created_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 1, ?)`,
         subject?.id ?? null, demo.lesson.title, demo.lesson.gradeLevel, demo.lesson.content, JSON.stringify(demo.lesson.vocabulary),
-        // The language the lesson is WRITTEN in travels with it. Leaving it out of this INSERT is
-        // what made a freshly seeded Filipino lesson speak English: the demo said 'fil-PH' and the
-        // column quietly took its '' default.
+        // The language the lesson is WRITTEN in travels with it ('' = English).
         demo.lesson.objectives, demo.lesson.language, demo.lesson.assignedDate, (maxOrder?.m ?? -1) + 1, now,
       );
       for (let i = 0; i < demo.activities.length; i++) {

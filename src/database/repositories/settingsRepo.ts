@@ -75,6 +75,8 @@ export const settingsRepo = {
       therapyGoals: map.get('therapyGoals') ?? DEFAULT_SETTINGS.therapyGoals,
       therapyHidden: map.get('therapyHidden') ?? DEFAULT_SETTINGS.therapyHidden,
       therapySafetyAcceptedAt: map.get('therapySafetyAcceptedAt') ?? DEFAULT_SETTINGS.therapySafetyAcceptedAt,
+      shopHint: map.get('shopHint') ?? DEFAULT_SETTINGS.shopHint,
+      petCosmetics: map.get('petCosmetics') ?? DEFAULT_SETTINGS.petCosmetics,
       subscriptionStatus: map.get('subscriptionStatus') ?? DEFAULT_SETTINGS.subscriptionStatus,
     };
   },

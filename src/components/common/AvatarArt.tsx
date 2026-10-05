@@ -1,5 +1,6 @@
 import React from 'react';
 import Svg, { Circle, Ellipse, G, Path, Rect } from 'react-native-svg';
+import { SVG_DECORATIVE } from '@/utils/svgA11y';
 import type { AvatarId } from '@/constants/avatars';
 
 /**
@@ -237,7 +238,7 @@ const ART: Record<AvatarId, { bg: string; draw: () => React.ReactNode }> = {
 export function AvatarArt({ id, size, round = true }: { id: AvatarId; size: number; round?: boolean }) {
   const art = ART[id];
   return (
-    <Svg width={size} height={size} viewBox="0 0 100 100" accessible={false}>
+    <Svg width={size} height={size} viewBox="0 0 100 100" {...SVG_DECORATIVE}>
       {round ? <Circle cx={50} cy={50} r={50} fill={art.bg} /> : <Rect width={100} height={100} rx={22} fill={art.bg} />}
       {art.draw()}
     </Svg>

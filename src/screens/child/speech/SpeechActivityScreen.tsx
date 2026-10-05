@@ -1,12 +1,13 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { activityArtFor } from '@/speechpractice/stageArt';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import { BigButton, Card, ChildScreen, IconTile, PressableScale, ProgressBar } from '@/components/common';
+import { Animated, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { BigButton, Card, Celebration, ChildScreen, IconTile, PressableScale, ProgressBar } from '@/components/common';
 import { ExerciseView, type PracticeKit } from '@/components/speech';
 import { ItemPicture } from '@/components/speech/ItemPicture';
 import { MAX_FONT_SCALE, SPACING } from '@/constants/sizes';
 import { useSettings } from '@/context/SettingsContext';
 import { speechPracticeRepo } from '@/database';
+import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { useMyWords, useSizes, useSoundRecorder, useSpeak, useVisibleButtons } from '@/hooks';
 import { useI18n } from '@/i18n';
 import type { RootScreenProps } from '@/navigation/types';
@@ -226,14 +227,9 @@ export function SpeechActivityScreen({ route, navigation }: RootScreenProps<'Spe
           </Card>
         ) : finished ? (
           <>
-            <Card color={theme.colors.successSoft} style={styles.done}>
-              <IconTile name="star-outline" size={76} tint="#FFF1C2" />
-              <Text style={[styles.doneText, { fontSize: sizes.phrase - 4, color: theme.colors.text }]} maxFontSizeMultiplier={MAX_FONT_SCALE} accessibilityLiveRegion="polite">
-                {t('spAllDone')}
-              </Text>
-            </Card>
-            <BigButton label={t('spPracticeAgain')} icon="replay" minHeight={80} onPress={again} />
-            <BigButton label={t('spMoreActivities')} icon="view-grid" variant="secondary" minHeight={72} onPress={() => navigation.navigate('SpeechPractice')} />
+            <DoneCard text={t('spAllDone')} textSize={sizes.phrase - 4} />
+            <BigButton label={t('spPracticeAgain')} icon="replay" minHeight={80} pressedScale={0.94} onPress={again} />
+            <BigButton label={t('spMoreActivities')} icon="view-grid" variant="secondary" minHeight={72} pressedScale={0.94} onPress={() => navigation.navigate('SpeechPractice')} />
           </>
         ) : exercise ? (
           <>
@@ -255,6 +251,51 @@ export function SpeechActivityScreen({ route, navigation }: RootScreenProps<'Spe
         ) : null}
       </ScrollView>
     </ChildScreen>
+  );
+}
+
+/**
+ * The "All done" card. Plays once, when it first mounts (the screen only mounts it on entering the
+ * finished state, so a rerender never replays it): the star pops with a little overshoot, the
+ * message fades and rises, and the shared Celebration sparkles burst around it. With reduced
+ * motion everything simply shows, still. Nothing here touches scoring or saved data.
+ */
+function DoneCard({ text, textSize }: { text: string; textSize: number }) {
+  const theme = useTheme();
+  const reduced = useReducedMotion();
+  const pop = useRef(new Animated.Value(reduced ? 1 : 0.4)).current;
+  const rise = useRef(new Animated.Value(reduced ? 1 : 0)).current;
+  const [burst, setBurst] = useState(0);
+
+  useEffect(() => {
+    if (reduced) return;
+    setBurst(1);
+    Animated.parallel([
+      Animated.spring(pop, { toValue: 1, friction: 4, tension: 120, useNativeDriver: true }),
+      Animated.timing(rise, { toValue: 1, duration: 450, delay: 120, useNativeDriver: true }),
+    ]).start();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return (
+    <View>
+      <Card color={theme.colors.successSoft} style={styles.done}>
+        <Animated.View style={{ transform: [{ scale: pop }] }}>
+          <IconTile name="star-outline" size={76} tint="#FFF1C2" />
+        </Animated.View>
+        <Animated.Text
+          style={[
+            styles.doneText,
+            { fontSize: textSize, color: theme.colors.text, opacity: rise, transform: [{ translateY: rise.interpolate({ inputRange: [0, 1], outputRange: [12, 0] }) }] },
+          ]}
+          maxFontSizeMultiplier={MAX_FONT_SCALE}
+          accessibilityLiveRegion="polite"
+        >
+          {text}
+        </Animated.Text>
+      </Card>
+      <Celebration trigger={burst} />
+    </View>
   );
 }
 

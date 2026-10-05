@@ -10,7 +10,9 @@ import { activityPicture } from '@/components/activities/activityPictures';
 import { useProfile, personalize } from '@/context/ProfileContext';
 import { useSettings } from '@/context/SettingsContext';
 import { therapyRepo } from '@/database';
-import { useAwardStars, useSizes, useSpeak, useTherapyActivities } from '@/hooks';
+import { useClaimStatus, useClaimStars, useSizes, useSpeak, useTherapyActivities, useToday } from '@/hooks';
+import { rewardsRepo } from '@/database';
+import { AWAITING_MESSAGE, claimKey } from '@/rewards/verification';
 import type { RootScreenProps } from '@/navigation/types';
 import { Fonts, Radius, shade, useTheme } from '@/theme';
 import { tileInk } from '@/constants/colors';
@@ -35,12 +37,14 @@ export function ActivitiesScreen({ navigation }: RootScreenProps<'Activities'>) 
   const { data: activities, loading } = useTherapyActivities();
   const { speakPhrase, speakFeedback } = useSpeak();
   const { t, tContent } = useI18n();
-  const award = useAwardStars();
+  const claim = useClaimStars();
+  const { isoDate } = useToday();
   const [openId, setOpenId] = useState<number | null>(null);
   const [filter, setFilter] = useState<ActivityCategory | null>(null);
   const [burst, setBurst] = useState(0);
 
   const open = activities.find((e) => e.id === openId) ?? null;
+  const { data: claimStatus } = useClaimStatus(open ? claimKey.offline(open.id, isoDate) : null);
   const categories = (Object.keys(ACTIVITY_CATEGORY_META) as ActivityCategory[]).filter((k) => activities.some((a) => a.category === k));
   const visible = filter ? activities.filter((a) => a.category === filter) : activities;
 
@@ -55,12 +59,17 @@ export function ActivitiesScreen({ navigation }: RootScreenProps<'Activities'>) 
       if (!ok) return;
     }
     await therapyRepo.setCompleted(ex.id, !ex.isCompleted);
+    const key = claimKey.offline(ex.id, isoDate);
     if (!ex.isCompleted) {
-      await award('activity', ex.name);
+      // A real-world activity: the app cannot see it, so the star WAITS for a grown-up to confirm in Parent Mode.
+      const r = await claim('offline', key, ex.name);
       setBurst((b) => b + 1);
-      speakFeedback(personalize(profile.rewards.celebrationMessage, displayName));
+      speakFeedback(r.outcome === 'awaiting_parent' ? AWAITING_MESSAGE : personalize(profile.rewards.celebrationMessage, displayName));
       setTimeout(() => setOpenId(null), 900);
     } else {
+      // Un-ticking an activity that was still waiting for a grown-up takes it off their list. Stars already
+      // credited stay, and re-ticking the same day cannot credit them again.
+      await rewardsRepo.withdrawClaim(key);
       speakPhrase(tContent(ex.name));
       setOpenId(null);
     }
@@ -101,6 +110,11 @@ export function ActivitiesScreen({ navigation }: RootScreenProps<'Activities'>) 
             {open.instructions ? tContent(open.instructions) : 'No instructions yet.'}
           </Text>
           <BigButton label="Read it to me" icon="volume-high" variant="secondary" minHeight={76} onPress={() => speakPhrase(`${tContent(open.name)}. ${tContent(open.instructions)}`)} />
+          {open.isCompleted && claimStatus === 'awaiting_parent' ? (
+            <Text style={[styles.instructions, { fontSize: sizes.body + 2, color: theme.colors.text }]} accessibilityLiveRegion="polite" maxFontSizeMultiplier={MAX_FONT_SCALE}>
+              ⏳ Waiting for a grown-up to check it.
+            </Text>
+          ) : null}
           <BigButton
             label={open.isCompleted ? 'Not done yet' : 'Done!'}
             icon={open.isCompleted ? 'close' : 'check-bold'}
@@ -122,19 +136,20 @@ export function ActivitiesScreen({ navigation }: RootScreenProps<'Activities'>) 
           {/* Therapy sits at the top of the list — see the note on styles.therapyEntry. */}
           <MissionCard
             title="Therapy"
-            subtitle="Home practice for movement and hand skills"
+            subtitle="Movement and hand skills at home"
             colorArt="category:therapy"
             color="lagoon"
             onPress={() => navigation.navigate('TherapyHome')}
             accessibilityLabel="Therapy. Home practice for movement and hand skills."
           />
+          {/* The filters are one scrolling row: seven wrapped pills made three rows that pushed the activities off the screen. */}
           {categories.length > 1 ? (
-            <View style={styles.filters}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filters}>
               <FilterPill label="All" emoji="✨" selected={filter === null} onPress={() => setFilter(null)} />
               {categories.map((k) => (
                 <FilterPill key={k} label={ACTIVITY_CATEGORY_META[k].label} emoji={ACTIVITY_CATEGORY_META[k].emoji} selected={filter === k} onPress={() => setFilter(k)} />
               ))}
-            </View>
+            </ScrollView>
           ) : null}
           {visible.map((ex) => {
             const meta = ACTIVITY_CATEGORY_META[ex.category];
@@ -213,7 +228,7 @@ function FilterPill({ label, emoji, selected, onPress }: { label: string; emoji:
 const styles = StyleSheet.create({
   therapyEntry: { paddingTop: SPACING.md, paddingBottom: SPACING.sm },
   list: { paddingVertical: SPACING.sm, gap: SPACING.md, paddingBottom: SPACING.xl },
-  filters: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm },
+  filters: { flexDirection: 'row', gap: SPACING.sm, paddingVertical: 2, paddingRight: SPACING.sm },
   pill: { minHeight: MIN_CHILD_TARGET - 8, paddingHorizontal: SPACING.md, borderRadius: Radius.pill, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center', flexGrow: 1 },
   pillText: { fontFamily: Fonts.extrabold, fontSize: 16 },
   card: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, padding: SPACING.md, borderRadius: Radius.lg },

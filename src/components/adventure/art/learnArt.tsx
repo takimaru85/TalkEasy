@@ -11,7 +11,6 @@ import { HEART_PATH } from './colorKit';
  */
 export type LearnArtName =
   | 'english_vocabulary' | 'english_picture_match' | 'english_sentences'
-  | 'filipino_vocabulary' | 'filipino_word_recognition' | 'filipino_sentences'
   | 'math_counting' | 'math_addition' | 'math_subtraction' | 'math_multiplication' | 'math_comparing'
   | 'math_time' | 'math_money'
   | 'science_animals' | 'science_plants' | 'science_body' | 'science_weather' | 'science_environment'
@@ -92,7 +91,6 @@ export function drawLearn(name: LearnArtName, grad: Grad, g: Fill): Drawn {
 
     // ---- Find the picture: a framed picture under a magnifier -------------------------------------
     case 'english_picture_match':
-    case 'filipino_word_recognition':
       return {
         defs: (
           <>
@@ -115,7 +113,6 @@ export function drawLearn(name: LearnArtName, grad: Grad, g: Fill): Drawn {
 
     // ---- Finish / build the sentence: lined paper and a pencil -------------------------------------
     case 'english_sentences':
-    case 'filipino_sentences':
       return {
         defs: <>{grad('p', '#FFFFFF', '#E3EAFF')}</>,
         art: (
@@ -128,22 +125,6 @@ export function drawLearn(name: LearnArtName, grad: Grad, g: Fill): Drawn {
         ),
       };
 
-    // ---- Mga Salita: a banana on a card ---------------------------------------------------------------
-    case 'filipino_vocabulary':
-      return {
-        defs: <>{grad('c', '#FFFFFF', '#FFF1C9')}</>,
-        art: (
-          <>
-            <Rect x={7} y={8} width={50} height={46} rx={7} fill={g('c')} stroke="#E0A93B" strokeWidth={2.2} />
-            <G transform="translate(4 4) scale(0.88)">
-              <Banana />
-            </G>
-            <Sparkle cx={54} cy={12} r={4.2} />
-          </>
-        ),
-      };
-
-    // ---- Counting: three apples ----------------------------------------------------------------------
     case 'math_counting':
       return {
         defs: null,

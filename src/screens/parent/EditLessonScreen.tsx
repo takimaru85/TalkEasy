@@ -138,8 +138,8 @@ export function EditLessonScreen({ navigation, route }: ParentScreenProps<'EditL
           />
           {/*
             Which language the lesson is READ ALOUD in. It sits by the subject because that is
-            what decides it: a Filipino lesson needs a Filipino voice, and an English voice
-            reading Filipino says "Mga" as the letters M, G, A.
+            what decides it: a lesson written in another language needs a voice for it, because
+            an English voice reads foreign words with English rules.
           */}
           <ChoiceRow
             label="Spoken language"

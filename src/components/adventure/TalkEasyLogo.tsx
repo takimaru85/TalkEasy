@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
+import { SVG_DECORATIVE } from '@/utils/svgA11y';
 import { MAX_FONT_SCALE, SPACING } from '@/constants/sizes';
 import { fitFontSize } from '@/utils/fitText';
 import { Fonts } from '@/theme';
@@ -46,7 +47,7 @@ export function TalkEasyLogo({ size, tagline }: Props) {
           Easy
         </Text>
 
-        <Svg width={rocket} height={rocket} viewBox="0 0 40 40" accessible={false} style={styles.rocket}>
+        <Svg width={rocket} height={rocket} viewBox="0 0 40 40" {...SVG_DECORATIVE} style={styles.rocket}>
           {/* Rocket body */}
           <Path d="M20 3 C26 9 28 17 28 23 L12 23 C12 17 14 9 20 3 Z" fill="#FFFFFF" />
           <Circle cx="20" cy="14" r="3.6" fill={Adventure.sky.to} />

@@ -34,3 +34,4 @@ export { GrownUpsCard } from './GrownUpsCard';
 export { SpeechPracticeLayout } from './SpeechPracticeLayout';
 export { CardDecor } from './CardDecor';
 export type { ColorArtName } from './ColorArt';
+export { EquippedBadge } from './EquippedBadge';

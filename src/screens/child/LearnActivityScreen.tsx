@@ -2,13 +2,15 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { BigButton, Celebration, ChildScreen } from '@/components/common';
+import { earnLabel } from '@/rewards/earnLabel';
+import { claimKey } from '@/rewards/verification';
 import { LEARN_ACTIVITY_ART } from '@/learning/activityArt';
 import { AnswerChoiceCard, AnswerChoiceGrid, AnswerFeedback, ProgressIndicator, QuestionCard, illustratedSet, useChoiceLayout } from '@/components/adaptive';
 import { MAX_FONT_SCALE, SPACING, TAP_GUARD_MS } from '@/constants/sizes';
 import { useProfile, personalize } from '@/context/ProfileContext';
 import { useSettings } from '@/context/SettingsContext';
 import { learningRepo } from '@/database';
-import { useAwardStars, useLearningConfigs, useSizes } from '@/hooks';
+import { useClaimStars, useLearningConfigs, useSizes } from '@/hooks';
 import { createRng, getActivity, getSubject } from '@/learning';
 import type { Question } from '@/learning';
 import type { RootScreenProps } from '@/navigation/types';
@@ -29,7 +31,7 @@ export function LearnActivityScreen({ navigation, route }: RootScreenProps<'Lear
   const { settings } = useSettings();
   const { profile, displayName } = useProfile();
   const { data: configs, loading: configsLoading } = useLearningConfigs();
-  const award = useAwardStars();
+  const claim = useClaimStars();
   const activity = getActivity(route.params.activityKey);
   const subject = activity ? getSubject(activity.subjectKey) : undefined;
 
@@ -83,14 +85,18 @@ export function LearnActivityScreen({ navigation, route }: RootScreenProps<'Lear
     Haptics.notificationAsync(ok ? Haptics.NotificationFeedbackType.Success : Haptics.NotificationFeedbackType.Warning).catch(() => {});
   };
 
+  // One claim per play: `finish` can be reached twice (a late timer plus a tap), and stars are money now.
+  const claimed = useRef(false);
   const finish = async (finalScore: number) => {
     setPhase('done');
-    if (!activity) return;
+    if (!activity || claimed.current) return;
+    claimed.current = true;
     learningRepo
       .recordSession({ activityKey: activity.key, subjectKey: activity.subjectKey, difficulty, correct: finalScore, total: questions.length })
       .catch(() => {});
-    let earned = await award('learning', activity.title);
-    if (finalScore === questions.length) earned += await award('perfect', `${activity.title} (perfect)`);
+    // `finish` is only reached after the LAST question was answered, and each play (its `seed`) is one claim.
+    let earned = (await claim('quiz', claimKey.quiz(activity.key, seed), activity.title)).stars;
+    if (finalScore === questions.length) earned += (await claim('perfect', claimKey.perfect(activity.key, seed), `${activity.title} (perfect)`)).stars;
     setStarsEarned(earned);
     setBurst((b) => b + 1);
     const line =
@@ -144,6 +150,7 @@ export function LearnActivityScreen({ navigation, route }: RootScreenProps<'Lear
   };
 
   const restart = () => {
+    claimed.current = false; // a new play is a new claim
     setSeed(Date.now());
     setIndex(0);
     setScore(0);
@@ -187,7 +194,7 @@ export function LearnActivityScreen({ navigation, route }: RootScreenProps<'Lear
     : null;
 
   return (
-    <ChildScreen title={activity.title} emoji={subject.emoji} colorArt={LEARN_ACTIVITY_ART[activity.key]} back>
+    <ChildScreen title={activity.title} subtitle={earnLabel(profile.rewards.starsPerLearningSession, profile.rewards.starsPerPerfectSession) || undefined} emoji={subject.emoji} colorArt={LEARN_ACTIVITY_ART[activity.key]} back>
       <View style={[styles.progress, { paddingHorizontal: sizes.horizontalPadding }]}>
         <ProgressIndicator current={index + 1} total={questions.length} />
       </View>

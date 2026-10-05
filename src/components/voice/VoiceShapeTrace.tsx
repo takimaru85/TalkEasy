@@ -1,5 +1,6 @@
 import React from 'react';
 import Svg, { Circle, Defs, G, LinearGradient, Path, Polygon, Rect, Stop } from 'react-native-svg';
+import { SVG_DECORATIVE } from '@/utils/svgA11y';
 import type { VoiceShape } from '@/practice/types';
 
 interface Props {
@@ -30,7 +31,7 @@ export function VoiceShapeTrace({ shape, width, height, color = '#7343D8', dim }
   const o = dim ? 0.3 : 1;
 
   return (
-    <Svg width={width} height={h} viewBox="0 0 100 46" accessible={false} pointerEvents="none">
+    <Svg width={width} height={h} viewBox="0 0 100 46" {...SVG_DECORATIVE} pointerEvents="none">
       {/* The line brightens left to right, so the eye reads it in the direction the voice moves.
           It starts at 0.78, not lower: the beginning of the shape has to be plainly visible. */}
       <Defs>

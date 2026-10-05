@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
+import { SVG_DECORATIVE } from '@/utils/svgA11y';
 import { MAX_FONT_SCALE, SPACING } from '@/constants/sizes';
 import { Fonts, useTheme } from '@/theme';
 import { AdventureRadius, AdventureShadow } from '@/theme/adventure';
@@ -101,7 +102,7 @@ function GuidePicture({ guide, color }: { guide: Extract<Guide, { kind: 'line' |
       : <Path d={`M ${W / 2} ${H / 2 - r} L ${W / 2 + r} ${H / 2 + r} L ${W / 2 - r} ${H / 2 + r} Z`} {...stroke} />;
   }
   return (
-    <Svg width={W * 1.2} height={H * 1.2} viewBox={`0 0 ${W} ${H}`} accessible={false}>
+    <Svg width={W * 1.2} height={H * 1.2} viewBox={`0 0 ${W} ${H}`} {...SVG_DECORATIVE}>
       {shape}
     </Svg>
   );

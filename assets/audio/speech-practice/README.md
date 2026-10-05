@@ -5,7 +5,7 @@ pronunciation, not a text-to-speech guess. This folder holds the bundled recordi
 
 ```
 speech-practice/
-  en/   fil/   ceb/            one folder per pronunciation set
+  en/                      the pronunciation set (English only)
     sounds/     b.m4a          isolated sounds       (key sound:b)
     syllables/  ba.m4a         BA BE BI BO BU …      (key syllable:ba)
     words/      v-ball.m4a     vocabulary words      (key word:v-ball)

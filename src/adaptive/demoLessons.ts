@@ -108,31 +108,4 @@ export const DEMO_LESSONS: DemoLesson[] = [
       },
     ],
   },
-  {
-    subjectName: 'Filipino',
-    lesson: {
-      title: 'Mga hayop (Animals)',
-      gradeLevel: 'Grade 2',
-      content: 'Aso ang tawag sa dog. Pusa ang tawag sa cat. Ibon ang tawag sa bird.',
-      vocabulary: ['🐶 Aso', '🐱 Pusa', '🐦 Ibon'],
-      objectives: 'Recognise Filipino words for common animals.',
-      // Written in Filipino, so it is SPOKEN in Filipino: the title, the sentences, each animal
-      // word and both questions. Without this the English voice reads "Mga" as M-G-A.
-      language: 'fil-PH',
-      assignedDate: null,
-      isActive: true,
-    },
-    activities: [
-      {
-        type: 'picture', question: 'Alin ang aso?', image: null,
-        choices: [{ label: 'Aso', emoji: '🐶', correct: true }, { label: 'Pusa', emoji: '🐱', correct: false }, { label: 'Ibon', emoji: '🐦', correct: false }],
-        pairs: [], answers: ['aso', 'dog'], hint: 'Aso means dog.', difficulty: easy, allowedMethods: ['picture', 'speak', 'assisted'],
-      },
-      {
-        type: 'mcq', question: 'Ano ang tawag sa cat?', image: '🐱',
-        choices: [{ label: 'Pusa', correct: true }, { label: 'Aso', correct: false }, { label: 'Isda', correct: false }],
-        pairs: [], answers: ['pusa'], hint: 'It starts with P.', difficulty: easy, allowedMethods: ['tap', 'speak', 'type', 'assisted'],
-      },
-    ],
-  },
 ];

@@ -174,9 +174,10 @@ ok(imageOf(initialScanState) === null, 'idle has no photo');
 // ---- language ---------------------------------------------------------------------------------------------------
 ok(SCAN_LANGUAGES[0].tag === '' && SCAN_LANGUAGES[0].label === 'English', 'English is the first and default choice');
 ok(SCAN_LANGUAGES.length >= 2, 'more than one language is offered');
-ok(normalizeScanLanguage('fil-PH') === 'fil-PH', 'a Filipino scan keeps its tag');
+ok(normalizeScanLanguage('es-ES') === 'es-ES', 'a Spanish scan keeps its tag');
+ok(normalizeScanLanguage('fil-PH') === '', 'the removed Filipino tag falls back to English');
 ok(normalizeScanLanguage('nonsense') === '', 'an unknown language falls back to the app voice');
-ok(scriptFor('') === 'Latin' && scriptFor('fil-PH') === 'Latin', 'every current language uses the Latin recogniser');
+ok(scriptFor('') === 'Latin' && scriptFor('es-ES') === 'Latin', 'every current language uses the Latin recogniser');
 ok(scriptFor('nonsense') === 'Latin', 'an unknown language still gets a usable script');
 
 // ---- privacy: nothing leaves the device, and the text is never logged ------------------------------------------

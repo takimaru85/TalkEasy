@@ -36,8 +36,11 @@ import { SpeakPracticeScreen } from '@/screens/child/adaptive/SpeakPracticeScree
 import { SoundPracticeScreen } from '@/screens/child/sound/SoundPracticeScreen';
 import { SoundPracticeDetailScreen } from '@/screens/child/sound/SoundPracticeDetailScreen';
 import { SpeechPracticeScreen } from '@/screens/child/speech/SpeechPracticeScreen';
+import { SpacePetScreen } from '@/screens/child/SpacePetScreen';
+import { AdventureMapScreen } from '@/screens/child/AdventureMapScreen';
 import { MyProgressScreen } from '@/screens/child/MyProgressScreen';
 import { AchievementsScreen } from '@/screens/child/AchievementsScreen';
+import { RewardsShopScreen } from '@/screens/child/RewardsShopScreen';
 import { SpeechActivityScreen } from '@/screens/child/speech/SpeechActivityScreen';
 import { SpeechStageScreen } from '@/screens/child/speech/SpeechStageScreen';
 import { SoundTargetScreen } from '@/screens/child/speech/SoundTargetScreen';
@@ -123,7 +126,10 @@ export function RootNavigator() {
         <Stack.Screen name="SoundPracticeDetail" component={SoundPracticeDetailScreen} />
         <Stack.Screen name="SpeechPractice" component={SpeechPracticeScreen} />
         <Stack.Screen name="MyProgress" component={MyProgressScreen} />
+        <Stack.Screen name="AdventureMap" component={AdventureMapScreen} />
+        <Stack.Screen name="SpacePet" component={SpacePetScreen} />
         <Stack.Screen name="Achievements" component={AchievementsScreen} />
+        <Stack.Screen name="RewardsShop" component={RewardsShopScreen} />
         <Stack.Screen name="SpeechActivity" component={SpeechActivityScreen} />
         <Stack.Screen name="SpeechStage" component={SpeechStageScreen} />
         <Stack.Screen name="SoundTarget" component={SoundTargetScreen} />

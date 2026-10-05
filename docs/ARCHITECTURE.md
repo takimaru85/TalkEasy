@@ -63,7 +63,7 @@ src/
 ├─ hooks/              useDbQuery + hooks per data type, useSizes, useSpeak, useToday
 ├─ i18n/               types, registry, I18nContext, locales/{en,englishVariants}
 ├─ soundpractice/      types, content (sounds, syllables, words, phrases)
-├─ learning/           types, engine, content/{english,filipino,math,science,ap,esp}
+├─ learning/           types, engine, content/{english,math,science,ap,esp}
 ├─ navigation/         RootNavigator (child stack), ParentStack, types
 ├─ screens/
 │  ├─ child/           ChildHome, Communicate, SchoolMode, School, SubjectDetail, Assignments,
@@ -358,7 +358,7 @@ handwriting % (levels tried / 7) as two independent numbers.
 ## Code
 
 * `src/adaptive/types.ts` — method/type/assistance metadata; `answers.ts` — normalisation
-  ("ten" = 10, Filipino number words), containment matching, choice trimming per assistance
+  ("ten" = 10), containment matching, choice trimming per assistance
   level, method ordering; `handwriting.ts` — 7 tracing levels; `demoLessons.ts` — seed content.
 * `src/services/speechRecognition.ts` — optional on-device STT (`expo-speech-recognition`,
   `requiresOnDeviceRecognition`); absent in Expo Go → parent-assisted oral answer instead.

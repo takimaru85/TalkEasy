@@ -48,7 +48,7 @@ const SECTION_SCREENS: { file: string; name: string }[] = [
  * guessed would cry wolf until somebody deleted it. These are the section screens whose only door
  * has been, or could easily become, a single line in one file.
  */
-const ROUTES_THAT_NEED_A_DOOR = ['SchoolMode', 'School', 'Activities', 'Calendar', 'ScanAssignment'];
+const ROUTES_THAT_NEED_A_DOOR = ['SchoolMode', 'School', 'Activities', 'Calendar', 'ScanAssignment', 'RewardsShop'];
 
 /** Every .tsx under a directory, as [path, source]. */
 function globSource(dir: string): [string, string][] {

@@ -21,20 +21,21 @@ const NO_METRICS: AchievementMetrics = {
  * the practice behind it — which also means these screens are already true for a child who has
  * been using TalkEasy since before badges existed.
  */
-export function useAchievements(): { metrics: AchievementMetrics; badges: EarnedBadge[]; earnedCount: number } {
+export function useAchievements(): { metrics: AchievementMetrics; badges: EarnedBadge[]; earnedCount: number; loading: boolean } {
   const { profile } = useProfile();
   const adventure = useAdventure();
 
-  const { data } = useDbQuery(
+  const { data, loading } = useDbQuery(
     async () => {
-      const [sound, speech, adaptive] = await Promise.all([
+      const [sound, speech, adaptive, soundsExplored] = await Promise.all([
         soundPracticeRepo.lifetime(),
         speechPracticeRepo.lifetime(),
         adaptiveProgressRepo.getProgress(profile.id),
+        speechPracticeRepo.soundsExplored(),
       ]);
       return {
         soundAttempts: sound.attempts,
-        soundsPractised: sound.sounds,
+        soundsPractised: Math.max(sound.sounds, soundsExplored),
         speechExercises: speech.exercises,
         speechActivities: speech.activities,
         wordsPractised: speech.words,
@@ -44,13 +45,13 @@ export function useAchievements(): { metrics: AchievementMetrics; badges: Earned
       } satisfies AchievementMetrics;
     },
     NO_METRICS,
-    ['soundPractice', 'speechPractice', 'adaptive'],
+    ['soundPractice', 'speechPractice', 'voicePractice', 'adaptive'],
     [profile.id],
   );
 
   // Stars and streak come from the adventure hook, which already watches the rewards topic.
-  const metrics: AchievementMetrics = { ...data, stars: adventure.totalStars, streak: adventure.streak };
+  const metrics: AchievementMetrics = { ...data, stars: adventure.lifetimeStars, streak: adventure.streak };
   const badges = evaluateBadges(metrics);
 
-  return { metrics, badges, earnedCount: badges.filter((b) => b.earned).length };
+  return { metrics, badges, earnedCount: badges.filter((b) => b.earned).length, loading };
 }

@@ -23,6 +23,8 @@ interface Props {
   /** Stretch to fill available width (default true). */
   fullWidth?: boolean;
   compact?: boolean;
+  /** How far the button shrinks while pressed (default is PressableScale's). */
+  pressedScale?: number;
 }
 
 /**
@@ -38,6 +40,7 @@ export function BigButton({
   minHeight = MIN_CHILD_TARGET,
   style,
   accessibilityLabel,
+  pressedScale,
   fullWidth = true,
   compact = false,
 }: Props) {
@@ -73,6 +76,7 @@ export function BigButton({
 
   return (
     <PressableScale
+      pressedScale={pressedScale}
       onPress={onPress}
       disabled={disabled}
       accessibilityRole="button"

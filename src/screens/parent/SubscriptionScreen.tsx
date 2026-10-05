@@ -128,7 +128,7 @@ export function SubscriptionScreen({ navigation }: ParentScreenProps<'Subscripti
         </Card>
 
         {/* Development only — disappears by itself the moment a real provider is wired in. */}
-        {subscription.canPurchase ? null : (
+        {subscription.canPurchase || !__DEV__ ? null : (
           <>
             <SectionTitle title="Development" emoji="hammer-wrench" />
             <Card>

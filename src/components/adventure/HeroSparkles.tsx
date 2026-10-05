@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet } from 'react-native';
 import Svg, { Circle, G, Path } from 'react-native-svg';
+import { SVG_DECORATIVE } from '@/utils/svgA11y';
 import { Adventure } from '@/theme/adventure';
 
 interface Props {
@@ -20,7 +21,7 @@ interface Props {
  */
 export function HeroSparkles({ size }: Props) {
   return (
-    <Svg width={size} height={size} viewBox="0 0 100 100" style={styles.layer} accessible={false} pointerEvents="none">
+    <Svg width={size} height={size} viewBox="0 0 100 100" style={styles.layer} {...SVG_DECORATIVE} pointerEvents="none">
       {/* Sound waves on the mic side — speech, leaving the speaker. */}
       <G opacity={0.55}>
         <Path d="M20 50 q-7 -9 0 -18" stroke={Adventure.sky.from} strokeWidth={2.4} fill="none" strokeLinecap="round" />

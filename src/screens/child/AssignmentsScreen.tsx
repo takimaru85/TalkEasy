@@ -7,7 +7,9 @@ import { MAX_FONT_SCALE, SPACING } from '@/constants/sizes';
 import { useSettings } from '@/context/SettingsContext';
 import { assignmentsRepo } from '@/database';
 import { useProfile } from '@/context/ProfileContext';
-import { useAssignments, useAwardStars, useSizes, useSpeak, useToday } from '@/hooks';
+import { useAssignments, useClaimStars, useSizes, useSpeak, useToday } from '@/hooks';
+import { rewardsRepo } from '@/database';
+import { AWAITING_MESSAGE, claimKey } from '@/rewards/verification';
 import type { RootScreenProps } from '@/navigation/types';
 import type { AssignmentWithSubject } from '@/types/models';
 import { confirm } from '@/utils/confirm';
@@ -25,7 +27,7 @@ export function AssignmentsScreen({ navigation }: RootScreenProps<'Assignments'>
   const { data: assignments, loading } = useAssignments();
   const { speakPhrase, speakFeedback } = useSpeak();
   const { displayName } = useProfile();
-  const award = useAwardStars();
+  const claim = useClaimStars();
 
   const open = assignments.filter((a) => a.status !== 'done');
   const done = assignments.filter((a) => a.status === 'done');
@@ -37,10 +39,14 @@ export function AssignmentsScreen({ navigation }: RootScreenProps<'Assignments'>
       if (!ok) return;
     }
     await assignmentsRepo.setStatus(a.id, finishing ? 'done' : 'todo');
+    const key = claimKey.assignment(a.id);
     if (finishing) {
-      const stars = await award('assignment', a.title);
-      speakFeedback(`Finished! Great job, ${displayName}!${stars > 0 ? ` ${stars} stars.` : ''}`);
-    } else speakPhrase(a.title);
+      const r = await claim('assignment', key, a.title);
+      speakFeedback(r.outcome === 'awaiting_parent' ? `Finished! ${AWAITING_MESSAGE}` : `Finished! Great job, ${displayName}!${r.stars > 0 ? ` ${r.stars} stars.` : ''}`);
+    } else {
+      await rewardsRepo.withdrawClaim(key);
+      speakPhrase(a.title);
+    }
   };
 
   return (

@@ -18,6 +18,7 @@ import { ManageTherapyScreen } from '@/screens/parent/ManageTherapyScreen';
 import { EditTherapyScreen } from '@/screens/parent/EditTherapyScreen';
 import { CareNotesScreen } from '@/screens/parent/CareNotesScreen';
 import { EditNoteScreen } from '@/screens/parent/EditNoteScreen';
+import { PracticeOverviewScreen } from '@/screens/parent/PracticeOverviewScreen';
 import { ProgressScreen } from '@/screens/parent/ProgressScreen';
 import { SettingsScreen } from '@/screens/parent/SettingsScreen';
 import { SubscriptionScreen } from '@/screens/parent/SubscriptionScreen';
@@ -56,6 +57,7 @@ export function ParentStack() {
       <Stack.Screen name="CareNotes" component={CareNotesScreen} />
       <Stack.Screen name="EditNote" component={EditNoteScreen} />
       <Stack.Screen name="Progress" component={ProgressScreen} />
+      <Stack.Screen name="PracticeOverview" component={PracticeOverviewScreen} />
       <Stack.Screen name="Settings" component={SettingsScreen} />
       <Stack.Screen name="Subscription" component={SubscriptionScreen} />
       <Stack.Screen name="TherapySettings" component={TherapySettingsScreen} />

@@ -6,6 +6,7 @@ import { MIN_SUPPORTED_WIDTH } from '@/constants/sizes';
 import { useSettings } from '@/context/SettingsContext';
 import { effectiveWorld } from '@/adventure/worlds';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
 import { AdventureNight, useIsAdventure, useTheme } from '@/theme';
 
 interface Props {
@@ -34,6 +35,9 @@ export function ScreenContainer({ children, style, background, edges = ['top', '
   const page = background ?? (sky ? AdventureNight.bottom : theme.colors.background);
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: page }]} edges={edges}>
+      {/* The adventure world is dark, so its clock and battery must be light. The newest mounted bar wins and
+          the previous one returns when the screen closes. */}
+      <StatusBar style={adventure && theme.night ? 'light' : 'dark'} />
       {sky ? <WorldBackground world={effectiveWorld(settings.adventureTheme, settings.adventureWorld)} width={skyWidth} height={skyHeight} /> : null}
       <View style={[styles.inner, style]}>{children}</View>
     </SafeAreaView>

@@ -32,6 +32,7 @@ const PICTURES: Record<string, ImageSourcePropType> = {
   'pet-time': require('../../../assets/activities/pet-time.webp'),
   'sunshine-time': require('../../../assets/activities/sunshine-time.webp'),
   'water-plants': require('../../../assets/activities/water-plants.webp'),
+  'kitchen-helper': require('../../../assets/activities/kitchen-helper.webp'),
 };
 
 /** The picture for an activity, by name, or null — null is an ordinary answer (the icon is shown). */

@@ -1,6 +1,6 @@
 import type { Difficulty } from '@/types/models';
 
-export type LearningSubjectKey = 'english' | 'filipino' | 'math' | 'science' | 'ap' | 'esp';
+export type LearningSubjectKey = 'english' | 'math' | 'science' | 'ap' | 'esp';
 
 export interface Option {
   /** Text on the answer button. */

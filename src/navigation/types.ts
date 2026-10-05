@@ -23,6 +23,7 @@ export type ParentStackParamList = {
   CareNotes: { filter?: import('@/types/models').NoteType } | undefined;
   EditNote: { noteId?: number; noteType?: import('@/types/models').NoteType };
   Progress: undefined;
+  PracticeOverview: undefined;
   Settings: undefined;
   ManageLessons: undefined;
   EditLesson: { lessonId?: number };
@@ -62,7 +63,10 @@ export type RootStackParamList = {
   SoundPracticeDetail: { soundId: string };
   SpeechPractice: undefined;
   MyProgress: undefined;
+  AdventureMap: undefined;
+  SpacePet: undefined;
   Achievements: undefined;
+  RewardsShop: undefined;
   SpeechActivity: { activityId: string; category?: string };
   SpeechStage: { stageId: string };
   SoundTarget: { targetId: string };

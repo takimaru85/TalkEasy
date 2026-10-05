@@ -1,8 +1,12 @@
 import React, { useId } from 'react';
 import { StyleSheet } from 'react-native';
 import Svg, { Circle, Defs, Ellipse, G, LinearGradient, Path, RadialGradient, Rect, Stop } from 'react-native-svg';
+import { SVG_DECORATIVE } from '@/utils/svgA11y';
 import type { WorldId } from '@/adventure/worlds';
 import { SpaceBackground } from './SpaceBackground';
+import { BackgroundPicture, ThemeScene } from './ThemeScene';
+import { DEFAULT_THEME } from '@/shop/themes';
+import { useActiveShopTheme } from '@/context/ShopThemeContext';
 
 interface Props {
   world: WorldId;
@@ -21,7 +25,20 @@ interface Props {
  * animation, pure vector.
  */
 export function WorldBackground({ world, width, height }: Props) {
-  if (world === 'space') return <SpaceBackground width={width} height={height} />;
+  // A premium theme the child owns and switched on replaces the backdrop everywhere this component is used
+  // (every child screen and Home). Nothing else about a screen changes.
+  const theme = useActiveShopTheme();
+  if (theme) return <ThemeScene theme={theme} width={width} height={height} />;
+  if (world === 'space') {
+    // Space Explorer: the supplied picture, over the original vector sky, which stays underneath as the
+    // fallback if the picture is ever missing or still decoding.
+    return (
+      <>
+        <SpaceBackground width={width} height={height} />
+        <BackgroundPicture file={DEFAULT_THEME.background.file} scrim={DEFAULT_THEME.background.scrim} base="transparent" width={width} height={height} />
+      </>
+    );
+  }
   return <Scene world={world} width={width} height={height} />;
 }
 
@@ -45,7 +62,7 @@ function Scene({ world, width: w, height: h }: { world: Exclude<WorldId, 'space'
   const p = PALETTE[world];
 
   return (
-    <Svg style={StyleSheet.absoluteFill} width={w} height={h} accessible={false} pointerEvents="none">
+    <Svg style={StyleSheet.absoluteFill} width={w} height={h} {...SVG_DECORATIVE} pointerEvents="none">
       <Defs>
         <LinearGradient id={`sky${id}`} x1="0" y1="0" x2="0.3" y2="1">
           <Stop offset="0" stopColor={p.top} />

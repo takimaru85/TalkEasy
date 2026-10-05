@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Animated, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Glyph } from '@/components/common/Glyph';
 import { Icon } from '@/components/common/Icon';
 import { GameIcon } from '@/components/adventure/GameIcon';
@@ -260,7 +260,9 @@ export function MyDayUpcoming({ state, variant = 'home', onOpen, onOpenEntry, on
   return onOpen ? (
     <Pressable
       onPress={onOpen}
-      accessibilityRole="button"
+      // On the web a button cannot contain another button (the NEXT panel is one), so the card is a plain
+      // pressable there; Android and iOS keep the button role.
+      accessibilityRole={Platform.OS === 'web' && next && onOpenEntry ? undefined : 'button'}
       accessibilityLabel={`My Day. ${a11y}`}
       accessibilityHint="Opens the whole day"
       accessibilityActions={[{ name: 'activate' }, ...openNextAction]}

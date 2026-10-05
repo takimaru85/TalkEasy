@@ -1,6 +1,7 @@
 import React from 'react';
 import { ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { ChildScreen, Icon, PressableScale } from '@/components/common';
+import { SpaceAdventureMap } from '@/components/adventure/SpaceAdventureMap';
 import { BadgeChip, ColorArt, GradientSurface, HeroBanner, StatCard } from '@/components/adventure';
 import type { ColorArtName } from '@/components/adventure';
 import { badgePreviewCount, statTextWidth } from '@/adventure/progressLayout';
@@ -78,6 +79,8 @@ export function MyProgressScreen({ navigation }: RootScreenProps<'MyProgress'>) 
           onSettings={() => navigation.navigate('ParentPin')}
           settingsLabel={t('advParentSettings')}
         />
+
+        <SpaceAdventureMap />
 
         <View style={[styles.grid, { gap: SPACING.md }]}>
           {stats.map((s) => (

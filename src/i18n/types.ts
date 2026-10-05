@@ -243,10 +243,32 @@ export interface Strings {
   advSeeAll: string;
   advSeeAllSub: string;
   advParentSettings: string;
+  advMapTitle: string;
+  advMapStop: string;
+  advMapFirstWords: string;
+  advMapSoundExplorer: string;
+  advMapWordBuilder: string;
+  advMapChampion: string;
+  advMapSub: string;
+  advMapHomeSub: string;
+  petTitle: string;
+  petSub: string;
+  petDressUp: string;
+  advMapHomeTitle: string;
+  advMapOpen: string;
+  advMapNext: string;
+  advMapAllDone: string;
+  advMapCelebrate: string;
+  advMapGreat: string;
+  advMapContinue: string;
+  advMapStay: string;
   tracingLocked: string;
   tracingTapToLock: string;
   tracingLockA11y: string;
   tracingUnlockA11y: string;
+  shopLabel: string;
+  shopHintText: string;
+  shopHintDismiss: string;
   advTaglineWorld: string;
   advDaily: string;
   advDailySub: string;
@@ -605,6 +627,8 @@ export interface Strings {
   advTodayPlan: string;
   spContinueWith: string;
   spStartWith: string;
+  spAllSoundsDone: string;
+  spAllSoundsAgain: string;
   spStepsOf: string;
 
   // ---- Guided first-run tour ----

@@ -1,8 +1,9 @@
-import React from 'react';
-import { ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { Animated, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { Avatar, Icon, PressableScale, ScreenContainer } from '@/components/common';
 import {
   AdventureButton,
+  EquippedBadge,
   DiscoveryBadge,
   HeroSparkles,
   GradientSurface,
@@ -14,24 +15,37 @@ import {
   WorldArt,
   WorldBackground,
 } from '@/components/adventure';
-import { game, themeFor, type CardArt, type CardSlot } from '@/adventure/themes';
+import { PetCard } from '@/components/adventure/PetCard';
+import { usePetReaction, usePetWardrobe } from '@/hooks/usePet';
+import { game, themeFor, worldly, type CardArt, type CardSlot } from '@/adventure/themes';
 import { TourOverlay, TourProvider, TourTarget, useTour } from '@/components/onboarding';
 import { MAX_FONT_SCALE, MIN_CHILD_TARGET, MIN_SUPPORTED_WIDTH, SPACING } from '@/constants/sizes';
 import { useProfile } from '@/context/ProfileContext';
 import { MyDayUpcoming } from '@/components/myday/MyDayUpcoming';
-import { useAdventure, useMyDay, useAdventureWorld, useCollection, useCurrentTarget, useSizes, useToday, useTodayAdventure, useTodayLessons, useTodaySoundPractice } from '@/hooks';
+import { useAdventure, useMyDay, useReducedMotion, useAdventureWorld, useCollection, useCurrentTarget, useAdventureMap, useSizes, useToday, useTodayAdventure, useTodayLessons, useTodaySoundPractice } from '@/hooks';
 import { useI18n } from '@/i18n';
 import type { Strings } from '@/i18n/types';
 import type { RootScreenProps } from '@/navigation/types';
+import { useSettings } from '@/context/SettingsContext';
+import { SHOP_HINT_DONE, afterShopHintShown, shouldShowShopHint } from '@/adventure/shopHint';
+import { useCollectionStrip } from '@/context/CollectionContext';
+import { CollectibleArt } from '@/components/adventure/CollectibleArt';
 import { AdventureZone, Fonts, useTheme } from '@/theme';
 import { Adventure, AdventureNight, AdventureRadius, shade, type AdventureKey } from '@/theme/adventure';
 import { fitFontSize, textWidth } from '@/utils/fitText';
+
+/**
+ * The Space Adventure Map card has its own picture (the ringed planet) and its own hue, so it does
+ * not look like a second Speech Practice card (same robot, same orange). It is the map, not a theme
+ * destination, so it does not come from the world theme's card slots.
+ */
+const MAP_CARD = { art: worldly('saturn'), color: 'reef' as const, decor: ['star-four-points', 'star-four-points'] };
 
 type Destination =
   | 'SpeechPractice' | 'WritingPractice' | 'Learn' | 'Communicate' | 'Favorites' | 'AdaptiveHome'
   | 'MyProgress' | 'Achievements' | 'SoundPractice' | 'VoiceComm'
   | 'School' | 'MyDay' | 'Activities' | 'Feelings' | 'SchoolMode' | 'ParentPin'
-  | 'Collection' | 'ChooseAdventure';
+  | 'Collection' | 'ChooseAdventure' | 'AdventureMap';
 
 /** How many different sounds today's mission asks for — small enough to finish in one sitting. */
 const DAILY_TARGET = 5;
@@ -53,6 +67,8 @@ const EXPLORE_LABEL_MIN = 10;
 /** A capsule minus its number: padding + border + the 15pt icon + the gap before the digits. */
 const CAPSULE_FIXED = 9 * 2 + 1.5 * 2 + 15 + 4;
 const HUD_GAP = 6;
+/** The SHOP segment on the star capsule: divider + gap + 18pt icon + gap + the word, before the word's own width. */
+const SHOP_EXTRA = 1 + 8 + 8 + 18 + 4;
 /** Narrower than this and the child's own name is no longer worth reading. */
 const NAME_MIN = 96;
 
@@ -136,6 +152,9 @@ function HomeBody({ navigation }: RootScreenProps<'ChildHome'>) {
 
   const today = useTodayAdventure();
   const target = useCurrentTarget();
+  const adventureMap = useAdventureMap();
+  const pet = usePetReaction(adventureMap);
+  const wardrobe = usePetWardrobe(adventureMap);
   /**
    * The active theme's visual configuration. Every illustration, card colour and corner mark on
    * this screen comes from here — the screen never names a world, so a new theme is a new entry in
@@ -145,6 +164,22 @@ function HomeBody({ navigation }: RootScreenProps<'ChildHome'>) {
   /** A theme's card, by slot. Saves repeating `adv.cards.x` at seven call sites. */
   const card = (slot: CardSlot) => adv.cards[slot];
   const collection = useCollection();
+  // The Shop discovery hint: decided ONCE when Home opens (so it does not vanish mid-visit), counted, and gone for good
+  // once dismissed or the Shop has been visited.
+  const { settings: homeSettings, updateSetting } = useSettings();
+  const [hintVisible, setHintVisible] = useState(() => shouldShowShopHint(homeSettings.shopHint));
+  const hintCounted = useRef(false);
+  useEffect(() => {
+    if (hintCounted.current || !hintVisible) return;
+    hintCounted.current = true;
+    void updateSetting('shopHint', afterShopHintShown(homeSettings.shopHint));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  // The strip counts the full Space Collection (46) in the Space world; other worlds keep their own five.
+  const strip = useCollectionStrip();
+  const stripFound = strip.found;
+  const stripTotal = strip.total;
+  const stripItems = strip.items;
   const { width, height } = useWindowDimensions();
 
   // High contrast opts out of the universe: a starfield behind text is what that mode removes.
@@ -195,7 +230,7 @@ function HomeBody({ navigation }: RootScreenProps<'ChildHome'>) {
     [adventure.totalStars, adventure.streak, adventure.level].reduce(
       (w, n) => w + CAPSULE_FIXED + textWidth(String(n), 14),
       0,
-    ) + HUD_GAP * 2;
+    ) + SHOP_EXTRA + textWidth(t('shopLabel'), 13) + HUD_GAP * 2;
   const hudStacked = contentWidth - (MIN_CHILD_TARGET - 8) - HUD_GAP * 2 - 6 - capsulesWidth < NAME_MIN;
   const inviteTitleSize = fitFontSize(t('advChooseCta'), contentWidth - SPACING.md * 2 - 34, 15, 'line', 12);
 
@@ -259,7 +294,12 @@ function HomeBody({ navigation }: RootScreenProps<'ChildHome'>) {
           {/* Flight HUD: who is flying, and what they have collected. */}
           <View style={hudStacked ? styles.hudStacked : styles.hud}>
             <View style={[styles.hudWho, !hudStacked && styles.hudWhoFill]}>
-              <Avatar avatar={profile.avatar} photoUri={profile.photoUri} size={MIN_CHILD_TARGET - 8} />
+              <View>
+                <Avatar avatar={profile.avatar} photoUri={profile.photoUri} size={MIN_CHILD_TARGET - 8} />
+                <View style={styles.equipped} pointerEvents="none">
+                  <EquippedBadge size={26} />
+                </View>
+              </View>
               <View style={styles.hudName}>
                 <Text style={[styles.greeting, { color: inkMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={1}>
                   {t(greetingKey(now.getHours()))}
@@ -276,11 +316,19 @@ function HomeBody({ navigation }: RootScreenProps<'ChildHome'>) {
               </View>
             </View>
             <View style={hudStacked ? styles.hudStatsRow : styles.hudStats}>
-              <Capsule icon="star" tone={Adventure.sun.from} value={adventure.totalStars} label={t('advStars', { n: adventure.totalStars })} night={night} ink={ink} />
+              <Capsule icon="star" tone={Adventure.sun.from} value={adventure.totalStars} label={`${t('advStars', { n: adventure.totalStars })}. ${t('shopLabel')}: open the Rewards Shop`} night={night} ink={ink} onPress={() => navigation.navigate('RewardsShop')} pulseOnIncrease shopLabel={t('shopLabel')} />
               <Capsule icon="fire" tone={Adventure.coral.from} value={adventure.streak} label={t('advStreak', { n: adventure.streak })} night={night} ink={ink} />
               <Capsule icon="shield-star" tone={Adventure.grape.from} value={adventure.level} label={t('advLevel', { n: adventure.level })} night={night} ink={ink} />
             </View>
           </View>
+          {hintVisible ? (
+            <View style={styles.hint} accessible accessibilityLiveRegion="polite">
+              <Text style={styles.hintText} maxFontSizeMultiplier={MAX_FONT_SCALE}>{t('shopHintText')}</Text>
+              <Pressable onPress={() => { setHintVisible(false); void updateSetting('shopHint', SHOP_HINT_DONE); }} accessibilityRole="button" accessibilityLabel={t('shopHintDismiss')} style={styles.hintClose} hitSlop={6}>
+                <Icon name="close" size={18} color="#3A2A00" />
+              </Pressable>
+            </View>
+          ) : null}
 
           <TalkEasyLogo size={Math.min(42, sizes.heading + 8)} tagline={t('advTaglineWorld')} />
 
@@ -365,17 +413,17 @@ function HomeBody({ navigation }: RootScreenProps<'ChildHome'>) {
                 <PressableScale
                   onPress={go('Collection')}
                   accessibilityRole="button"
-                  accessibilityLabel={`${t('advMyCollection')}. ${t('advFoundOf', { n: collection.found, total: collection.items.length })}`}
+                  accessibilityLabel={`${t('advMyCollection')}. ${t('advFoundOf', { n: stripFound, total: stripTotal })}`}
                   hitSlop={4}
                 >
                   <View style={styles.strip}>
                     <View style={styles.stripArt}>
-                      {collection.items.map((item) => (
-                        <WorldArt key={item.id} name={item.art} size={worldArtSize} locked={!item.found} />
-                      ))}
+                      {stripItems
+                        ? stripItems.map((item) => <CollectibleArt key={item.id} art={item.art} size={worldArtSize} locked={!item.found} />)
+                        : collection.items.map((item) => <WorldArt key={item.id} name={item.art} size={worldArtSize} locked={!item.found} />)}
                     </View>
                     <Text style={[styles.stripText, { color: ink }]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={1}>
-                      {`${collection.found} / ${collection.items.length}`}
+                      {`${stripFound} / ${stripTotal}`}
                     </Text>
                     <Icon name="chevron-right" size={22} color={inkMuted} />
                   </View>
@@ -396,17 +444,6 @@ function HomeBody({ navigation }: RootScreenProps<'ChildHome'>) {
           />
           </TourTarget>
 
-          {/* My Day / Up next — a live status, not a grid card: now, next, and "it's time". */}
-          {myDay.total > 0 ? (
-            <MyDayUpcoming
-              state={myDay}
-              onOpen={go('MyDay')}
-              // A step's own activity (Homework → Lessons) if the parent linked one; otherwise My Day.
-              onOpenEntry={(e) => (e.item.linkedActivity ? go(e.item.linkedActivity)() : go('MyDay')())}
-              onGo={(e) => (e.item.linkedActivity ? go(e.item.linkedActivity)() : go('MyDay')())}
-            />
-          ) : null}
-
           {/* Speech Practice is a core pillar: full width, and it says where the child GOT TO.
               The BA–BU chips used to sit here. Five tappable sounds on the entry screen asks a
               child to choose before anything has been explained; choosing a target is the first
@@ -420,7 +457,7 @@ function HomeBody({ navigation }: RootScreenProps<'ChildHome'>) {
             width={contentWidth}
             featured
             decor={card('speech').decor}
-            onPress={go('SpeechPractice')}
+            onPress={() => (target.fresh || target.allDone ? navigation.navigate('SpeechPractice') : navigation.navigate('SoundTarget', { targetId: target.id }))}
             footer={
               <View style={styles.continueRow}>
                 <Text
@@ -428,14 +465,14 @@ function HomeBody({ navigation }: RootScreenProps<'ChildHome'>) {
                   maxFontSizeMultiplier={MAX_FONT_SCALE}
                   numberOfLines={2}
                 >
-                  {t(target.fresh ? 'spStartWith' : 'spContinueWith', { sound: target.display })}
+                  {target.allDone ? t('spAllSoundsDone') : t(target.stepsDone === 0 ? 'spStartWith' : 'spContinueWith', { sound: target.display })}
                 </Text>
                 <Text
                   style={[styles.continueCount, { color: night ? 'rgba(255,255,255,0.92)' : inkMuted }]}
                   maxFontSizeMultiplier={MAX_FONT_SCALE}
                   numberOfLines={1}
                 >
-                  {t('spStepsOf', { done: target.stepsDone, total: target.totalSteps })}
+                  {target.allDone ? t('spAllSoundsAgain') : t('spStepsOf', { done: target.stepsDone, total: target.totalSteps })}
                 </Text>
               </View>
             }
@@ -445,6 +482,21 @@ function HomeBody({ navigation }: RootScreenProps<'ChildHome'>) {
             </View>
           </FeatureCard>
           </TourTarget>
+
+          {/* My Day sits under Speech Practice, so the main learning activity is the first thing under the hero; it is still a live status (now, next, "it's time"). */}
+          {myDay.total > 0 ? (
+            <MyDayUpcoming
+              state={myDay}
+              onOpen={go('MyDay')}
+              // A step's own activity (Homework → Lessons) if the parent linked one; otherwise My Day.
+              onOpenEntry={(e) => (e.item.linkedActivity ? go(e.item.linkedActivity)() : go('MyDay')())}
+              onGo={(e) => (e.item.linkedActivity ? go(e.item.linkedActivity)() : go('MyDay')())}
+            />
+          ) : null}
+
+          <FeatureCard title={t('advMapHomeTitle')} subtitle={t('advMapHomeSub', { done: adventureMap.stages.filter((st) => st.done).length, total: adventureMap.stages.length })} {...MAP_CARD} width={contentWidth} onPress={go('AdventureMap')} />
+
+          <PetCard mood={pet.mood} message={pet.message} burst={pet.burst} equipped={wardrobe.equipped} label={t('petDressUp')} onPress={() => navigation.navigate('SpacePet')} />
 
           <View style={styles.pair}>
             <FeatureCard title={t('questTrace')} subtitle={t('questTraceSub')} {...card('trace')} width={half} onPress={go('WritingPractice')} />
@@ -610,18 +662,52 @@ function HomeBody({ navigation }: RootScreenProps<'ChildHome'>) {
   );
 }
 
-function Capsule({ icon, tone, value, label, night, ink }: { icon: string; tone: string; value: number; label: string; night: boolean; ink: string }) {
-  return (
-    <View
-      style={[styles.capsule, night ? { backgroundColor: '#141B44', borderColor: tone } : { backgroundColor: '#FFFFFF', borderColor: '#D8DEEA' }]}
-      accessibilityRole="text"
-      accessibilityLabel={label}
+function Capsule({ icon, tone, value, label, night, ink, onPress, pulseOnIncrease, shopLabel }: { icon: string; tone: string; value: number; label: string; night: boolean; ink: string; onPress?: () => void; pulseOnIncrease?: boolean; shopLabel?: string }) {
+  const reduced = useReducedMotion();
+  const scale = useRef(new Animated.Value(1)).current;
+  const last = useRef(value);
+  // A short pop when the number goes UP (a star was earned), never on load or on a drop (a purchase).
+  // The first render only records the value, so opening the app with stars already earned is still.
+  useEffect(() => {
+    const rose = value > last.current;
+    last.current = value;
+    if (!pulseOnIncrease || !rose || reduced) return;
+    Animated.sequence([
+      Animated.timing(scale, { toValue: 1.25, duration: 160, useNativeDriver: true }),
+      Animated.spring(scale, { toValue: 1, friction: 4, useNativeDriver: true }),
+    ]).start();
+  }, [value, pulseOnIncrease, reduced, scale]);
+
+  const body = (
+    <Animated.View
+      style={[styles.capsule, night ? { backgroundColor: '#141B44', borderColor: tone } : { backgroundColor: '#FFFFFF', borderColor: '#D8DEEA' }, shopLabel ? styles.capsuleShop : null, { transform: [{ scale }] }]}
     >
       <Icon name={icon} size={15} color={tone} />
       <Text style={[styles.capsuleValue, { color: ink }]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={1}>
         {value}
       </Text>
-    </View>
+      {shopLabel ? (
+        <>
+          <View style={styles.shopDivider} />
+          <Icon name="store" size={18} color="#FFC933" />
+          <Text style={[styles.shopText, { color: night ? '#FFE27A' : ink }]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={1}>
+            {shopLabel}
+          </Text>
+        </>
+      ) : null}
+    </Animated.View>
+  );
+  if (!onPress) {
+    return (
+      <View accessible accessibilityRole="text" accessibilityLabel={label}>
+        {body}
+      </View>
+    );
+  }
+  return (
+    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={label} hitSlop={10}>
+      {body}
+    </Pressable>
   );
 }
 
@@ -804,6 +890,7 @@ const styles = StyleSheet.create({
   // Claim the room the capsules leave, and only on one line: flexBasis 0 inside the STACKED
   // (column) variant would resolve against a parent with no free height and collapse the row.
   hudWhoFill: { flexGrow: 1, flexBasis: 0, flexShrink: 1 },
+  equipped: { position: 'absolute', right: -8, bottom: -8, elevation: 6, zIndex: 6 },
   hudStats: { flexDirection: 'row', alignItems: 'center', gap: HUD_GAP },
   hudStatsRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap', gap: HUD_GAP },
   hudName: { flex: 1, marginLeft: 4, marginRight: 2, minWidth: 0 },
@@ -811,6 +898,13 @@ const styles = StyleSheet.create({
   name: { fontFamily: Fonts.black, alignSelf: 'stretch' },
   capsule: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 9, paddingVertical: 5, borderRadius: AdventureRadius.pill, borderWidth: 1.5 },
   capsuleValue: { fontFamily: Fonts.black, fontSize: 14 },
+  // The Shop button: the star capsule with a gold rim and a soft glow, so it reads as pressable.
+  capsuleShop: { minHeight: 44, paddingVertical: 7, borderWidth: 2, shadowColor: '#FFC933', shadowOpacity: 0.55, shadowRadius: 8, shadowOffset: { width: 0, height: 0 }, elevation: 4 },
+  shopDivider: { width: 1, height: 18, backgroundColor: 'rgba(255,201,51,0.55)', marginHorizontal: 4 },
+  shopText: { fontFamily: Fonts.black, fontSize: 13, letterSpacing: 0.5 },
+  hint: { alignSelf: 'flex-end', flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#FFD84D', borderRadius: 18, paddingLeft: 12, paddingRight: 4, paddingVertical: 4, maxWidth: '100%' },
+  hintText: { flexShrink: 1, color: '#3A2A00', fontFamily: Fonts.extrabold, fontSize: 13 },
+  hintClose: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
   hero: { borderRadius: AdventureRadius.hero, borderWidth: 1.5, paddingHorizontal: SPACING.lg, paddingTop: SPACING.md, paddingBottom: SPACING.lg, gap: SPACING.sm },
   heroTop: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
   heroText: { flex: 1, minWidth: 0, gap: 4, justifyContent: 'center', paddingRight: SPACING.xs },

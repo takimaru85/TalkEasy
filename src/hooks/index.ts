@@ -30,11 +30,10 @@ export { useToday } from './useToday';
 export { useSizes } from './useSizes';
 export type { Sizes } from './useSizes';
 export { useSpeak } from './useSpeak';
-export { useRewardList, useStarSummary, useStarHistory, useAwardStars } from './useRewards';
+export { useRewardList, useStarSummary, useStarHistory, useClaimStars, useClaimStatus, useAwaitingClaims, useShopOwned, useShopEquipped } from './useRewards';
 export { useAdventureWorld, useCollection } from './useAdventureWorld';
 export { useWeeklySummary, useTodaySummary, useStarsEarned } from './useParentSummary';
 export { useMyDay, useNow } from './useMyDay';
-export type { StarEventKind } from './useRewards';
 export { useOrientationLock } from './useOrientationLock';
 export {
   useLessons,
@@ -56,5 +55,5 @@ export type { AdventureProgress } from './useAdventure';
 export { useAchievements } from './useAchievements';
 export { useVoiceAreas, useVoiceToday, useRecordVoicePractice } from './useVoicePractice';
 export { useTherapyDoneToday, useTherapyWeekCounts, useRecordTherapyPractice } from './useTherapyPractice';
-export { useTodayAdventure, useCurrentTarget } from './useTodayAdventure';
+export { useTodayAdventure, useCurrentTarget, useAdventureMap } from './useTodayAdventure';
 export { useReducedMotion } from './useReducedMotion';

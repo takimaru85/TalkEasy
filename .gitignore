@@ -39,3 +39,12 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# signing credentials (never commit)
+credentials.json
+/credentials/
+*.keystore
+app.json.backup
+
+# large source archives (not bundled)
+assets/*.zip

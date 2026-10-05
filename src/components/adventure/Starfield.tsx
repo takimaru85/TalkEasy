@@ -1,6 +1,7 @@
 import React, { useId } from 'react';
 import { StyleSheet } from 'react-native';
 import Svg, { Circle, Defs, LinearGradient, RadialGradient, Rect, Stop } from 'react-native-svg';
+import { SVG_DECORATIVE } from '@/utils/svgA11y';
 import { AdventureNight } from '@/theme/adventure';
 
 /**
@@ -44,7 +45,7 @@ export function Starfield({ height, width }: Props) {
   const id = useId().replace(/:/g, '');
 
   return (
-    <Svg style={StyleSheet.absoluteFill} width={width} height={height} accessible={false} pointerEvents="none">
+    <Svg style={StyleSheet.absoluteFill} width={width} height={height} {...SVG_DECORATIVE} pointerEvents="none">
       <Defs>
         <LinearGradient id={`sky${id}`} x1="0" y1="0" x2="0" y2="1">
           <Stop offset="0" stopColor={AdventureNight.top} />

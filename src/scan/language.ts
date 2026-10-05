@@ -4,7 +4,7 @@ import { CONTENT_LANGUAGES, normalizeContentLanguage } from '@/services/contentL
  * The language a scanned assignment is written in.
  *
  * This is the SAME axis as a lesson's language (services/contentLanguage.ts) and deliberately reuses
- * it: a scanned Filipino worksheet and a seeded Filipino lesson must be read aloud by the same
+ * it: a scanned worksheet and a seeded lesson in the same language must be read aloud by the same
  * voice, through the same code, or the two drift apart and one of them starts saying "Mga" as the
  * letters M, G, A again.
  *
@@ -26,7 +26,7 @@ export function normalizeScanLanguage(raw: string | null | undefined): ScanLangu
 /**
  * The SCRIPT the text-recognition engine should look for.
  *
- * ML Kit recognises by script, not by language: one Latin model reads English, Filipino, Spanish and
+ * ML Kit recognises by script, not by language: one Latin model reads English, Spanish and
  * most of Europe, and the separate models are for Chinese, Devanagari, Japanese and Korean. Every
  * language TalkEasy currently offers is Latin, so this returns 'Latin' for all of them — the mapping
  * exists so that adding a language with another script is a line HERE rather than a change to the
@@ -40,7 +40,6 @@ export function scriptFor(language: ScanLanguage): 'Latin' | 'Chinese' | 'Devana
   switch (tag) {
     // Every current content language is written in Latin script.
     case '':
-    case 'fil-PH':
     case 'es-ES':
     default:
       return 'Latin';

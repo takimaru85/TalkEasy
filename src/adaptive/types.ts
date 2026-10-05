@@ -87,11 +87,11 @@ export interface Lesson {
   /** Visual vocabulary lines, e.g. "☀️ Sunlight". One per line. */
   vocabulary: string[];
   /**
-   * The language the lesson is WRITTEN in, as a BCP-47 tag ('fil-PH'); '' means English.
+   * The language the lesson is WRITTEN in, as a BCP-47 tag ('es-ES'); '' means English.
    *
    * Everything this lesson speaks inherits it — the title, the explanation, each vocabulary word,
    * every question and hint. It is stored rather than guessed from the text, because guessing is
-   * what makes a Filipino lesson get read by an English voice. See services/contentLanguage.ts.
+   * what makes a non-English lesson get read by an English voice. See services/contentLanguage.ts.
    */
   language: string;
   objectives: string;

@@ -78,7 +78,7 @@ export function TourOverlay() {
   if (done) {
     return (
       <View style={[styles.fill, styles.celebrate]} accessibilityViewIsModal>
-        <Mascot size={110} mood="cheer" />
+        <Mascot size={110} mood="cheer" pip />
         <Text style={styles.celebrateTitle} maxFontSizeMultiplier={MAX_FONT_SCALE}>
           🎉 {t('tourDoneTitle')}
         </Text>
