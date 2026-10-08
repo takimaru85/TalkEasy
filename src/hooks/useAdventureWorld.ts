@@ -2,12 +2,14 @@ import { useCallback } from 'react';
 import { adaptiveProgressRepo, buttonsRepo, soundPracticeRepo, speechPracticeRepo } from '@/database';
 import { useProfile } from '@/context/ProfileContext';
 import { useSettings } from '@/context/SettingsContext';
+import { useOwnedItems } from '@/context/ShopThemeContext';
 import {
   BA_ROW,
   DAILY_MISSION_TARGET,
   WORLDS,
   effectiveWorld,
   evaluateCollection,
+  isWorldUnlocked,
   type CollectedItem,
   type CollectionMetrics,
   type WorldDefinition,
@@ -23,6 +25,8 @@ export interface AdventureWorldState {
   unchosen: boolean;
   /** Save the child's pick. Does nothing when the grown-up has fixed the world. */
   chooseWorld: (id: WorldId) => Promise<void>;
+  /** Shop items owned; a world other than Space is unlocked by `isWorldUnlocked(id, owned)`. */
+  owned: readonly string[];
 }
 
 /**
@@ -32,17 +36,18 @@ export interface AdventureWorldState {
 export function useAdventureWorld(): AdventureWorldState {
   const { settings, updateSetting } = useSettings();
   const childChooses = settings.adventureTheme === 'child';
-  const id = effectiveWorld(settings.adventureTheme, settings.adventureWorld);
+  const owned = useOwnedItems();
+  const id = effectiveWorld(settings.adventureTheme, settings.adventureWorld, owned);
 
   const chooseWorld = useCallback(
     async (w: WorldId) => {
-      if (!childChooses) return;
+      if (!childChooses || !isWorldUnlocked(w, owned)) return;
       await updateSetting('adventureWorld', w);
     },
-    [childChooses, updateSetting],
+    [childChooses, owned, updateSetting],
   );
 
-  return { world: WORLDS[id], childChooses, unchosen: childChooses && settings.adventureWorld === '', chooseWorld };
+  return { world: WORLDS[id], childChooses, unchosen: childChooses && settings.adventureWorld === '', owned, chooseWorld };
 }
 
 const NO_METRICS: CollectionMetrics = { speechPractice: 0, baRowSyllables: 0, tracingSessions: 0, missionDays: 0, talkTaps: 0 };

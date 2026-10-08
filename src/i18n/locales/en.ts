@@ -284,6 +284,8 @@ export const en: Locale = {
     advChooseQuestion: 'What do you want to explore?',
     advChooseSub: 'Choose your favorite adventure.',
     advYourWorld: 'Your adventure',
+    advWorldLocked: 'Unlock in the Shop',
+    advWorldSoon: 'Coming soon',
     advWorldPicked: 'A grown-up chose this adventure for you.',
     advWorldBegins: 'Your {world} adventure begins!',
     advMyCollection: 'My Collection',

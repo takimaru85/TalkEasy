@@ -35,9 +35,10 @@ export function PhraseBanner({ phrase, onRepeat, placeholder, pending, onClear }
         styles.banner,
         theme.shadow,
         {
-          backgroundColor: theme.colors.surface,
-          borderColor: active ? theme.colors.primary : theme.highContrast ? theme.colors.border : theme.colors.borderSoft,
-          borderWidth: active ? 2.5 : theme.highContrast ? theme.borderWidth : 1,
+          backgroundColor: theme.night && !theme.highContrast ? 'rgba(14,20,86,0.92)' : theme.colors.surface,
+          borderColor: theme.night && !theme.highContrast ? (active ? '#7CF0FF' : '#4D6BFF') : active ? theme.colors.primary : theme.highContrast ? theme.colors.border : theme.colors.borderSoft,
+          borderWidth: theme.night && !theme.highContrast ? 3 : active ? 2.5 : theme.highContrast ? theme.borderWidth : 1,
+          borderRadius: theme.night && !theme.highContrast ? 34 : Radius.lg,
         },
       ]}
     >
@@ -83,6 +84,7 @@ export function PhraseBanner({ phrase, onRepeat, placeholder, pending, onClear }
             { backgroundColor: hasPhrase ? theme.colors.primary : theme.colors.surfaceAlt, borderColor: hasPhrase ? theme.colors.primaryDark : 'transparent' },
             // On the night sky: a solid game button with a darker base.
             theme.night && { borderColor: shade(hasPhrase ? theme.colors.primary : theme.colors.surfaceAlt, 1.4), borderBottomWidth: 5, borderBottomColor: shade(hasPhrase ? theme.colors.primary : theme.colors.surfaceAlt, 0.62) },
+            theme.night && !theme.highContrast && { borderRadius: 999, backgroundColor: hasPhrase ? '#2F5BFF' : 'rgba(120,130,190,0.35)', borderColor: hasPhrase ? '#9FB6FF' : 'rgba(255,255,255,0.25)', borderWidth: 2.5, borderBottomWidth: 2.5 },
             pressed && styles.pressed,
           ]}
         >

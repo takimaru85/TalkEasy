@@ -4,6 +4,8 @@ import { SVG_DECORATIVE } from '@/utils/svgA11y';
 import { Adventure } from '@/theme/adventure';
 import { useActiveAvatar } from '@/context/ShopThemeContext';
 import { AvatarArt } from './AvatarArt';
+import { AstroAnimated } from './AstroAnimated';
+import { useReducedMotion } from '@/hooks/useReducedMotion';
 
 export type MascotMood = 'happy' | 'cheer' | 'listening';
 
@@ -14,6 +16,8 @@ interface Props {
   space?: boolean;
   /** Always draw Pip, never the equipped avatar (the first-run tour introduces Pip by name). */
   pip?: boolean;
+  /** Play the moving Astro Explorer (only for that avatar, and not under reduced motion). Hero spots only. */
+  animated?: boolean;
 }
 
 /**
@@ -31,7 +35,8 @@ interface Props {
  * `mood` is the only expression control: 'happy' at rest, 'cheer' when celebrating (arms up,
  * wider smile), 'listening' while the child speaks (open mouth, attentive eyes).
  */
-export function Mascot({ size, mood = 'happy', space, pip }: Props) {
+export function Mascot({ size, mood = 'happy', space, pip, animated }: Props) {
+  const reduced = useReducedMotion();
   // The designated mascot spots show the companion the child chose (the free Astro Explorer by default);
   // `pip` keeps the original character where the app introduces it.
   const avatar = useActiveAvatar();
@@ -40,7 +45,7 @@ export function Mascot({ size, mood = 'happy', space, pip }: Props) {
   const id = useId().replace(/:/g, '');
   const body = `body-${id}`;
   const cheer = mood === 'cheer';
-  if (!pip) return <AvatarArt id={avatar} size={size} />;
+  if (!pip) return animated && avatar === 'astro-explorer' && !reduced ? <AstroAnimated size={size} /> : <AvatarArt id={avatar} size={size} />;
 
   return (
     <Svg width={size} height={size} viewBox="0 0 100 100" {...SVG_DECORATIVE}>

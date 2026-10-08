@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { useShopEquipped } from '@/hooks';
 import { getShopItem } from '@/shop/catalog';
 import { ColorArt } from './ColorArt';
@@ -16,7 +16,7 @@ export function EquippedBadge({ size = 28 }: { size?: number }) {
   const { data: equipped } = useShopEquipped();
   const id = equipped.badge;
   const item = id ? getShopItem(id) : undefined;
-  if (!item || !item.art) return null;
+  if (!item || (!item.art && !item.emoji)) return null;
   return (
     <View
       pointerEvents="none"
@@ -24,7 +24,7 @@ export function EquippedBadge({ size = 28 }: { size?: number }) {
       importantForAccessibility="no-hide-descendants"
       style={[styles.disc, { width: size, height: size, borderRadius: size / 2 }]}
     >
-      <ColorArt name={item.art} size={Math.round(size * 0.86)} />
+      {item.emoji ? <Text allowFontScaling={false} style={{ fontSize: Math.round(size * 0.62), lineHeight: Math.round(size * 0.78) }}>{item.emoji}</Text> : <ColorArt name={item.art!} size={Math.round(size * 0.86)} />}
     </View>
   );
 }

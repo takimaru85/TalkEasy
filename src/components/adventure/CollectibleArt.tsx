@@ -1,7 +1,7 @@
 import React, { useId } from 'react';
 import Svg, { Defs, Ellipse, LinearGradient, Stop } from 'react-native-svg';
 import { SVG_DECORATIVE } from '@/utils/svgA11y';
-import { View } from 'react-native';
+import { Text, View } from 'react-native';
 import { getAvatar, type AvatarId } from '@/shop/avatars';
 import { AvatarArt } from './AvatarArt';
 import { WorldArt } from './WorldArt';
@@ -23,6 +23,13 @@ export function CollectibleArt({ art, size, locked }: { art: string; size: numbe
   if (art.startsWith('avatar:')) {
     const id = art.slice(7) as AvatarId;
     body = getAvatar(id) ? <AvatarArt id={id} size={safe} /> : null;
+  } else if (art.startsWith('emoji:')) {
+    // The expansion's pictures: an emoji on a soft plate (offline-safe, like the learning content).
+    body = (
+      <View style={{ width: safe, height: safe, borderRadius: safe / 2, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.14)' }}>
+        <Text allowFontScaling={false} style={{ fontSize: safe * 0.58, lineHeight: safe * 0.72 }}>{art.slice(6)}</Text>
+      </View>
+    );
   } else if (art.startsWith('world:')) {
     body = <WorldArt name={art.slice(6) as WorldArtName} size={safe} locked={locked} />;
   } else {

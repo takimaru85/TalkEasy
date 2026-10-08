@@ -9,6 +9,7 @@ import { useSizes } from '@/hooks';
 import { Fonts } from '@/theme';
 import { CollectibleArt } from './CollectibleArt';
 
+const PAGE = 60;
 const rarityOf = (r: CollectibleState['rarity']) => RARITIES.find((x) => x.id === r)!;
 
 function foundOn(item: CollectibleState, backfilled: boolean): string {
@@ -30,6 +31,9 @@ export function SpaceCollectionGrid({ onGo }: { onGo: (d: Destination) => void }
   const { width } = useWindowDimensions();
   const { state, unseen, discoveries, markSeen } = useSpaceCollection();
   const [category, setCategory] = useState<CollectionCategory | 'all'>('all');
+  const [rarity, setRarity] = useState<CollectibleState['rarity'] | 'all'>('all');
+  // A thousand cards at once is slow to draw, so they appear in pages of 60.
+  const [limit, setLimit] = useState(PAGE);
   const [selected, setSelected] = useState<CollectibleState | null>(null);
   const [celebrate, setCelebrate] = useState<string[]>([]);
 
@@ -47,7 +51,12 @@ export function SpaceCollectionGrid({ onGo }: { onGo: (d: Destination) => void }
   const columns = contentWidth >= 600 ? 4 : contentWidth >= 340 ? 3 : 2;
   const gap = 10;
   const cardWidth = Math.floor((contentWidth - gap * (columns - 1)) / columns);
-  const shown = state.items.filter((i) => category === 'all' || i.category === category);
+  const matching = state.items.filter((i) => (category === 'all' || i.category === category) && (rarity === 'all' || i.rarity === rarity));
+  const shown = matching.slice(0, limit);
+  const pick = <T,>(set: (v: T) => void) => (v: T) => {
+    set(v);
+    setLimit(PAGE);
+  };
   const names = celebrate.map((id) => getCollectible(id)?.name).filter(Boolean) as string[];
   const trophies = celebrate.filter((id) => id.startsWith('trophy-')).length;
 
@@ -67,7 +76,7 @@ export function SpaceCollectionGrid({ onGo }: { onGo: (d: Destination) => void }
         {[{ id: 'all' as const, label: 'All', emoji: '⭐', n: state.found, total: state.total }, ...CATEGORIES.map((c) => ({ id: c.id, label: c.label, emoji: c.emoji, n: state.items.filter((i) => i.category === c.id && i.found).length, total: state.items.filter((i) => i.category === c.id).length }))].map((c) => (
           <Pressable
             key={c.id}
-            onPress={() => setCategory(c.id)}
+            onPress={() => pick(setCategory)(c.id)}
             accessibilityRole="button"
             accessibilityState={{ selected: category === c.id }}
             accessibilityLabel={`${c.label}, ${c.n} of ${c.total} found`}
@@ -81,10 +90,25 @@ export function SpaceCollectionGrid({ onGo }: { onGo: (d: Destination) => void }
         ))}
       </ScrollView>
 
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+        {[{ id: 'all' as const, label: 'Every rarity', color: '#FFFFFF' }, ...RARITIES].map((r) => (
+          <Pressable
+            key={r.id}
+            onPress={() => pick(setRarity)(r.id)}
+            accessibilityRole="button"
+            accessibilityState={{ selected: rarity === r.id }}
+            accessibilityLabel={`${r.label}, ${r.id === 'all' ? state.total : state.items.filter((i) => i.rarity === r.id).length} items`}
+            style={[styles.chip, rarity === r.id && styles.chipOn, rarity !== r.id && { borderColor: r.color }]}
+          >
+            <Text style={[styles.chipText, rarity === r.id && styles.chipTextOn]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={1}>{r.label}</Text>
+          </Pressable>
+        ))}
+      </ScrollView>
+
       <View style={[styles.grid, { gap }]}>
         {shown.map((item) => {
           const rar = rarityOf(item.rarity);
-          const mystery = !item.found && item.rarity === 'legendary';
+          const mystery = !item.found && (item.rarity === 'legendary' || item.rarity === 'mythic');
           return (
             <Pressable
               key={item.id}
@@ -113,12 +137,21 @@ export function SpaceCollectionGrid({ onGo }: { onGo: (d: Destination) => void }
         })}
       </View>
 
+      {matching.length === 0 ? (
+        <Text style={styles.empty} maxFontSizeMultiplier={MAX_FONT_SCALE}>Nothing here yet. Try another group.</Text>
+      ) : null}
+      {matching.length > shown.length ? (
+        <Pressable onPress={() => setLimit((n) => n + PAGE)} accessibilityRole="button" accessibilityLabel={`Show ${Math.min(PAGE, matching.length - shown.length)} more`} style={styles.more}>
+          <Text style={styles.moreText} maxFontSizeMultiplier={MAX_FONT_SCALE}>Show more · {matching.length - shown.length} left</Text>
+        </Pressable>
+      ) : null}
+
       <Modal visible={selected !== null} transparent animationType="fade" onRequestClose={() => setSelected(null)}>
         <View style={styles.scrim}>
           {selected ? (
             <View style={styles.sheet} accessibilityViewIsModal>
               <CollectibleArt art={selected.art} size={110} locked={!selected.found} />
-              <Text style={styles.sheetName} maxFontSizeMultiplier={MAX_FONT_SCALE}>{!selected.found && selected.rarity === 'legendary' ? 'Mystery collectible' : selected.name}</Text>
+              <Text style={styles.sheetName} maxFontSizeMultiplier={MAX_FONT_SCALE}>{!selected.found && (selected.rarity === 'legendary' || selected.rarity === 'mythic') ? 'Mystery collectible' : selected.name}</Text>
               <View style={[styles.rarity, { borderColor: rarityOf(selected.rarity).color }]}>
                 <Text style={[styles.rarityText, { color: '#1B2350' }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>{rarityOf(selected.rarity).label} · {CATEGORIES.find((c) => c.id === selected.category)?.label}</Text>
               </View>
@@ -156,6 +189,9 @@ const styles = StyleSheet.create({
   chipOn: { backgroundColor: '#FFD84D', borderColor: '#FFD84D' },
   chipText: { color: '#FFFFFF', fontFamily: Fonts.extrabold, fontSize: 13 },
   chipTextOn: { color: '#3A2A00' },
+  empty: { color: '#C9D3FF', fontFamily: Fonts.bold, fontSize: 15, textAlign: 'center', paddingVertical: SPACING.md },
+  more: { alignSelf: 'center', minHeight: MIN_CHILD_TARGET, paddingHorizontal: SPACING.xl, borderRadius: 999, justifyContent: 'center', backgroundColor: '#FFD84D' },
+  moreText: { color: '#3A2A00', fontFamily: Fonts.extrabold, fontSize: 16 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-start' },
   card: { borderRadius: 18, borderWidth: 2, padding: 8, alignItems: 'center', gap: 4 },
   cardLocked: { backgroundColor: '#161F4E', borderColor: '#3A4A96' },

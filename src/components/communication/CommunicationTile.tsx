@@ -174,7 +174,7 @@ export const CommunicationTile = React.memo(function CommunicationTile({ button,
           <>
             {night ? (
               <>
-                <GradientSurface from={shade(deep, pressed ? 1.15 : 1.32)} to={deep} direction="vertical" />
+                <GradientSurface from={shade(deep, pressed ? 1.45 : 1.65)} to={shade(deep, 1.15)} direction="vertical" />
                 {/* Gloss: fades out 55% of the way down (a full-size surface — see GradientSurface). */}
                 <GradientSurface from="#FFFFFF" to="#FFFFFF" direction="vertical" fromOpacity={0.32} toOpacity={0} toOffset={0.55} />
               </>

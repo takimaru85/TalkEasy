@@ -5,7 +5,7 @@ import LottieView from "lottie-react-native";
 const COSMO_ANIMATION = require("../../../assets/talkeasy_cosmo_lottie/talkeasy_cosmo_avatar.json");
 
 /**
- * NOT USED in v2.2.1. The Lottie references its nine poses as external files, which the app bundle does not
+ * NOT USED in v2.2.2. The Lottie references its nine poses as external files, which the app bundle does not
  * contain, so it cannot play on a device yet. Nothing imports this file, so neither it nor the animation is
  * shipped. Before using it, embed the poses in the JSON (base64) or switch to an image sequence.
  */

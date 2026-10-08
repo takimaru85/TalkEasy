@@ -52,10 +52,10 @@ export function moodFor(reaction: PetReaction): PetMood {
 
 // ---- cosmetics ----------------------------------------------------------------------------------
 
-export type CosmeticSlot = 'head' | 'antenna' | 'neck' | 'body';
+export type CosmeticSlot = 'head' | 'antenna' | 'neck' | 'body' | 'face' | 'cheeks' | 'back';
 
 export interface CosmeticDef {
-  id: 'explorer-hat' | 'star-antenna' | 'scarf' | 'helmet' | 'space-suit' | 'gold-visor' | 'galaxy-suit';
+  id: string;
   name: string;
   slot: CosmeticSlot;
   /** What earns it, in words a child can follow. Always a real milestone, never a purchase. */
@@ -72,6 +72,23 @@ export const COSMETICS: CosmeticDef[] = [
   // Astronaut Suits & Hats: new, separate from the helmet and suit above. Earned, never bought.
   { id: 'gold-visor', name: 'Gold Visor Helmet', slot: 'head', hint: 'Finish the First Words planet.', unlock: { kind: 'stage', stage: 'firstWords' } },
   { id: 'galaxy-suit', name: 'Galaxy Space Suit', slot: 'body', hint: 'Finish all four planets on the Adventure Map.', unlock: { kind: 'allStages' } },
+  // Cute extras: all earned by practising sounds, never bought.
+  { id: 'rosy-cheeks', name: 'Rosy cheeks', slot: 'cheeks', hint: 'Practise 2 different sounds.', unlock: { kind: 'sounds', atLeast: 2 } },
+  { id: 'bunny-ears', name: 'Bunny ears', slot: 'head', hint: 'Practise 3 different sounds.', unlock: { kind: 'sounds', atLeast: 3 } },
+  { id: 'heart-glasses', name: 'Heart glasses', slot: 'face', hint: 'Practise 4 different sounds.', unlock: { kind: 'sounds', atLeast: 4 } },
+  { id: 'bow-tie', name: 'Bow tie', slot: 'neck', hint: 'Practise 5 different sounds.', unlock: { kind: 'sounds', atLeast: 5 } },
+  { id: 'cat-ears', name: 'Kitty ears', slot: 'head', hint: 'Practise 6 different sounds.', unlock: { kind: 'sounds', atLeast: 6 } },
+  { id: 'angel-wings', name: 'Angel wings', slot: 'back', hint: 'Practise 7 different sounds.', unlock: { kind: 'sounds', atLeast: 7 } },
+  { id: 'star-glasses', name: 'Star glasses', slot: 'face', hint: 'Practise 8 different sounds.', unlock: { kind: 'sounds', atLeast: 8 } },
+  { id: 'pink-bow', name: 'Pink bow', slot: 'head', hint: 'Practise 9 different sounds.', unlock: { kind: 'sounds', atLeast: 9 } },
+  { id: 'heart-antenna', name: 'Heart antenna', slot: 'antenna', hint: 'Practise 10 different sounds.', unlock: { kind: 'sounds', atLeast: 10 } },
+  { id: 'party-hat', name: 'Party hat', slot: 'head', hint: 'Practise 12 different sounds.', unlock: { kind: 'sounds', atLeast: 12 } },
+  { id: 'butterfly-wings', name: 'Butterfly wings', slot: 'back', hint: 'Practise 14 different sounds.', unlock: { kind: 'sounds', atLeast: 14 } },
+  { id: 'rainbow-antenna', name: 'Rainbow antenna', slot: 'antenna', hint: 'Practise 16 different sounds.', unlock: { kind: 'sounds', atLeast: 16 } },
+  { id: 'flower-crown', name: 'Flower crown', slot: 'head', hint: 'Practise 18 different sounds.', unlock: { kind: 'sounds', atLeast: 18 } },
+  { id: 'bell-collar', name: 'Jingle bell collar', slot: 'neck', hint: 'Practise 20 different sounds.', unlock: { kind: 'sounds', atLeast: 20 } },
+  { id: 'fairy-wings', name: 'Fairy wings', slot: 'back', hint: 'Practise 24 different sounds.', unlock: { kind: 'sounds', atLeast: 24 } },
+  { id: 'royal-crown', name: 'Royal crown', slot: 'head', hint: 'Practise 30 different sounds.', unlock: { kind: 'sounds', atLeast: 30 } },
 ];
 
 /** The cosmetics earned so far, from the same stage states the Adventure Map shows. Grants nothing and stores nothing. */

@@ -100,7 +100,7 @@ ok(enCat.glyphs[0].d === filCat.glyphs[0].d && enCat.glyphs[2].d === filCat.glyp
 ok(enCat.glyphs[1].d !== filCat.glyphs[1].d, 'only the a differs');
 ok(layoutSchoolText('cat', 500, 200).glyphs[1].d === enCat.glyphs[1].d, 'default letter style is standard (US English)');
 
-ok(WRITING_LEVELS.length === 7 && WRITING_LEVELS.every((l, i) => l.level === i + 1 && l.items.length > 0), 'seven writing levels with items');
+ok(WRITING_LEVELS.length >= 100 && WRITING_LEVELS.every((l, i) => l.level === i + 1 && l.items.length > 0), 'a hundred writing levels, numbered in order, each with items');
 
 // ---- Tracing must not scroll the page --------------------------------------------------------------------------
 // The writing canvas sits inside a ScrollView. Without these, a finger dragged down the canvas scrolls the PAGE

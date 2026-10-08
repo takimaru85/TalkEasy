@@ -20,6 +20,11 @@ function star(cx: number, cy: number, outer: number, inner: number): string {
   return `M${pts.join(' L')} Z`;
 }
 
+/** A heart centred on cx, cy; k scales it (about 2.4k wide). */
+function heart(cx: number, cy: number, k: number): string {
+  return `M${cx} ${cy + 1.9 * k} C${cx - 2.4 * k} ${cy - 0.2 * k} ${cx - 1.6 * k} ${cy - 2.2 * k} ${cx} ${cy - 0.9 * k} C${cx + 1.6 * k} ${cy - 2.2 * k} ${cx + 2.4 * k} ${cy - 0.2 * k} ${cx} ${cy + 1.9 * k} Z`;
+}
+
 /**
  * Cosmetics are drawn over the picture on a 100-unit grid, so they scale with the pet at any size.
  *
@@ -89,13 +94,159 @@ function Cosmetic({ id, compact }: { id: string; compact: boolean }) {
           {compact ? null : <Path d={star(34.3, 63.5, 2.6, 1.1)} fill="#FFD84D" />}
         </G>
       );
+    case 'rosy-cheeks':
+      return (
+        <G>
+          <Ellipse cx={34.5} cy={50} rx={4.2} ry={2.6} fill="#FF7FA8" fillOpacity={0.6} />
+          <Ellipse cx={67.5} cy={50} rx={4.2} ry={2.6} fill="#FF7FA8" fillOpacity={0.6} />
+        </G>
+      );
+    case 'bunny-ears':
+      return (
+        <G>
+          <G transform="rotate(-12 40 24)">
+            <Ellipse cx={40} cy={11} rx={5} ry={13} fill="#FFFFFF" stroke="#C9D3F0" strokeWidth={1.2} />
+            <Ellipse cx={40} cy={12} rx={2.4} ry={9} fill="#FFB6CC" />
+          </G>
+          <G transform="rotate(12 61 24)">
+            <Ellipse cx={61} cy={11} rx={5} ry={13} fill="#FFFFFF" stroke="#C9D3F0" strokeWidth={1.2} />
+            <Ellipse cx={61} cy={12} rx={2.4} ry={9} fill="#FFB6CC" />
+          </G>
+        </G>
+      );
+    case 'cat-ears':
+      return (
+        <G>
+          <Path d="M30 30 L31.5 11 L46 23 Z" fill="#FFB347" stroke="#E08A00" strokeWidth={1.2} strokeLinejoin="round" />
+          <Path d="M33.5 25 L34.2 16.5 L41 22.5 Z" fill="#FFC9D6" />
+          <Path d="M71 30 L69.5 11 L55 23 Z" fill="#FFB347" stroke="#E08A00" strokeWidth={1.2} strokeLinejoin="round" />
+          <Path d="M67.5 25 L66.8 16.5 L60 22.5 Z" fill="#FFC9D6" />
+        </G>
+      );
+    case 'pink-bow':
+      return (
+        <G>
+          <Path d="M39 21 L28 14 L28 28 Z" fill="#FF6BB5" stroke="#D93C8E" strokeWidth={1} strokeLinejoin="round" />
+          <Path d="M39 21 L50 14 L50 28 Z" fill="#FF6BB5" stroke="#D93C8E" strokeWidth={1} strokeLinejoin="round" />
+          <Circle cx={39} cy={21} r={3.3} fill="#FF9BD0" stroke="#D93C8E" strokeWidth={1} />
+        </G>
+      );
+    case 'party-hat':
+      return (
+        <G>
+          <Path d="M39 27 L50.5 3.5 L62 27 Z" fill="#FF6BB5" stroke="#D93C8E" strokeWidth={1} strokeLinejoin="round" />
+          <Path d="M43 19.5 L58 19.5 M40.5 24.5 L60.5 24.5" stroke="#FFE27A" strokeWidth={2.2} strokeLinecap="round" />
+          <Circle cx={50.5} cy={3.5} r={3.2} fill="#FFD84D" stroke="#E0A800" strokeWidth={1} />
+        </G>
+      );
+    case 'flower-crown':
+      return (
+        <G>
+          <Path d="M32 27 Q50.5 17 69 27" stroke="#4FBF6B" strokeWidth={2.4} strokeLinecap="round" fill="none" />
+          {[[35, 25.5, '#FF7FA8'], [42, 21.5, '#FFD84D'], [50.5, 19.8, '#B58CFF'], [59, 21.5, '#FF7FA8'], [66, 25.5, '#FFD84D']].map(([x, y, c]) => (
+            <G key={String(x)}>
+              <Circle cx={Number(x)} cy={Number(y)} r={3.6} fill={String(c)} stroke="#FFFFFF" strokeWidth={0.8} />
+              <Circle cx={Number(x)} cy={Number(y)} r={1.2} fill="#FFFFFF" />
+            </G>
+          ))}
+        </G>
+      );
+    case 'royal-crown':
+      return (
+        <G>
+          <Path d="M35 27 L36.5 11.5 L43.5 19.5 L50.5 8.5 L57.5 19.5 L64.5 11.5 L66 27 Z" fill="#FFD84D" stroke="#E0A800" strokeWidth={1.2} strokeLinejoin="round" />
+          <Circle cx={50.5} cy={22} r={2.2} fill="#FF5DA2" />
+          <Circle cx={42} cy={23} r={1.6} fill="#4D9BE8" />
+          <Circle cx={59} cy={23} r={1.6} fill="#5BD98A" />
+        </G>
+      );
+    case 'heart-glasses':
+      return (
+        <G>
+          <Path d={heart(42, 43, 3.6)} fill="#FF7FA8" fillOpacity={0.35} stroke="#FF3D8B" strokeWidth={1.6} strokeLinejoin="round" />
+          <Path d={heart(60, 43, 3.6)} fill="#FF7FA8" fillOpacity={0.35} stroke="#FF3D8B" strokeWidth={1.6} strokeLinejoin="round" />
+          <Path d="M47 42 Q51 40.5 55 42" stroke="#FF3D8B" strokeWidth={1.4} fill="none" />
+        </G>
+      );
+    case 'star-glasses':
+      return (
+        <G>
+          <Path d={star(42, 43, 7, 3.2)} fill="#FFD84D" fillOpacity={0.4} stroke="#E0A800" strokeWidth={1.4} strokeLinejoin="round" />
+          <Path d={star(60, 43, 7, 3.2)} fill="#FFD84D" fillOpacity={0.4} stroke="#E0A800" strokeWidth={1.4} strokeLinejoin="round" />
+          <Path d="M48.5 42 Q51 40.8 53.5 42" stroke="#E0A800" strokeWidth={1.4} fill="none" />
+        </G>
+      );
+    case 'bow-tie':
+      return (
+        <G>
+          <Path d="M50 62.5 L41 58 L41 67 Z" fill="#4D9BE8" stroke="#2F6FB8" strokeWidth={1} strokeLinejoin="round" />
+          <Path d="M50 62.5 L59 58 L59 67 Z" fill="#4D9BE8" stroke="#2F6FB8" strokeWidth={1} strokeLinejoin="round" />
+          <Circle cx={50} cy={62.5} r={2.4} fill="#7DB8F2" stroke="#2F6FB8" strokeWidth={1} />
+        </G>
+      );
+    case 'bell-collar':
+      return (
+        <G>
+          <Path d="M35 62.5 Q49 67 64 62.5" stroke="#FF5DA2" strokeWidth={3} strokeLinecap="round" fill="none" />
+          <Circle cx={49.5} cy={66.2} r={3} fill="#FFD84D" stroke="#E0A800" strokeWidth={1} />
+          <Path d="M47.5 66.6 L51.5 66.6" stroke="#E0A800" strokeWidth={0.9} />
+        </G>
+      );
+    case 'heart-antenna':
+      return (
+        <G>
+          <Path d="M55 22 Q56.2 18 57.8 15" stroke="#E0457F" strokeWidth={2.2} strokeLinecap="round" fill="none" />
+          <Path d={heart(57.9, 10.5, 4.2)} fill="#FF5DA2" stroke="#E0457F" strokeWidth={1} strokeLinejoin="round" />
+        </G>
+      );
+    case 'rainbow-antenna':
+      return (
+        <G>
+          <Path d="M55 22 Q56.2 18 57.8 15" stroke="#8A6FD8" strokeWidth={2.2} strokeLinecap="round" fill="none" />
+          <Circle cx={57.9} cy={10.5} r={6.2} fill="#FF6B6B" />
+          <Circle cx={57.9} cy={10.5} r={4.6} fill="#FFD84D" />
+          <Circle cx={57.9} cy={10.5} r={3} fill="#5BD98A" />
+          <Circle cx={57.9} cy={10.5} r={1.5} fill="#4D9BE8" />
+        </G>
+      );
+    case 'angel-wings':
+      return (
+        <G>
+          <Path d="M29 64 Q5 50 7 74 Q12 85 30 76 Z" fill="#FFFFFF" stroke="#C9D3F0" strokeWidth={1.4} strokeLinejoin="round" />
+          <Path d="M70 64 Q94 50 92 74 Q87 85 69 76 Z" fill="#FFFFFF" stroke="#C9D3F0" strokeWidth={1.4} strokeLinejoin="round" />
+        </G>
+      );
+    case 'butterfly-wings':
+      return (
+        <G>
+          <Ellipse cx={17} cy={63} rx={11} ry={8} fill="#B58CFF" stroke="#7B5CFF" strokeWidth={1.2} transform="rotate(-25 17 63)" />
+          <Ellipse cx={19} cy={77} rx={8} ry={6} fill="#FF9BD0" stroke="#D93C8E" strokeWidth={1.2} transform="rotate(20 19 77)" />
+          <Ellipse cx={82} cy={63} rx={11} ry={8} fill="#B58CFF" stroke="#7B5CFF" strokeWidth={1.2} transform="rotate(25 82 63)" />
+          <Ellipse cx={80} cy={77} rx={8} ry={6} fill="#FF9BD0" stroke="#D93C8E" strokeWidth={1.2} transform="rotate(-20 80 77)" />
+        </G>
+      );
+    case 'fairy-wings':
+      return (
+        <G>
+          <Path d="M29 62 Q6 40 8 66 Q12 78 30 72 Z" fill="#7CF0FF" fillOpacity={0.55} stroke="#FFFFFF" strokeWidth={1.4} strokeLinejoin="round" />
+          <Path d="M70 62 Q93 40 91 66 Q87 78 69 72 Z" fill="#7CF0FF" fillOpacity={0.55} stroke="#FFFFFF" strokeWidth={1.4} strokeLinejoin="round" />
+          <Path d="M29 72 Q14 84 22 90 Q30 90 31 76 Z" fill="#FF9BD0" fillOpacity={0.55} stroke="#FFFFFF" strokeWidth={1.2} strokeLinejoin="round" />
+          <Path d="M70 72 Q85 84 77 90 Q69 90 68 76 Z" fill="#FF9BD0" fillOpacity={0.55} stroke="#FFFFFF" strokeWidth={1.2} strokeLinejoin="round" />
+        </G>
+      );
     default:
       return null;
   }
 }
 
 /** Back to front, so the suit is under the scarf, the scarf under the helmet and the star on top. */
-const DRAW_ORDER = ['space-suit', 'galaxy-suit', 'scarf', 'helmet', 'gold-visor', 'explorer-hat', 'star-antenna'];
+const DRAW_ORDER = [
+  'angel-wings', 'butterfly-wings', 'fairy-wings',
+  'space-suit', 'galaxy-suit', 'scarf', 'bow-tie', 'bell-collar', 'rosy-cheeks',
+  'helmet', 'gold-visor', 'heart-glasses', 'star-glasses',
+  'explorer-hat', 'bunny-ears', 'cat-ears', 'pink-bow', 'party-hat', 'flower-crown', 'royal-crown',
+  'star-antenna', 'heart-antenna', 'rainbow-antenna',
+];
 
 interface Props {
   size: number;
@@ -171,5 +322,28 @@ export function SpacePet({ size, mood = 'idle', equipped = [], burst = 0 }: Prop
       </Animated.View>
       <Celebration trigger={burst} />
     </View>
+  );
+}
+
+/** The part of the 100-unit pet grid each accessory lives in, so its thumbnail can crop to just that. */
+const THUMB_BOX: Record<string, string> = {
+  head: '22 0 58 38',
+  antenna: '46 0 24 26',
+  neck: '30 54 40 20',
+  body: '22 56 56 36',
+  face: '32 33 40 20',
+  cheeks: '28 43 46 14',
+  back: '2 44 96 50',
+  helmet: '18 16 66 52',
+  'gold-visor': '18 16 66 52',
+};
+
+/** One accessory on its own, cropped, for the dress-up list. Decorative: the row carries the name. */
+export function CosmeticThumb({ id, slot, size }: { id: string; slot: string; size: number }) {
+  const box = THUMB_BOX[id] ?? THUMB_BOX[slot] ?? '0 0 100 100';
+  return (
+    <Svg width={size} height={size} viewBox={box} pointerEvents="none">
+      <Cosmetic id={id} compact={false} />
+    </Svg>
   );
 }

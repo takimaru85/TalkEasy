@@ -22,8 +22,36 @@ export function getDb(): Promise<SQLite.SQLiteDatabase> {
   return dbPromise;
 }
 
+/**
+ * On the web the database is a file in the browser's origin-private file system, and only ONE
+ * context may hold its sync access handle. After a reload (or hot reload) the previous page's
+ * handle is released a moment late, so the first open can fail with NoModificationAllowedError.
+ * Retry briefly; a second open TAB keeps the lock, so that case gets a plain explanation.
+ */
+function isHandleBusy(err: unknown): boolean {
+  const text = err instanceof Error ? `${err.name} ${err.message}` : String(err);
+  return /NoModificationAllowed|createSyncAccessHandle|Access Handle/i.test(text);
+}
+
+async function openWithRetry(): Promise<SQLite.SQLiteDatabase> {
+  const attempts = 12;
+  for (let i = 0; ; i++) {
+    try {
+      return await SQLite.openDatabaseAsync(DATABASE_NAME);
+    } catch (err) {
+      if (!isHandleBusy(err)) throw err;
+      if (i >= attempts - 1) {
+        throw new Error(
+          'TalkEasy is already open in another browser tab or window. Close the other one, then reload this page.',
+        );
+      }
+      await new Promise((resolve) => setTimeout(resolve, 250 + i * 150));
+    }
+  }
+}
+
 async function openAndPrepare(): Promise<SQLite.SQLiteDatabase> {
-  const db = await SQLite.openDatabaseAsync(DATABASE_NAME);
+  const db = await openWithRetry();
   await db.execAsync('PRAGMA journal_mode = WAL;');
   await db.execAsync('PRAGMA foreign_keys = ON;');
   await runMigrations(db);

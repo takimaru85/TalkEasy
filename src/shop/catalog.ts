@@ -2,6 +2,7 @@ import type { ColorArtName } from '@/components/adventure/ColorArt';
 import { PREMIUM_THEMES, type ThemeId } from './themes';
 import { SPACE_AVATARS, type AvatarId } from './avatars';
 import { CASH_PURCHASES_ENABLED } from '@/subscription/release';
+import { MORE_SHOP_ITEMS } from './moreItems';
 
 /**
  * The Rewards Shop catalogue. Code, not database rows: a price list is content, and what a child
@@ -34,6 +35,8 @@ export interface ShopItem {
   rarity: Rarity;
   /** The drawing for a sticker/trophy/badge. A theme has none: its preview is the scene itself (`ThemeScene`). */
   art?: ColorArtName;
+  /** Or an emoji as the picture (the big sticker book): offline and crisp, no bitmap. */
+  emoji?: string;
   /** Set on a theme: which scene it switches on. */
   themeId?: ThemeId;
   /** Set on an avatar: which companion it is. */
@@ -72,6 +75,8 @@ export const ALL_SHOP_ITEMS: ShopItem[] = [
   { id: 'trophy-reader', category: 'trophies', rarity: 'rare', name: 'Reading Book', description: 'For loving books.', stars: 25, art: 'category:reading' },
   { id: 'trophy-shield', category: 'trophies', rarity: 'rare', name: 'Helper Badge', description: 'A badge for community helpers.', stars: 30, art: 'learn:ap_community' },
   { id: 'trophy-gold', category: 'trophies', rarity: 'epic', name: 'Golden Medal', description: 'The golden medal.', stars: 40, art: 'stat:medal' },
+  // The big sticker book: 300+ more stickers and trophies, from `shop/moreItems.ts`.
+  ...MORE_SHOP_ITEMS,
   // Premium keepsakes. The product ids below are PLACEHOLDERS until they exist in the stores; until
   // then the cash path reports itself unavailable and nothing is charged or granted.
   { id: 'premium-streak', category: 'premium', rarity: 'epic', name: 'Super Streak', description: 'A blazing streak flame.', stars: 60, cash: { productId: 'talkeasy.shop.streak', fallbackPrice: '₱49' }, art: 'stat:streak' },

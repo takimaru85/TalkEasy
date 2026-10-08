@@ -183,8 +183,26 @@ export function evaluateCollection(world: WorldId, metrics: CollectionMetrics): 
  * The world in effect for a pair of settings: the grown-up's fixed choice, else the child's pick,
  * else Space — the world TalkEasy always had, so nothing changes until someone chooses.
  */
-export function effectiveWorld(theme: AdventureThemeSetting, childPick: WorldId | ''): WorldId {
-  return theme === 'child' ? childPick || 'space' : theme;
+export function effectiveWorld(theme: AdventureThemeSetting, childPick: WorldId | '', owned?: readonly string[]): WorldId {
+  const id: WorldId = theme === 'child' ? childPick || 'space' : theme;
+  // `owned` omitted = no shop context (a check script): behave as before. Given, a world the family has not unlocked is Space.
+  return owned && !isWorldUnlocked(id, owned) ? 'space' : id;
+}
+
+/**
+ * Space is the free default for everyone. Every other world is unlocked by owning one of these shop
+ * themes (`shop/themes.ts` item ids). Vehicles has no theme yet, so it is not unlockable — the picker
+ * shows it as "Coming soon" until a Vehicles theme is added here and in the shop.
+ */
+export const WORLD_UNLOCK_ITEMS: Record<WorldId, readonly string[]> = {
+  space: [],
+  dinosaurs: ['theme-dino'],
+  animals: ['theme-forest', 'theme-ocean'],
+  vehicles: [],
+};
+
+export function isWorldUnlocked(id: WorldId, owned: readonly string[]): boolean {
+  return id === 'space' || WORLD_UNLOCK_ITEMS[id].some((item) => owned.includes(item));
 }
 
 /** The syllables of the "BA row" milestone, exactly as the Syllables activity logs them. */

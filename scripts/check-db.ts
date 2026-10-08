@@ -285,12 +285,12 @@ async function checkCollection() {
   const shim = makeShim(raw);
   const now = '2026-10-04T10:00:00.000Z';
   const ids = COLLECTION.map((c) => c.id);
-  assert(COLLECTION.length >= 40, 'at least 40 collectibles (' + COLLECTION.length + ')');
+  assert(COLLECTION.length >= 1000, 'at least 1000 collectibles (' + COLLECTION.length + ')');
   assert(new Set(ids).size === ids.length, 'collectible ids are unique');
   assert(CATEGORIES.every((c) => COLLECTION.some((i) => i.category === c.id)), 'every category has collectibles');
-  assert(['common', 'uncommon', 'rare', 'epic', 'legendary'].every((r) => COLLECTION.some((i) => i.rarity === r)), 'all five rarities are used');
+  assert(['common', 'uncommon', 'rare', 'epic', 'legendary', 'mythic'].every((r) => COLLECTION.some((i) => i.rarity === r)), 'all six rarities are used');
   assert(COLLECTION.every((i) => i.fact.length > 10 && i.hint.length > 5), 'every collectible has a fun fact and a hint');
-  assert(COLLECTION.every((i) => i.art.startsWith('avatar:') || i.art.startsWith('world:') || (COLLECTION_ART_KEYS as readonly string[]).includes(i.art)), 'every collectible has a drawing');
+  assert(COLLECTION.every((i) => i.art.startsWith('avatar:') || i.art.startsWith('world:') || i.art.startsWith('emoji:') || (COLLECTION_ART_KEYS as readonly string[]).includes(i.art)), 'every collectible has a drawing');
   assert(COLLECTION.filter((i) => i.legacy).map((i) => i.id).sort().join() === 'earth,golden-star,moon,rocket,saturn', 'the five original collectibles are kept');
 
   // Nothing found at the start; thresholds are measured, not assumed.
@@ -304,7 +304,7 @@ async function checkCollection() {
   assert(!evaluateSpaceCollection({ ...NO_COLLECTION_METRICS, offlineConfirmed: 0 }, new Map()).items.find((i) => i.id === 'treasure-chest')!.found && evaluateSpaceCollection({ ...NO_COLLECTION_METRICS, offlineConfirmed: 1 }, new Map()).items.find((i) => i.id === 'treasure-chest')!.found, 'the treasure chest needs a grown-up-confirmed activity');
 
   // Milestones build on real finds: 10 found => Alien Egg, 20 => Legendary Badge; a full category => the trophy.
-  const rich = { ...NO_COLLECTION_METRICS, speechPractice: 99, sounds: 30, words: 30, quizzes: 30, lessons: 9, tracingSessions: 20, practiceSessions: 5, routineSteps: 5, missionDays: 5, talkTaps: 20, baRowSyllables: 5, stars: 100, streak: 9, offlineConfirmed: 2 };
+  const rich = { ...NO_COLLECTION_METRICS, speechPractice: 9999, sounds: 999, words: 999, quizzes: 999, lessons: 999, tracingSessions: 999, practiceSessions: 999, routineSteps: 999, missionDays: 999, talkTaps: 9999, baRowSyllables: 5, stars: 9999, streak: 999, offlineConfirmed: 2 };
   const all = evaluateSpaceCollection(rich, new Map());
   assert(all.found === COLLECTION.length, 'enough verified practice finds everything (' + all.found + ')');
   assert(all.completeCategories.length === CATEGORIES.length && all.earnedIds.includes(trophyId('vehicles')), 'a finished category earns its trophy');

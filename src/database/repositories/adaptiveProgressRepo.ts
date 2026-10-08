@@ -1,3 +1,4 @@
+import { WRITING_LEVELS } from '@/adaptive/handwriting';
 import { getDb, nowIso } from '../db';
 import { notify } from '../events';
 import type { AdaptiveAttempt, AdaptiveProgress, AnswerMethod, HandwritingSession } from '@/adaptive/types';
@@ -46,7 +47,7 @@ const toSession = (r: HandwritingRow): HandwritingSession => ({
   completedAt: r.completed_at,
 });
 
-export const HANDWRITING_LEVEL_COUNT = 7;
+export const HANDWRITING_LEVEL_COUNT = WRITING_LEVELS.length;
 
 /**
  * Learning attempts (how the child answered) and handwriting practice sessions.
@@ -142,7 +143,7 @@ export const adaptiveProgressRepo = {
     const lessonsWithWork = lessons.filter((l) => l.total > 0);
     const lessonsCompleted = lessonsWithWork.filter((l) => l.done >= l.total).length;
 
-    // Handwriting: separate. "Percent" = share of the 7 levels the child has practised at least once.
+    // Handwriting: separate. "Percent" = share of the writing levels the child has practised at least once.
     const hw = await db.getAllAsync<{ level: number; n: number }>(
       'SELECT level, COUNT(*) AS n FROM handwriting_sessions WHERE child_id = ? GROUP BY level', childId,
     );

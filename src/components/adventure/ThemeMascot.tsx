@@ -8,6 +8,8 @@ interface Props {
   size: number;
   /** Space only: Pip wears the helmet. Ignored by the other companions, who need no suit. */
   space?: boolean;
+  /** Let the Astro Explorer move (hero spot). */
+  animated?: boolean;
 }
 
 /**
@@ -23,8 +25,8 @@ interface Props {
  *
  * Mascot is imported from its FILE, never the adventure barrel, which imports back into common.
  */
-export function ThemeMascot({ mascot, size, space }: Props) {
-  if (mascot === 'pip') return <Mascot size={size} mood="cheer" space={space} />;
+export function ThemeMascot({ mascot, size, space, animated }: Props) {
+  if (mascot === 'pip') return <Mascot size={size} mood="cheer" space={space} animated={animated} />;
   const name = mascot === 'rexy' ? 'dino-hero' : mascot === 'leo' ? 'animal-hero' : 'vehicle-hero';
   return <ThemeArt name={name} size={size} />;
 }

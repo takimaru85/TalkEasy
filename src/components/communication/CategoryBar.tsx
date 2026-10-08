@@ -59,9 +59,27 @@ export function CategoryBar({ categories, selectedId, onSelect, visibleCount = 4
     [items.map((i) => i.name).join('|'), innerWidth],
   );
 
+  const pill = theme.night && !theme.highContrast;
   const chipStyle = (selected: boolean, solid?: string) => [
     styles.chip,
-    theme.night
+    pill
+      ? {
+          flexGrow: 0,
+          flexShrink: 1,
+          minWidth: 0,
+          flexBasis: 'auto' as const,
+          flexDirection: 'row' as const,
+          borderRadius: 999,
+          minHeight: 38,
+          paddingHorizontal: 6,
+          paddingVertical: 4,
+          gap: 4,
+          backgroundColor: selected ? '#FFD84D' : 'rgba(12,18,52,0.82)',
+          borderColor: selected ? '#FFD84D' : 'rgba(255,255,255,0.25)',
+          borderWidth: 1,
+          borderBottomWidth: 1,
+        }
+      : theme.night
       ? {
           backgroundColor: solid ?? theme.colors.surfaceAlt,
           borderColor: selected ? theme.colors.selected : shade(solid ?? theme.colors.surfaceAlt, 1.4),
@@ -76,10 +94,14 @@ export function CategoryBar({ categories, selectedId, onSelect, visibleCount = 4
         },
   ];
 
-  const labelStyle = (color: string) => [styles.label, { fontSize: labelSize, lineHeight: Math.round(labelSize * 1.18), color }];
+  const labelStyle = (color: string, selected = false) => [
+    styles.label,
+    { fontSize: pill ? 12 : labelSize, lineHeight: Math.round((pill ? 12 : labelSize) * 1.18), color: pill && selected ? '#3A2A00' : color },
+    pill && { alignSelf: 'auto' as const, flexShrink: 1 },
+  ];
 
   return (
-    <View style={styles.row} accessibilityRole="tablist">
+    <View style={[styles.row, pill && { gap: 4, paddingHorizontal: 10 }, pill && !showAll && { flexWrap: 'nowrap' }]} accessibilityRole="tablist">
       {items.map((item) => {
         const selected = item.id === selectedId;
         const solid = item.id === null ? theme.colors.primary : tileInk(item.color);
@@ -98,11 +120,14 @@ export function CategoryBar({ categories, selectedId, onSelect, visibleCount = 4
             hitSlop={4}
             style={({ pressed }) => [...chipStyle(selected, solid), pressed && styles.pressed]}
           >
-            <Icon name={selected ? 'check-bold' : item.icon} size={22} color={ink} />
+            {/* Small pills: only the chosen one shows its check, so all six fit on one line on a phone. */}
+            {pill && !selected ? null : <Icon name={selected ? 'check-bold' : item.icon} size={pill ? 14 : 22} color={pill && selected ? '#3A2A00' : ink} />}
             <Text
-              style={labelStyle(selected || theme.night ? '#FFFFFF' : theme.colors.text)}
+              style={labelStyle(selected || theme.night ? '#FFFFFF' : theme.colors.text, selected)}
               maxFontSizeMultiplier={MAX_FONT_SCALE}
-              numberOfLines={2}
+              numberOfLines={pill ? 1 : 2}
+              adjustsFontSizeToFit={pill}
+              minimumFontScale={0.75}
               textBreakStrategy="simple"
             >
               {item.name}
@@ -119,8 +144,8 @@ export function CategoryBar({ categories, selectedId, onSelect, visibleCount = 4
           hitSlop={4}
           style={({ pressed }) => [...chipStyle(false), pressed && styles.pressed]}
         >
-          <Icon name="dots-horizontal" size={22} color={theme.colors.textMuted} />
-          <Text style={labelStyle(theme.colors.text)} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={2}>
+          {pill ? null : <Icon name="dots-horizontal" size={22} color={theme.colors.textMuted} />}
+          <Text style={labelStyle(theme.colors.text)} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={pill ? 1 : 2} adjustsFontSizeToFit={pill} minimumFontScale={0.75}>
             {t('categoryMore')}
           </Text>
         </Pressable>
@@ -132,8 +157,8 @@ export function CategoryBar({ categories, selectedId, onSelect, visibleCount = 4
           hitSlop={4}
           style={({ pressed }) => [...chipStyle(false), pressed && styles.pressed]}
         >
-          <Icon name="chevron-up" size={22} color={theme.colors.textMuted} />
-          <Text style={labelStyle(theme.colors.text)} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={2}>
+          {pill ? null : <Icon name="chevron-up" size={22} color={theme.colors.textMuted} />}
+          <Text style={labelStyle(theme.colors.text)} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={pill ? 1 : 2} adjustsFontSizeToFit={pill} minimumFontScale={0.75}>
             {t('categoryLess')}
           </Text>
         </Pressable>
@@ -146,7 +171,7 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: SPACING.sm,
+    gap: 6,
     paddingHorizontal: SPACING.lg,
     marginBottom: SPACING.sm,
   },

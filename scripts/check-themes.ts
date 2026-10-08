@@ -167,7 +167,7 @@ for (const sub of DEFAULT_SUBJECTS) {
   ok(!!name, `the ${sub.name} subject's stored icon maps to a drawing`);
   ok(!!name && has(subjectArt, name.replace('subject:', '')), `${sub.name}: the drawing ${name} exists`);
 }
-for (const l of WRITING_LEVELS) ok(has(levelArt, String(l.level)), `Learn & Trace level ${l.level} has a drawing`);
+for (const l of WRITING_LEVELS) ok(has(levelArt, String(l.art)), `Learn & Trace level ${l.level} has a drawing`);
 for (const a of THERAPY_ACTIVITIES) ok(has(therapyArt, a.id), `the ${a.name} therapy activity has a drawing`);
 
 // a grown-up's own icon is never overridden

@@ -26,6 +26,7 @@ import { Fonts } from '@/theme';
 type Filter = 'all' | ShopCategory | 'pet';
 type Pending = { item: ShopItem; method: AcquireMethod; step: 'gate' | 'confirm' | 'working' } | null;
 
+const PAGE = 24;
 const RARITY_LABEL = { common: 'Common', rare: 'Rare', epic: 'Epic' } as const;
 
 /**
@@ -57,6 +58,7 @@ export function RewardsShopScreen(_props: RootScreenProps<'RewardsShop'>) {
   // Previewing a theme draws it in a sheet of its own. It never touches the active theme.
   const [preview, setPreview] = useState<ShopItem | null>(null);
   const [pinKey, setPinKey] = useState(0);
+  const [limit, setLimit] = useState(PAGE);
   const [prices, setPrices] = useState<Record<string, string>>({});
   const provider = getCashProvider();
   // Having found the Shop is the end of the discovery hint on Home.
@@ -78,7 +80,9 @@ export function RewardsShopScreen(_props: RootScreenProps<'RewardsShop'>) {
   const contentWidth = Math.max(MIN_SUPPORTED_WIDTH, width) - sizes.horizontalPadding * 2;
   const columns = contentWidth >= 600 ? 4 : contentWidth >= 340 ? 2 : 1;
   const cardWidth = Math.floor((contentWidth - sizes.gap * (columns - 1)) / columns);
-  const items = SHOP_ITEMS.filter((i) => filter === 'all' || i.category === filter);
+  const matching = SHOP_ITEMS.filter((i) => filter === 'all' || i.category === filter);
+  // Hundreds of cards at once are slow to draw, so they come in pages.
+  const items = matching.slice(0, limit);
   const showPets = filter === 'all' || filter === 'pet';
   const cashPrice = (item: ShopItem) => (item.cash ? prices[item.cash.productId] ?? item.cash.fallbackPrice : '');
 
@@ -167,7 +171,7 @@ export function RewardsShopScreen(_props: RootScreenProps<'RewardsShop'>) {
 
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.pills}>
             {[{ id: 'all' as const, label: 'All' }, ...SHOP_CATEGORIES.slice(0, 2), { id: 'pet' as const, label: 'Pet Accessories' }, ...SHOP_CATEGORIES.slice(2)].map((c) => (
-              <Pressable key={c.id} onPress={() => setFilter(c.id)} accessibilityRole="button" accessibilityState={{ selected: filter === c.id }} style={[styles.pill, filter === c.id && styles.pillOn]}>
+              <Pressable key={c.id} onPress={() => { setFilter(c.id); setLimit(PAGE); }} accessibilityRole="button" accessibilityState={{ selected: filter === c.id }} style={[styles.pill, filter === c.id && styles.pillOn]}>
                 <Text style={[styles.pillText, filter === c.id && styles.pillTextOn]} maxFontSizeMultiplier={MAX_FONT_SCALE}>{c.label}</Text>
               </Pressable>
             ))}
@@ -209,6 +213,8 @@ export function RewardsShopScreen(_props: RootScreenProps<'RewardsShop'>) {
                       </View>
                     ) : item.avatarId ? (
                       <AvatarArt id={item.avatarId} size={Math.min(92, cardWidth - 28)} />
+                    ) : item.emoji ? (
+                      <Text allowFontScaling={false} style={{ fontSize: Math.min(56, cardWidth - 40), lineHeight: Math.min(70, cardWidth - 24) }}>{item.emoji}</Text>
                     ) : item.art ? (
                       <ColorArt name={item.art} size={Math.min(84, cardWidth - 28)} />
                     ) : null}
@@ -264,6 +270,12 @@ export function RewardsShopScreen(_props: RootScreenProps<'RewardsShop'>) {
               );
             })}
           </View>
+
+          {filter !== 'pet' && matching.length > items.length ? (
+            <Pressable onPress={() => setLimit((n) => n + PAGE)} accessibilityRole="button" accessibilityLabel={`Show ${Math.min(PAGE, matching.length - items.length)} more rewards`} style={[styles.button, styles.buttonGet, { alignSelf: 'center', paddingHorizontal: 28 }]}>
+              <Text style={styles.buttonText} maxFontSizeMultiplier={MAX_FONT_SCALE}>Show more · {matching.length - items.length} left</Text>
+            </Pressable>
+          ) : null}
 
           {showPets ? (
             <View style={[styles.grid, { gap: sizes.gap, marginTop: sizes.gap }]}>

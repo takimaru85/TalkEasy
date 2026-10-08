@@ -4,6 +4,7 @@ import { SCIENCE } from './content/science';
 import { AP } from './content/ap';
 import { ESP } from './content/esp';
 import type { LearningActivity, LearningSubject, LearningSubjectKey } from './types';
+import { LEVEL_ACTIVITY_MAP } from './levels';
 
 /**
  * Registry of Grade 2 learning content. Order here is the order shown to the child.
@@ -20,12 +21,15 @@ const ACTIVITY_MAP = new Map<string, LearningActivity>(
 );
 
 export function getActivity(key: string): LearningActivity | undefined {
-  return ACTIVITY_MAP.get(key);
+  // Level activities (`english.l012`) are not in a subject's list, so they are looked up here.
+  return ACTIVITY_MAP.get(key) ?? LEVEL_ACTIVITY_MAP.get(key);
 }
 
 export function getSubject(key: string): LearningSubject | undefined {
   return LEARNING_SUBJECT_MAP[key as LearningSubjectKey];
 }
 
+export { SUBJECT_LEVELS, LEVEL_COUNT, levelsFor } from './levels';
+export type { LevelDef } from './levels';
 export { createRng, QUESTIONS_PER_SESSION } from './engine';
 export type { LearningActivity, LearningSubject, LearningSubjectKey, Option, Question } from './types';

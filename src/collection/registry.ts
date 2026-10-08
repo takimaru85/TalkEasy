@@ -1,5 +1,7 @@
+import { EXTRA_COLLECTION } from './extra';
+import { generateCollection } from './generated';
 /**
- * THE SPACE COLLECTION: 46 collectibles in six categories, each found by doing something real in TalkEasy.
+ * THE SPACE COLLECTION: 46 core collectibles (plus the generated expansion in extra.ts) in six categories, each found by doing something real in TalkEasy.
  * Pure data (no React, no storage), so the unlock rules can be read in one place and checked in Node.
  *
  * WHAT A CONDITION MEANS. Every condition is measured against VERIFIED practice the app already records:
@@ -16,7 +18,7 @@
  * Rocket) with exactly their old milestones, so everything a child already found is still found.
  */
 export type CollectionCategory = 'companions' | 'planets' | 'vehicles' | 'discoveries' | 'equipment' | 'special';
-export type Rarity = 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary';
+export type Rarity = 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary' | 'mythic';
 
 /** The measurable things a condition can ask about. Every one is counted, never typed in. */
 export type CollectionMetric =
@@ -77,11 +79,12 @@ export const RARITIES: { id: Rarity; label: string; color: string }[] = [
   { id: 'rare', label: 'Rare', color: '#4D9BE8' },
   { id: 'epic', label: 'Epic', color: '#B58CFF' },
   { id: 'legendary', label: 'Legendary', color: '#FFC933' },
+  { id: 'mythic', label: 'Mythic', color: '#FF5DA2' },
 ];
 
 const m = (metric: CollectionMetric, at: number): Condition => ({ kind: 'metric', metric, at });
 
-export const COLLECTION: Collectible[] = [
+const CORE_COLLECTION: Collectible[] = [
   // ---- A. Space Companions -------------------------------------------------------------------------------
   { id: 'astro-explorer', name: 'Astro Explorer', category: 'companions', rarity: 'rare', art: 'avatar:astro-explorer', fact: 'Astro Explorer loves meeting new friends on every planet.', hint: 'Do 3 steps of Speech Practice.', condition: m('speechPractice', 3), destination: 'speech' },
   { id: 'cosmo-robot', name: 'Cosmo Robot', category: 'companions', rarity: 'rare', art: 'avatar:cosmo-robot', fact: 'Cosmo glows brighter every time you learn something new.', hint: 'Finish 3 Play & Learn activities.', condition: m('quizzes', 3), destination: 'learn' },
@@ -140,6 +143,25 @@ export const COLLECTION: Collectible[] = [
   { id: 'rainbow-nebula', name: 'Rainbow Nebula', category: 'special', rarity: 'legendary', art: 'rainbow-nebula', fact: 'The Rainbow Nebula shimmers in every colour.', hint: 'Find 30 collectibles.', condition: { kind: 'collected', at: 30 }, destination: 'progress' },
   { id: 'legendary-badge', name: 'Legendary Galaxy Badge', category: 'special', rarity: 'legendary', art: 'legendary-badge', fact: 'Only the greatest explorers earn the Legendary Galaxy Badge.', hint: 'Find 20 collectibles.', condition: { kind: 'collected', at: 20 }, destination: 'progress' },
 ];
+
+/** The 46 originals plus the expansion (Common to Mythic). */
+const BASE = [...CORE_COLLECTION, ...EXTRA_COLLECTION];
+const ALL = [...BASE, ...generateCollection(new Set(BASE.map((c) => c.id)))];
+
+/**
+ * The Mythic rarity is earned by finding OTHER collectibles. Their thresholds are spaced evenly from 60 up to 90% of
+ * the whole collection, so the last mythic is always reachable however many items there are.
+ */
+const MYTHICS = ALL.filter((c) => c.rarity === 'mythic');
+const MYTHIC_FROM = 60;
+const MYTHIC_TO = Math.floor(ALL.length * 0.9);
+MYTHICS.forEach((c, i) => {
+  const at = Math.round(MYTHIC_FROM + (i * (MYTHIC_TO - MYTHIC_FROM)) / Math.max(1, MYTHICS.length - 1));
+  c.condition = { kind: 'collected', at };
+  c.hint = `Find ${at} collectibles.`;
+});
+
+export const COLLECTION: Collectible[] = ALL;
 
 /** A trophy for finishing a whole category. Not counted among the collectibles: it is the prize for them. */
 export const trophyId = (category: CollectionCategory) => `trophy-${category}`;

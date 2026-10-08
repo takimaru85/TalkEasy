@@ -337,7 +337,7 @@ function HomeBody({ navigation }: RootScreenProps<'ChildHome'>) {
             <View style={styles.heroTop}>
               <View style={[styles.mascotWrap, { width: heroArtW }]}>
                 {night ? <HeroSparkles size={Math.min(heroArtW + 28, sizes.iconSize + 92)} /> : null}
-                <ThemeMascot mascot={adv.mascot} size={Math.min(heroArtW, sizes.iconSize + 64)} space={night} />
+                <ThemeMascot mascot={adv.mascot} size={Math.min(heroArtW, sizes.iconSize + 64)} space={night} animated />
                 {/* Pip speaks first — the app's whole point, said by the character. */}
                 <View style={[styles.bubble, night ? { backgroundColor: '#FFFFFF' } : { backgroundColor: theme.colors.surface, borderWidth: 1.5, borderColor: theme.colors.border }]}>
                   <Text style={[styles.bubbleText, { fontSize: bubbleSize }]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={1}>

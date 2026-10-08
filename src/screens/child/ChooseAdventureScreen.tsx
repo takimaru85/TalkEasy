@@ -3,7 +3,7 @@ import { ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-n
 import { ChildScreen, Icon, PressableScale } from '@/components/common';
 import { GradientSurface } from '@/components/adventure/GradientSurface';
 import { WorldArt } from '@/components/adventure/WorldArt';
-import { WORLDS, WORLD_IDS, type WorldId } from '@/adventure/worlds';
+import { WORLDS, WORLD_IDS, WORLD_UNLOCK_ITEMS, isWorldUnlocked, type WorldId } from '@/adventure/worlds';
 import { MAX_FONT_SCALE, SPACING } from '@/constants/sizes';
 import { useAdventureWorld, useSizes, useSpeak } from '@/hooks';
 import { useI18n } from '@/i18n';
@@ -21,7 +21,7 @@ export function ChooseAdventureScreen({ navigation }: RootScreenProps<'ChooseAdv
   const theme = useTheme();
   const { t } = useI18n();
   const { width } = useWindowDimensions();
-  const { world, childChooses, unchosen, chooseWorld } = useAdventureWorld();
+  const { world, childChooses, unchosen, owned, chooseWorld } = useAdventureWorld();
   const { speakFeedback } = useSpeak();
 
   const contentWidth = width - sizes.horizontalPadding * 2;
@@ -32,6 +32,11 @@ export function ChooseAdventureScreen({ navigation }: RootScreenProps<'ChooseAdv
   const nameSize = WORLD_IDS.reduce((min, id) => Math.min(min, fitFontSize(WORLDS[id].name.toUpperCase(), cardWidth - SPACING.md * 2, 20, 'line', 14)), 20);
 
   const pick = async (id: WorldId) => {
+    if (!isWorldUnlocked(id, owned)) {
+      // Worlds other than Space are bought as themes: take them to the Shop. Vehicles has nothing to buy yet.
+      if (WORLD_UNLOCK_ITEMS[id].length) navigation.navigate('RewardsShop');
+      return;
+    }
     if (!childChooses) return;
     await chooseWorld(id);
     speakFeedback(t('advWorldBegins', { world: WORLDS[id].name }));
@@ -55,14 +60,16 @@ export function ChooseAdventureScreen({ navigation }: RootScreenProps<'ChooseAdv
             const w = WORLDS[id];
             const c = Adventure[w.color];
             const current = !unchosen && world.id === id;
-            const disabled = !childChooses && !current;
+            const locked = !isWorldUnlocked(id, owned);
+            const soon = locked && WORLD_UNLOCK_ITEMS[id].length === 0;
+            const disabled = (!childChooses && !current) || soon;
             return (
               <PressableScale
                 key={id}
                 onPress={() => pick(id)}
                 accessibilityRole="button"
-                accessibilityLabel={`${w.name}. ${w.tagline}${current ? `. ${t('advYourWorld')}` : ''}`}
-                accessibilityState={{ selected: current, disabled: !childChooses }}
+                accessibilityLabel={`${w.name}. ${w.tagline}${current ? `. ${t('advYourWorld')}` : ''}${locked ? `. ${soon ? t('advWorldSoon') : t('advWorldLocked')}` : ''}`}
+                accessibilityState={{ selected: current, disabled: soon || (!locked && !childChooses) }}
                 hitSlop={4}
                 style={{ width: cardWidth }}
               >
@@ -90,6 +97,14 @@ export function ChooseAdventureScreen({ navigation }: RootScreenProps<'ChooseAdv
                   <Text style={[styles.tagline, { color: theme.night ? 'rgba(255,255,255,0.92)' : theme.colors.textMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={2}>
                     {w.tagline}
                   </Text>
+                  {locked ? (
+                    <View style={styles.badge}>
+                      <Icon name="lock" size={14} color="#5A3A00" />
+                      <Text style={styles.badgeText} maxFontSizeMultiplier={MAX_FONT_SCALE} numberOfLines={1}>
+                        {soon ? t('advWorldSoon') : t('advWorldLocked')}
+                      </Text>
+                    </View>
+                  ) : null}
                   {current ? (
                     <View style={styles.badge}>
                       <Icon name="check-bold" size={14} color="#5A3A00" />

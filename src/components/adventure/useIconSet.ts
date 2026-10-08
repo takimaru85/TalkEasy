@@ -1,6 +1,4 @@
-import { effectiveWorld } from '@/adventure/worlds';
-import { useSettings } from '@/context/SettingsContext';
-import { useActiveShopTheme } from '@/context/ShopThemeContext';
+import { useActiveShopTheme, useEffectiveWorld } from '@/context/ShopThemeContext';
 import { getPremiumTheme } from '@/shop/themes';
 
 /**
@@ -17,11 +15,11 @@ import { getPremiumTheme } from '@/shop/themes';
 export type IconSet = 'space' | 'classic';
 
 export function useIconSet(): IconSet {
-  const { settings } = useSettings();
+  const world = useEffectiveWorld();
   const premium = useActiveShopTheme();
   // The space themes (Moon Base, Nebula Dreams...) are still the Space Explorer universe: rockets stay.
   if (premium) return getPremiumTheme(premium)?.family === 'space' ? 'space' : 'classic';
-  return effectiveWorld(settings.adventureTheme, settings.adventureWorld) === 'space' ? 'space' : 'classic';
+  return world === 'space' ? 'space' : 'classic';
 }
 
 /**
@@ -30,8 +28,8 @@ export function useIconSet(): IconSet {
  * stand down: the artwork is already a finished scene and they only compete with it and sit under the text.
  */
 export function useBackgroundIsPicture(): boolean {
-  const { settings } = useSettings();
+  const world = useEffectiveWorld();
   const premium = useActiveShopTheme();
   if (premium) return !!getPremiumTheme(premium)?.background;
-  return effectiveWorld(settings.adventureTheme, settings.adventureWorld) === 'space';
+  return world === 'space';
 }

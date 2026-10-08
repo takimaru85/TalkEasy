@@ -299,6 +299,8 @@ export interface Strings {
   advChooseQuestion: string;
   advChooseSub: string;
   advYourWorld: string;
+  advWorldLocked: string;
+  advWorldSoon: string;
   advWorldPicked: string;
   advWorldBegins: string;
   advMyCollection: string;

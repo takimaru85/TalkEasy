@@ -1,13 +1,13 @@
 import React from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import { ChildScreen, EmptyState, Glyph, Icon, PressableScale } from '@/components/common';
+import { FlatList, StyleSheet, Text, View } from 'react-native';
+import { Card, ChildScreen, EmptyState, Glyph, Icon, PressableScale, ProgressBar, SectionLabel } from '@/components/common';
 import { useProfile } from '@/context/ProfileContext';
 import { earnLabel } from '@/rewards/earnLabel';
 import { MissionCard } from '@/components/adventure/MissionCard';
 import { LEARN_ACTIVITY_ART, LEARN_SUBJECT_ART } from '@/learning/activityArt';
 import { MAX_FONT_SCALE, SPACING } from '@/constants/sizes';
 import { useLearningBest, useLearningConfigs, useSizes, useSpeak } from '@/hooks';
-import { getSubject } from '@/learning';
+import { getSubject, levelsFor } from '@/learning';
 import type { RootScreenProps } from '@/navigation/types';
 import { Fonts, Radius, useTheme, type AdventureKey } from '@/theme';
 
@@ -20,6 +20,8 @@ function stars(best: number | undefined): string {
   if (best >= 0.34) return '⭐';
   return '';
 }
+
+const Separator = () => <View style={styles.separator} />;
 
 /** Activities inside one subject, as big cards. Stars show the best result so far. */
 export function LearnSubjectScreen({ navigation, route }: RootScreenProps<'LearnSubject'>) {
@@ -34,13 +36,27 @@ export function LearnSubjectScreen({ navigation, route }: RootScreenProps<'Learn
 
   if (!subject) return <ChildScreen title="Learn" back />;
   const activities = subject.activities.filter((a) => configs.get(a.key)?.isEnabled ?? true);
+  const levels = levelsFor(subject.key);
+  const done = (key: string) => best.get(key) !== undefined;
+  const doneCount = levels.filter((l) => done(l.key)).length;
+  const nextLevel = levels.find((l) => !done(l.key))?.level;
 
   return (
     <ChildScreen title={subject.name} emoji={subject.emoji} colorArt={LEARN_SUBJECT_ART[subject.key]} back>
-      {activities.length === 0 ? (
+      {activities.length === 0 && levels.length === 0 ? (
         <EmptyState icon="book-open-variant" title="Nothing to practise yet" message="A parent can turn activities on in Parent Mode." />
       ) : (
-        <ScrollView contentContainerStyle={[styles.content, { paddingHorizontal: sizes.horizontalPadding }]}>
+        <FlatList
+          data={levels}
+          keyExtractor={(l) => l.key}
+          initialNumToRender={8}
+          windowSize={5}
+          maxToRenderPerBatch={6}
+          removeClippedSubviews
+          contentContainerStyle={[styles.content, { paddingHorizontal: sizes.horizontalPadding }]}
+          ItemSeparatorComponent={Separator}
+          ListHeaderComponent={
+            <View style={styles.header}>
           {activities.map((a, i) => theme.night ? (
             <MissionCard
               key={a.key}
@@ -82,14 +98,54 @@ export function LearnSubjectScreen({ navigation, route }: RootScreenProps<'Learn
               </View>
             </PressableScale>
           ))}
-        </ScrollView>
+              {levels.length > 0 ? (
+                <>
+              <SectionLabel icon="stairs" text={`Levels 1 to ${levels.length}`} />
+              <Card padding={SPACING.md}>
+                <ProgressBar value={doneCount / levels.length} label={`${doneCount} / ${levels.length}`} color={theme.colors.selected} accessibilityLabel={`${doneCount} of ${levels.length} levels done`} />
+              </Card>
+                </>
+              ) : null}
+            </View>
+          }
+          renderItem={({ item: l, index: i }) => {
+                const isDone = done(l.key);
+                // One step at a time: a level opens once the one before it is done (a level already done stays open).
+                const locked = !isDone && i > 0 && !done(levels[i - 1].key);
+                return (
+                  <MissionCard
+                    key={l.key}
+                    locked={locked}
+                    eyebrow={`LEVEL ${l.level}`}
+                    title={l.title}
+                    subtitle={locked ? `Finish level ${l.level - 1} first.` : l.description}
+                    glyph={l.emoji}
+                    colorArt={LEARN_SUBJECT_ART[subject.key]}
+                    color={COLORS[Math.floor((l.level - 1) / 10) % COLORS.length]}
+                    done={isDone}
+                    doneLabel="Done!"
+                    compact={isDone}
+                    current={l.level === nextLevel}
+                    currentLabel="UP NEXT"
+                    onPress={() => {
+                      if (locked) return speakFeedback(`Finish level ${l.level - 1} first`);
+                      speakFeedback(l.title);
+                      navigation.navigate('LearnActivity', { activityKey: l.key });
+                    }}
+                    accessibilityLabel={`Level ${l.level}, ${l.title}. ${l.description}${isDone ? '. Done' : l.level === nextLevel ? '. Up next' : ''}${locked ? `. Locked. Finish level ${l.level - 1} first` : ''}`}
+                  />
+                );
+}}
+        />
       )}
     </ChildScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  content: { paddingVertical: SPACING.sm, gap: SPACING.md, paddingBottom: SPACING.xl },
+  content: { paddingVertical: SPACING.sm, paddingBottom: SPACING.xl },
+  header: { gap: SPACING.md, marginBottom: SPACING.md },
+  separator: { height: SPACING.md },
   row: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, padding: SPACING.md, borderRadius: Radius.lg },
   disc: { width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center' },
   emoji: { lineHeight: 52 },

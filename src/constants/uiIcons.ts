@@ -110,6 +110,20 @@ export const UI_ICONS: Record<string, UiIcon> = {
   '🙇': { icon: 'human-greeting-variant', tint: purple },
   '💪': { icon: 'arm-flex-outline', tint: coral },
 
+  // Level-based Learn subjects and activities
+  '🅰️': { icon: 'alpha-a-box-outline', tint: blue },
+  '🅱️': { icon: 'alpha-b-box-outline', tint: blue },
+  '🔠': { icon: 'format-letter-case-upper', tint: blue },
+  '🔡': { icon: 'format-letter-case-lower', tint: blue },
+  '🔟': { icon: 'numeric-10-box-outline', tint: green },
+  '🧒': { icon: 'human-child', tint: orange },
+  '🏠': { icon: 'home-outline', tint: orange },
+  '🐶': { icon: 'dog', tint: orange },
+  '🐟': { icon: 'fish', tint: teal },
+  '🐄': { icon: 'cow', tint: green },
+  '🐸': { icon: 'paw-outline', tint: green },
+  '🚀': { icon: 'rocket-launch-outline', tint: purple },
+
   // Writing practice levels
   '〰️': { icon: 'sine-wave', tint: blue },
 

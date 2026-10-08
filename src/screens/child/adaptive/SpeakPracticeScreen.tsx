@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SpeechAnswer } from '@/components/adaptive';
-import { BigButton, Card, Celebration, ChildScreen } from '@/components/common';
+import { BigButton, Card, Celebration, ChildScreen, Icon, PressableScale } from '@/components/common';
 import { matchesFreeAnswer } from '@/adaptive/answers';
 import { MAX_FONT_SCALE, SPACING } from '@/constants/sizes';
 import { useProfile } from '@/context/ProfileContext';
@@ -54,15 +54,35 @@ export function SpeakPracticeScreen({ navigation }: RootScreenProps<'SpeakPracti
   return (
     <ChildScreen title={t('titleSpeakAnswer')} emoji="🎤" art="speech" back>
       <Celebration trigger={burst} />
-      <View style={[styles.questionWrap, { paddingHorizontal: sizes.horizontalPadding }]}>
-        <Card color={theme.colors.primarySoft} style={styles.qCard}>
-          <Text style={styles.emoji} allowFontScaling={false}>{prompt.emoji}</Text>
-          <Text style={[styles.question, { fontSize: sizes.phrase - 4, color: theme.colors.text }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>{prompt.question}</Text>
-          <BigButton label={t('actionHearAgain')} icon="volume-high" variant="secondary" minHeight={56} fullWidth={false} style={styles.centred} onPress={() => speakFeedback(prompt.question)} />
-        </Card>
+      <ScrollView style={styles.flex} contentContainerStyle={[styles.content, { paddingHorizontal: sizes.horizontalPadding }]}>
+      {/* A plain View, sized by its own content. It used to be a Card + BigButton in a flex column, and on a phone that
+          card grew to fill the whole screen and pushed the answer controls out of view. */}
+      <View
+        style={[
+          styles.qCard,
+          {
+            backgroundColor: theme.night ? 'rgba(40,86,200,0.96)' : theme.tint(theme.colors.primarySoft),
+            // A hard ceiling: emoji + two lines of question + the button + gaps + padding. Whatever the phone's layout engine
+            // decides, the card can never grow past what it actually holds.
+            maxHeight: 70 + Math.round((sizes.phrase - 4) * 1.4) * 2 + 56 + SPACING.sm * 2 + SPACING.lg * 2 + 8,
+          },
+        ]}
+      >
+        <Text style={styles.emoji} allowFontScaling={false}>{prompt.emoji}</Text>
+        <Text style={[styles.question, { fontSize: sizes.phrase - 4, color: theme.colors.text }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>{prompt.question}</Text>
+        <PressableScale
+          onPress={() => speakFeedback(prompt.question)}
+          accessibilityRole="button"
+          accessibilityLabel={t('actionHearAgain')}
+          hitSlop={6}
+        >
+          <View style={styles.hear}>
+            <Icon name="volume-high" size={26} color="#FFFFFF" />
+            <Text style={styles.hearText} maxFontSizeMultiplier={MAX_FONT_SCALE}>{t('actionHearAgain')}</Text>
+          </View>
+        </PressableScale>
       </View>
 
-      <ScrollView style={styles.flex} contentContainerStyle={[styles.content, { paddingHorizontal: sizes.horizontalPadding }]}>
         {result ? (
           <Card>
             <Text style={[styles.recorded, { color: result.ok === false ? theme.colors.danger : theme.colors.success, fontSize: sizes.body + 4 }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
@@ -98,10 +118,10 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   // flexGrow 0 + flexShrink 0: the question sizes to its own content and never borrows
   // height from the answer controls below it.
-  questionWrap: { flexGrow: 0, flexShrink: 0, paddingTop: SPACING.sm, paddingBottom: SPACING.md },
   content: { paddingVertical: SPACING.sm, gap: SPACING.md, paddingBottom: SPACING.xl },
-  qCard: { alignItems: 'center', gap: SPACING.sm },
-  centred: { alignSelf: 'center' },
+  qCard: { alignSelf: 'stretch', flexGrow: 0, flexShrink: 0, alignItems: 'center', gap: SPACING.sm, padding: SPACING.lg, borderRadius: 24, borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.35)' },
+  hear: { minHeight: 56, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SPACING.sm, paddingHorizontal: SPACING.xl, borderRadius: 999, borderWidth: 2, borderColor: 'rgba(255,255,255,0.85)' },
+  hearText: { fontFamily: Fonts.extrabold, fontSize: 20, color: '#FFFFFF' },
   emoji: { fontSize: 56, lineHeight: 70 },
   question: { fontFamily: Fonts.black, textAlign: 'center' },
   recorded: { fontFamily: Fonts.extrabold, textAlign: 'center', marginBottom: SPACING.sm },

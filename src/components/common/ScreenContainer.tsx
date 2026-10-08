@@ -3,8 +3,7 @@ import { StyleSheet, View, useWindowDimensions, type StyleProp, type ViewStyle }
 // From the file, not the adventure barrel (which imports back into components/common).
 import { WorldBackground } from '@/components/adventure/WorldBackground';
 import { MIN_SUPPORTED_WIDTH } from '@/constants/sizes';
-import { useSettings } from '@/context/SettingsContext';
-import { effectiveWorld } from '@/adventure/worlds';
+import { useEffectiveWorld } from '@/context/ShopThemeContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { AdventureNight, useIsAdventure, useTheme } from '@/theme';
@@ -28,7 +27,7 @@ export function ScreenContainer({ children, style, background, edges = ['top', '
   // or negative size there is invalid and the whole background drops out (see MIN_SUPPORTED_WIDTH).
   const skyWidth = Math.max(MIN_SUPPORTED_WIDTH, width);
   const skyHeight = Math.max(MIN_SUPPORTED_WIDTH, height);
-  const { settings } = useSettings();
+  const world = useEffectiveWorld();
   // Every child screen sits in the child's adventure world (Space unless one was chosen) (a screen that draws its own sky — the home
   // screen — passes `background` and gets no second one).
   const sky = adventure && theme.night && !background;
@@ -38,7 +37,7 @@ export function ScreenContainer({ children, style, background, edges = ['top', '
       {/* The adventure world is dark, so its clock and battery must be light. The newest mounted bar wins and
           the previous one returns when the screen closes. */}
       <StatusBar style={adventure && theme.night ? 'light' : 'dark'} />
-      {sky ? <WorldBackground world={effectiveWorld(settings.adventureTheme, settings.adventureWorld)} width={skyWidth} height={skyHeight} /> : null}
+      {sky ? <WorldBackground world={world} width={skyWidth} height={skyHeight} /> : null}
       <View style={[styles.inner, style]}>{children}</View>
     </SafeAreaView>
   );
