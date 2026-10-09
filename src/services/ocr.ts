@@ -1,4 +1,4 @@
-import { NativeModules } from 'react-native';
+import { NativeModules, Platform } from 'react-native';
 import { scriptFor, type ScanLanguage } from '@/scan/language';
 import type { ScanFailure } from '@/scan/types';
 
@@ -56,6 +56,8 @@ interface RecognitionResult {
  * when the native side is missing. Never throws, so the UI can ask it during render.
  */
 export function isTextRecognitionAvailable(): boolean {
+  // ML Kit is not linked into the iOS app (react-native.config.js), so iOS never offers recognition.
+  if (Platform.OS === 'ios') return false;
   try {
     return NativeModules?.TextRecognition != null;
   } catch {

@@ -27,7 +27,7 @@ const PROMPTS: { question: string; emoji: string; answers: string[] }[] = [
  */
 export function SpeakPracticeScreen({ navigation }: RootScreenProps<'SpeakPractice'>) {
   const sizes = useSizes();
-  const { t } = useI18n();
+  const { t, speechTag } = useI18n();
   const theme = useTheme();
   const { displayName } = useProfile();
   const { speakFeedback } = useSpeak();
@@ -35,7 +35,7 @@ export function SpeakPracticeScreen({ navigation }: RootScreenProps<'SpeakPracti
   const [result, setResult] = useState<{ text: string; ok: boolean | null } | null>(null);
   const [burst, setBurst] = useState(0);
   const prompt = PROMPTS[index % PROMPTS.length];
-  const available = isSpeechRecognitionAvailable();
+  const available = isSpeechRecognitionAvailable(speechTag);
 
   const finish = (text: string, ok: boolean | null) => {
     setResult({ text, ok });
@@ -105,7 +105,7 @@ export function SpeakPracticeScreen({ navigation }: RootScreenProps<'SpeakPracti
 
         {!available ? (
           <Text style={[styles.note, { color: theme.colors.textMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
-            Tip for parents: speech-to-text works in the installed app (not Expo Go) and runs on the device only.
+            Tip for parents: speech-to-text works only in the installed app (not Expo Go), on phones that support offline speech recognition. The audio is processed on the phone only.
           </Text>
         ) : null}
         <BigButton label={t('actionDoneForNow')} variant="outline" minHeight={56} onPress={() => navigation.goBack()} />

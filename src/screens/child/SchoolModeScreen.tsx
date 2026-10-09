@@ -8,6 +8,7 @@ import { AssignmentCard, SubjectCard } from '@/components/school';
 import { Colors } from '@/constants/colors';
 import { SCHOOL_MODE_QUICK } from '@/constants/defaults';
 import { SECTION_EMOJI } from '@/constants/school';
+import { SCAN_ASSIGNMENT_AVAILABLE } from '@/scan/availability';
 import { MAX_FONT_SCALE, SPACING } from '@/constants/sizes';
 import { useAssignmentsDueBy, useQuickButtons, useScheduleForDay, useSizes, useSpeak, useToday } from '@/hooks';
 import type { RootScreenProps } from '@/navigation/types';
@@ -46,14 +47,16 @@ export function SchoolModeScreen({ navigation }: RootScreenProps<'SchoolMode'>) 
           Scan Assignment sits with the schoolwork it produces, above today's subjects: what it makes
           is an assignment, so it belongs beside them rather than in a tools menu somewhere else.
         */}
-        <MissionCard
-          title="Scan Assignment"
-          subtitle="Photograph a worksheet and turn it into words"
-          glyph="scan-assignment"
-          color="lagoon"
-          onPress={() => navigation.navigate('ScanAssignment')}
-          accessibilityLabel="Scan Assignment. Photograph a worksheet and turn it into words."
-        />
+        {SCAN_ASSIGNMENT_AVAILABLE ? (
+          <MissionCard
+            title="Scan Assignment"
+            subtitle="Photograph a worksheet and turn it into words"
+            glyph="scan-assignment"
+            color="lagoon"
+            onPress={() => navigation.navigate('ScanAssignment')}
+            accessibilityLabel="Scan Assignment. Photograph a worksheet and turn it into words."
+          />
+        ) : null}
 
         <SectionTitle title="Today's subjects" emoji={SECTION_EMOJI.school} />
         {schedule.length === 0 ? (

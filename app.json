@@ -68,7 +68,7 @@
         "expo-speech-recognition",
         {
           "microphonePermission": "TalkEasy uses the microphone when the child taps 'Say the answer', which turns speech into text, and when they record a practice attempt to hear it back. A practice recording stays on this device and is deleted after playback.",
-          "speechRecognitionPermission": "TalkEasy turns the child's spoken answer into text. Where your phone supports it, this happens on the device. If it does not, your phone's own speech service (Apple or Google) may process the audio over the internet to do so. TalkEasy itself never saves or sends the audio.",
+          "speechRecognitionPermission": "TalkEasy turns the child's spoken answer into text on the device only. If your phone cannot do this offline, the feature is switched off and the audio is not sent anywhere. TalkEasy never saves or sends the audio.",
           "androidSpeechServicePackages": [
             "com.google.android.as",
             "com.google.android.tts"

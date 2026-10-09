@@ -216,6 +216,20 @@ ok(scriptFor('nonsense') === 'Latin', 'an unknown language still gets a usable s
   ok(repo.includes('scan_text'), 'the scanned text is stored');
 }
 
+// ---- iOS Kids Category: no ML Kit on iOS, no online speech recognition --------------------------------------------
+{
+  const cfg = readFileSync('react-native.config.js', 'utf8');
+  ok(/@react-native-ml-kit\/text-recognition[\s\S]*ios:\s*null/.test(cfg), 'ML Kit is excluded from iOS autolinking');
+  const school = readFileSync('src/screens/child/SchoolModeScreen.tsx', 'utf8');
+  ok(/SCAN_ASSIGNMENT_AVAILABLE \?[\s\S]*navigate\('ScanAssignment'\)/.test(school), 'the Scan Assignment door is hidden when the feature is unavailable');
+  ok(readFileSync('src/scan/availability.ts', 'utf8').includes("Platform.OS !== 'ios'"), 'Scan Assignment is off on iOS');
+  ok(readFileSync('src/services/ocr.ts', 'utf8').includes("Platform.OS === 'ios'"), 'the OCR service never offers recognition on iOS');
+  const sr = readFileSync('src/services/speechRecognition.ts', 'utf8');
+  ok(sr.includes('requiresOnDeviceRecognition: true'), 'speech recognition always requires on-device processing');
+  ok(!/requiresOnDeviceRecognition:\s*!/.test(sr), 'on-device processing is never made conditional');
+  ok(sr.includes('onDeviceGuaranteed(n, lang)') && sr.includes('Platform.Version >= 33'), 'recognition refuses to start unless on-device is guaranteed');
+}
+
 console.log(`states checked, failures ${FAILURES.length}, languages ${SCAN_LANGUAGES.length}, problems ${problems}`);
 if (problems) process.exit(1);
 console.log('ALL OK');

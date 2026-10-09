@@ -1,4 +1,5 @@
 import { requireOptionalNativeModule } from 'expo-modules-core';
+import { Platform } from 'react-native';
 
 /**
  * Optional on-device speech-to-text.
@@ -9,11 +10,19 @@ import { requireOptionalNativeModule } from 'expo-modules-core';
  * is missing. Without it, `isSpeechRecognitionAvailable()` is false and the UI falls back to the
  * parent-assisted oral answer.
  *
- * Recognition is requested with `requiresOnDeviceRecognition` ONLY where the phone supports it, so there
- * audio is processed on the phone. On a phone without on-device recognition the system's own speech
- * service (Apple or Google) may process the audio online; TalkEasy cannot prevent that, so every
- * privacy statement says so. TalkEasy itself never stores or sends the audio — only the transcript
- * text reaches the app, and only the final answer text is saved.
+ * ON-DEVICE ONLY, AND ENFORCED HERE. Recognition is offered only where on-device recognition can be
+ * guaranteed, and is always started with `requiresOnDeviceRecognition: true`. It never falls back to the
+ * network. The library itself CANNOT be trusted to refuse: on iOS it sets the on-device flag only if the
+ * recogniser for the requested language supports it and otherwise silently goes online, and its
+ * `supportsOnDeviceRecognition()` checks the phone's own region language, not the requested one; on
+ * Android older than 13 it ignores the flag and uses the networked recogniser. So the guard below
+ * refuses to start unless it is sure:
+ *  - Android: API 33+ AND the on-device recogniser is installed.
+ *  - iOS: the on-device check passes AND the requested language is the phone's own language, because that
+ *    is the recogniser the check actually asked.
+ * Otherwise `isSpeechRecognitionAvailable(lang)` is false and the UI offers the grown-up-confirmed
+ * answer instead. TalkEasy itself never stores or sends the audio — only the transcript text reaches the
+ * app, and only the final answer text is saved.
  */
 interface SpeechNativeModule {
   start: (options: Record<string, unknown>) => void;
@@ -41,8 +50,37 @@ function load(): SpeechNativeModule | null {
   return native;
 }
 
-export function isSpeechRecognitionAvailable(): boolean {
-  return load() !== null;
+/** The phone's own language tag ("en-US"), or '' when it cannot be read. */
+function deviceLanguageTag(): string {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().locale ?? '';
+  } catch {
+    return '';
+  }
+}
+
+const sameTag = (a: string, b: string) => !!a && !!b && a.replace(/_/g, '-').toLowerCase() === b.replace(/_/g, '-').toLowerCase();
+
+/**
+ * Whether recognition for `lang` is guaranteed to run on the phone. False means "do not start it":
+ * see the file comment for why this is stricter than asking the library.
+ */
+function onDeviceGuaranteed(n: SpeechNativeModule, lang: string): boolean {
+  try {
+    if (!n.supportsOnDeviceRecognition?.()) return false;
+    if (Platform.OS === 'android') return typeof Platform.Version === 'number' && Platform.Version >= 33;
+    if (Platform.OS === 'ios') return sameTag(lang, deviceLanguageTag());
+    return false;
+  } catch {
+    return false;
+  }
+}
+
+/** Whether speech-to-text can be offered for `lang` (default: the phone's own language) with on-device processing guaranteed. */
+export function isSpeechRecognitionAvailable(lang?: string): boolean {
+  const n = load();
+  if (!n) return false;
+  return onDeviceGuaranteed(n, lang ?? deviceLanguageTag());
 }
 
 export async function requestSpeechPermission(): Promise<boolean> {
@@ -66,6 +104,10 @@ export function startListening(lang: string, onResult: Listener, onError: ErrorL
     onError('Speech recognition is not available in this build.');
     return () => {};
   }
+  if (!onDeviceGuaranteed(n, lang)) {
+    onError('Offline speech recognition is not supported on this device.');
+    return () => {};
+  }
   const subs: { remove: () => void }[] = [];
   try {
     subs.push(
@@ -83,7 +125,7 @@ export function startListening(lang: string, onResult: Listener, onError: ErrorL
       lang,
       interimResults: true,
       continuous: false,
-      requiresOnDeviceRecognition: !!n.supportsOnDeviceRecognition?.(),
+      requiresOnDeviceRecognition: true,
       addsPunctuation: false,
     });
   } catch (err) {

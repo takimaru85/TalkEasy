@@ -28,7 +28,7 @@ export function SpeechAnswer({ onUseAnswer, onAssistedResult, lang, prompt }: Pr
   const { t, speechTag } = useI18n();
   const listenLang = lang ?? speechTag;
   const theme = useTheme();
-  const available = isSpeechRecognitionAvailable();
+  const available = isSpeechRecognitionAvailable(listenLang);
   const [phase, setPhase] = useState<Phase>('idle');
   const [transcript, setTranscript] = useState('');
   const [message, setMessage] = useState('');
@@ -111,7 +111,7 @@ export function SpeechAnswer({ onUseAnswer, onAssistedResult, lang, prompt }: Pr
             🎤 Say your answer out loud.
           </Text>
           <Text style={[styles.note, { color: theme.colors.textMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
-            Speech-to-text is not available in this version, so a grown-up taps the answer below.
+            Offline speech recognition is not supported on this device, so a grown-up taps the answer below.
           </Text>
         </View>
       )}
