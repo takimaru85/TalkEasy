@@ -13,6 +13,7 @@ import { WORLDS, WORLD_IDS, type AdventureThemeSetting } from '@/adventure/world
 import type { RotationMode, SizeOption } from '@/types/models';
 import { alertMessage } from '@/utils/confirm';
 import { BRAND } from '@/constants/brand';
+import { PRIVACY_MICROPHONE, PRIVACY_POLICY_NOTE, PRIVACY_SCAN, PRIVACY_STORAGE, PRIVACY_VOICES } from '@/constants/privacyCopy';
 import { Fonts } from '@/theme';
 import { isValidPinFormat, isWeakPin, makePinRecord } from '@/services/pin';
 
@@ -244,15 +245,11 @@ export function SettingsScreen({ navigation }: ParentScreenProps<'Settings'>) {
           </Section>
 
           <Section title="Privacy">
-            <Text style={styles.hint} maxFontSizeMultiplier={MAX_FONT_SCALE}>
-              TalkEasy works fully offline. It has no account, no internet features, no analytics, and never
-              sends any data off this device. Uninstalling the app deletes its data.
-            </Text>
-            <Text style={styles.hint} maxFontSizeMultiplier={MAX_FONT_SCALE}>
-              Microphone: in Sound Practice and Speech Practice, "Hear yourself" records the attempt so it can
-              be played straight back, then deletes it. It is never scored, never turned into text, and never
-              saved. "Say the answer" in Learning turns speech into text and records nothing. It runs on this device where the phone supports that; otherwise your phone's own speech service (Apple or Google) may process the audio online. TalkEasy never saves or sends it.
-            </Text>
+            <Text style={styles.hint} maxFontSizeMultiplier={MAX_FONT_SCALE}>{PRIVACY_STORAGE}</Text>
+            <Text style={styles.hint} maxFontSizeMultiplier={MAX_FONT_SCALE}>{PRIVACY_MICROPHONE}</Text>
+            <Text style={styles.hint} maxFontSizeMultiplier={MAX_FONT_SCALE}>{PRIVACY_VOICES}</Text>
+            <Text style={styles.hint} maxFontSizeMultiplier={MAX_FONT_SCALE}>{PRIVACY_SCAN}</Text>
+            <Text style={styles.hint} maxFontSizeMultiplier={MAX_FONT_SCALE}>{PRIVACY_POLICY_NOTE}</Text>
           </Section>
 
           <Section title="About">

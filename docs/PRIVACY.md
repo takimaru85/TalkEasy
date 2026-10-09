@@ -1,59 +1,66 @@
-# TalkEasy — Privacy Policy
+# TalkEasy — Privacy Policy (summary)
 
-_Last updated: 9 October 2026_
+_Last updated: [DATE — fill in when published]. The full policy is [privacy-policy.md](privacy-policy.md); the published copy is https://ibgolden.com/talkeasy-privacy-policy/ (this summary and the full policy describe the release that removes Google ML Kit; the website must be updated to match when that release ships)._
 
-TalkEasy is a communication, school and learning companion app for a child. It is designed to
-work offline and to keep everything the child and parent enter on the device it is installed on.
+TalkEasy is a communication, school and learning companion app for a child. What a parent or child
+enters is kept on the device it is installed on.
 
-## What we collect
+## What TalkEasy's own code does
 
-**TalkEasy itself collects nothing.** It does not collect, transmit, or store any personal
-information on any server. The app has no user accounts, no advertising, no analytics or
-crash-reporting code, and its own code makes no network requests.
+TalkEasy has no user accounts, no advertising, and no analytics, tracking or crash-reporting code,
+and its own code makes no network requests that send anything a parent or child enters to anyone —
+including IB Golden. This is a statement about TalkEasy's own code. It does not cover the phone's
+operating system or the voice and speech services that come with the phone.
 
-**One third-party exception, Android only:** the optional Scan Assignment feature uses Google's
-ML Kit text-recognition library. The photo and the recognised text stay on the device, but Google
-documents that ML Kit also sends diagnostic usage data to Google (device model, OS version, the
-app's package name and version, a per-installation identifier, performance and error metrics).
-**ML Kit is not included in the iOS app and Scan Assignment is not available on iOS.**
-
-The app can record your child's voice in one place — the *Hear yourself* button in Sound Practice
-and Speech Practice — and that recording is played back and then deleted. See **Permissions**
-below, and the full [privacy policy](privacy-policy.md) for the detail.
+Google ML Kit was used by an earlier optional Scan Assignment feature on Android. **It is removed
+from both the Android and the iPhone/iPad app, and Scan Assignment text recognition is not
+available in this release.** Assignments can still be typed in, and assignments saved earlier stay
+on the device.
 
 ## What stays on the device
 
-All content created in the app — the child's profile (name, photo, favourites), communication
-phrases, school subjects, assignments, calendar events, routines, activities, learning results,
-stars and rewards, and caregiver notes — is stored in a private database inside the app's own
-storage area on the device. It is never uploaded anywhere. Uninstalling the app deletes all of it.
+The child's profile (name, photo, favourites), communication phrases, school subjects, assignments,
+calendar events, routines, activities, learning results, stars and rewards, and caregiver notes are
+stored in a private database in the app's own storage. Nothing is uploaded.
+
+- **Android:** the app does not take part in Android's automatic cloud backup.
+- **iPhone and iPad:** an iCloud or computer backup made by the operating system may include the
+  app's data; TalkEasy does not control that.
+- Uninstalling the app deletes what it stored.
 
 ## Permissions
 
-* **Camera / Photos** — only used when a parent chooses *Take photo* or *Choose photo* to attach a
+* **Camera / Photos** — only when a parent chooses *Take photo* or *Choose photo* to attach a
   picture to an assignment, activity, communication card or the child's profile. The picture is
-  copied into the app's private storage on the device. No photo is ever sent off the device.
-* **Text-to-speech** uses the voice engine built into the phone or tablet. Reading a phrase aloud
-  records nothing.
+  copied into the app's private storage. It is not uploaded.
+* **Text-to-speech** uses the voice engine installed on the phone or tablet. TalkEasy prefers an
+  installed offline voice but does not choose or control the engine, and some voices on a phone can
+  work online, so it does not promise that every voice is offline. TalkEasy itself sends no text
+  anywhere.
 * **Microphone** — used in two places, each only after the child taps a microphone button:
-  * *Say the answer* (Learning) turns speech into text using the device's own recognizer, and
-    only when offline (on-device) recognition is available. TalkEasy never falls back to an online
-    speech service: on a phone that cannot recognise speech offline, the feature is switched off and
-    a grown-up confirms the answer instead. No audio file is created; only the text answer is kept.
+  * *Say the answer* (Learning) turns speech into text using the phone's own recognizer, **only
+    when on-device recognition can be used** (Android 13 or newer with on-device recognition
+    available; on iPhone and iPad, only when the language in use is the phone's own language and
+    the phone supports it offline). TalkEasy always asks for on-device recognition and never falls
+    back to an online speech service. Otherwise the feature is switched off, the screen says
+    offline speech recognition is not supported on this device, and a grown-up confirms the answer.
+    No audio is saved or sent; only the text answer is kept. Not every device has been tested.
   * *Hear yourself* (Sound Practice, Speech Practice) records the attempt to a temporary cache
     file so it can be played straight back, then deletes it — when the next attempt starts, when
     the child moves on, or when the screen closes. At most one clip exists at a time. It is never
-    transcribed, never scored, never stored permanently, and never sent off the device.
+    transcribed, scored, stored permanently, or sent anywhere.
+
+## Parent PIN
+
+Created by the grown-up the first time Parent Mode is opened (there is no default PIN), stored only
+as a salted hash, with a short lockout after five wrong attempts. It separates the parent and child
+screens on a shared device; it is not strong security and does not encrypt the data.
 
 ## Children
 
-TalkEasy is intended to be set up and supervised by a parent or caregiver. TalkEasy collects
-nothing itself, so it has nothing to share with or sell to third parties, and no data to
-delete on request — removing the app removes everything it stored. The only data sent off the
-device is the diagnostic data from Google's ML Kit library on Android (see above), which TalkEasy
-does not control; the iOS app does not contain it.
+TalkEasy is intended to be set up and supervised by a parent or caregiver. We have not obtained
+COPPA, GDPR-K or Google Play Families certification. There are no in-app purchases in this version.
 
 ## Contact
 
-TalkEasy is created by **IB Golden** (ibgolden.com). Questions about this policy can be sent to
-IB Golden through the project page: https://github.com/takimaru85/TalkEasy
+TalkEasy is created by **IB Golden** (Ian Olden). Questions: info@ibgolden.com — https://ibgolden.com/

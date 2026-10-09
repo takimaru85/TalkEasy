@@ -18,6 +18,7 @@ import {
 import type { ParentScreenProps, ParentStackParamList } from '@/navigation/types';
 import { addDays, formatDate, formatTime } from '@/utils/date';
 import { PLUS_GATING_ENABLED } from '@/subscription/release';
+import { PRIVACY_BADGE } from '@/constants/privacyCopy';
 import { Fonts } from '@/theme';
 
 type MenuScreen = Extract<
@@ -156,7 +157,7 @@ export function DashboardScreen({ navigation }: ParentScreenProps<'Dashboard'>) 
             </Text>
             <View style={styles.badge}>
               <Icon name="lock-outline" size={14} color={Colors.success} />
-              <Text style={styles.badgeText} maxFontSizeMultiplier={MAX_FONT_SCALE}>Private · stays on this device</Text>
+              <Text style={styles.badgeText} maxFontSizeMultiplier={MAX_FONT_SCALE}>{PRIVACY_BADGE}</Text>
             </View>
           </View>
         </View>

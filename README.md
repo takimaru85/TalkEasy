@@ -20,9 +20,11 @@ It combines:
 | 🏫 **School Mode** | One simplified classroom screen: 8 quick phrases, today's subjects, today's assignments |
 | 👨‍👩‍👧 **Parent** | PIN-protected dashboard + managers for everything above, care notes, progress, settings |
 
-**Privacy:** no server, no account, no analytics, no ads, no location, no network code. Everything
-is in one SQLite file (`talkeasy.db`) plus a private folder for photos, inside the app sandbox.
-Uninstalling removes all of it.
+**Privacy:** no server, no account, no ads, no location, and no analytics or crash-reporting code.
+TalkEasy's own code makes no network requests that send anything a parent or child enters
+anywhere. (That does not cover the phone's own voice and speech services; see section 10.)
+Everything is in one SQLite file (`talkeasy.db`) plus a private folder for photos, inside the app
+sandbox. Uninstalling removes all of it.
 
 Design docs: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) (architecture, folders, navigation,
 schema, offline strategy, accessibility, state management).
@@ -79,7 +81,7 @@ npx expo start
 * **iOS simulator** (Mac) – press `i`.
 
 Same Wi-Fi is needed **only** for Expo Go to fetch the JavaScript from your computer. A built
-app (section 7) contains everything and never needs a network.
+app (section 7) contains everything it needs to run; TalkEasy's own code does not use the network.
 
 > Expo Go note: Expo Go supports every module TalkEasy uses (SQLite, speech, audio, image
 > picker, document picker, file system, haptics). After changing plugins in `app.json`, restart
@@ -107,7 +109,8 @@ TalkEasy will be too. Media volume (not ringtone) must be up.
 | iOS simulator (Mac only) | Xcode installed → `npx expo start` → press `i` |
 | Development build on a real iPhone | `npx expo run:ios --device` (Mac + Apple developer account) or `eas build --profile development --platform ios` |
 
-Apple voices work offline. For a nicer voice: Settings → Accessibility → Spoken Content →
+TalkEasy uses the voices installed on the phone and prefers an installed offline voice, but it does
+not control the engine, and some voices can work online. For a nicer voice: Settings → Accessibility → Spoken Content →
 Voices → download an *Enhanced* English voice → choose it in TalkEasy → Parent → Settings.
 TalkEasy asks iOS to play through the ring/silent switch; if still silent, raise the volume with the
 side buttons *while the app is open* and disconnect Bluetooth audio.
@@ -237,7 +240,7 @@ Done per lesson), Writing practice, Speak your answer, and a learning progress b
 
 Every question lets the child choose **how** to answer from the methods the parent/teacher
 allowed: 👆 tap a big card · 🖼️ pick a picture · 🔗 tap-to-match · ⌨️ big on-screen keyboard ·
-🎤 say it (on-device speech-to-text in the installed app; a grown-up confirms in Expo Go) ·
+🎤 say it (on-device-only speech-to-text in the installed app, where the phone supports it; otherwise a grown-up confirms) ·
 ✍️ write with a finger (never mandatory) · 🙋 tell a grown-up. A wrong answer gets one gentle
 retry with the hint; the objective never changes.
 
@@ -252,7 +255,9 @@ allowed answer methods. **Parent → Learning progress**: learning % and handwri
 separately, with strengths and "areas to practise" in supportive language.
 
 Check the engine with `npm run check:adaptive`. Speech-to-text needs a development/EAS build
-(`expo-speech-recognition` is a native module); everything else works in Expo Go.
+(`expo-speech-recognition` is a native module) and is offered only when on-device recognition is
+guaranteed (Android 13+ with on-device recognition; on iPhone/iPad only for the phone's own language).
+It never falls back to an online service (`src/services/speechRecognition.ts`). Everything else works in Expo Go.
 
 ## 9. How to extend
 
@@ -268,8 +273,12 @@ Check the engine with `npm run check:adaptive`. Speech-to-text needs a developme
 
 ## 10. Privacy statement
 
-TalkEasy stores everything in the app's private storage. It makes no network requests, embeds no
-analytics or crash-reporting SDK, shows no ads, has no account system and does not use location.
-The only permissions it can ask for are camera / photo library, and only when the parent taps
-*Take photo* / *Choose photo*. Care notes, progress and activity logs are private records for
+TalkEasy stores everything in the app's private storage. TalkEasy's own code makes no network
+requests that send user data anywhere, and it embeds no analytics or crash-reporting SDK, shows no
+ads, has no account system and does not use location. Google ML Kit (used by the former Scan
+Assignment OCR) has been removed from both platforms. The permissions it asks for are the camera /
+photo library (only when the parent taps *Take photo* / *Choose photo*) and the microphone (only
+after the child taps a microphone button). Text-to-speech and speech recognition use the phone's own
+engines, which TalkEasy does not control; recognition is requested on-device only. The full policy is
+in [docs/privacy-policy.md](docs/privacy-policy.md). Care notes, progress and activity logs are private records for
 caregivers; the app never interprets them and gives no medical advice.

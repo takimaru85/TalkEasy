@@ -3,6 +3,7 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { BigButton, Card, ChildScreen, Glyph, Icon } from '@/components/common';
 import { MAX_FONT_SCALE, MIN_CHILD_TARGET, SPACING } from '@/constants/sizes';
 import { isTextRecognitionAvailable } from '@/services/ocr';
+import { SCAN_PRIVACY_NOTE } from '@/constants/privacyCopy';
 import type { RootScreenProps } from '@/navigation/types';
 import { Fonts, useTheme } from '@/theme';
 
@@ -82,16 +83,15 @@ export function ScanAssignmentScreen({ navigation }: RootScreenProps<'ScanAssign
             <View style={styles.tip}>
               <Icon name="information-outline" size={20} color={c.textMuted} />
               <Text style={[styles.note, { color: c.textMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
-                Reading text from a photo needs the full app build — it is not available in Expo Go or in a
-                browser. You can still type an assignment in, and everything else works the same.
+                Reading text from a photo is not available in this release. You can still type an assignment
+                in, and everything else works the same.
               </Text>
             </View>
           </Card>
         )}
 
         <Text style={[styles.privacy, { color: theme.night ? 'rgba(255,255,255,0.7)' : c.textMuted }]} maxFontSizeMultiplier={MAX_FONT_SCALE}>
-          The photo is read on this device and stays on it. Nothing is uploaded, and the photo is only kept
-          if you choose to keep it.
+          {SCAN_PRIVACY_NOTE}
         </Text>
       </ScrollView>
     </ChildScreen>

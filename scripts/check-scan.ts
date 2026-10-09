@@ -4,11 +4,13 @@
 // in this build — and the rules below are the ones that keep it usable anyway: there is always a way
 // to get the words in, the text the engine read is never destroyed, and the app never answers the
 // homework.
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { imageOf, failureMessage, initialScanState, isBusy, scanReducer, type ScanEvent } from '../src/scan/machine';
 import { describeType, parseAssignment } from '../src/scan/parser';
 import { normalizeScanLanguage, scriptFor, SCAN_LANGUAGES } from '../src/scan/language';
 import type { ScanFailure, ScanState } from '../src/scan/types';
+import { PRIVACY_BADGE, PRIVACY_MICROPHONE, PRIVACY_POLICY_NOTE, PRIVACY_SCAN, PRIVACY_STORAGE, PRIVACY_VOICES, SCAN_PRIVACY_NOTE } from '../src/constants/privacyCopy';
+import { SCAN_ASSIGNMENT_AVAILABLE } from '../src/scan/availability';
 
 let problems = 0;
 const ok = (cond: unknown, msg: string) => { if (!cond) { problems++; console.log('FAIL', msg); } };
@@ -191,12 +193,8 @@ ok(scriptFor('nonsense') === 'Latin', 'an unknown language still gets a usable s
   for (const line of logs) {
     ok(!/text|result|raw/i.test(line), `a log line must not carry recognised text: ${line}`);
   }
-  // Availability must be decided from React Native's own registry, never by asking the package:
-  // its entry point substitutes a Proxy that THROWS on any property access when the native half is
-  // missing, so probing it in Expo Go would take the screen down instead of degrading.
-  ok(ocr.includes('NativeModules?.TextRecognition'), 'availability is probed safely, without touching the package');
-  ok(!/^import .*@react-native-ml-kit/m.test(ocr), 'the package is never imported at module scope');
-  ok(ocr.includes('isTextRecognitionAvailable()'), 'recognition is gated on availability');
+  ok(ocr.includes('isTextRecognitionAvailable()'), 'the OCR service exposes an availability check');
+  ok(ocr.includes('SCAN_ASSIGNMENT_AVAILABLE'), 'the OCR service is gated on the shared availability flag');
 
   const hook = readFileSync('src/hooks/useScanAssignment.ts', 'utf8');
   ok(!/console\.(log|warn|error)/.test(hook), 'the scan hook logs nothing');
@@ -216,18 +214,67 @@ ok(scriptFor('nonsense') === 'Latin', 'an unknown language still gets a usable s
   ok(repo.includes('scan_text'), 'the scanned text is stored');
 }
 
-// ---- iOS Kids Category: no ML Kit on iOS, no online speech recognition --------------------------------------------
+// ---- Kids Category: Scan Assignment is OFF on every platform, and ML Kit cannot creep back in ----------------------
 {
-  const cfg = readFileSync('react-native.config.js', 'utf8');
-  ok(/@react-native-ml-kit\/text-recognition[\s\S]*ios:\s*null/.test(cfg), 'ML Kit is excluded from iOS autolinking');
+  // The one flag.
+  ok(SCAN_ASSIGNMENT_AVAILABLE === false, 'Scan Assignment is unavailable in this release (src/scan/availability.ts)');
+  const avail = readFileSync('src/scan/availability.ts', 'utf8');
+  ok(!/Platform/.test(avail), 'the availability flag does not depend on the platform: it is off on iOS AND Android');
+  ok(/export const SCAN_ASSIGNMENT_AVAILABLE = false;/.test(avail), 'the flag is a plain false constant');
+
+  // The door in School Mode is behind the flag.
   const school = readFileSync('src/screens/child/SchoolModeScreen.tsx', 'utf8');
   ok(/SCAN_ASSIGNMENT_AVAILABLE \?[\s\S]*navigate\('ScanAssignment'\)/.test(school), 'the Scan Assignment door is hidden when the feature is unavailable');
-  ok(readFileSync('src/scan/availability.ts', 'utf8').includes("Platform.OS !== 'ios'"), 'Scan Assignment is off on iOS');
-  ok(readFileSync('src/services/ocr.ts', 'utf8').includes("Platform.OS === 'ios'"), 'the OCR service never offers recognition on iOS');
+
+  // ML Kit is gone: not in the manifest, the lockfile, any source file, or an autolinking override.
+  const pkg = readFileSync('package.json', 'utf8');
+  ok(!/ml-?kit/i.test(pkg), 'package.json has no ML Kit dependency');
+  ok(!/ml-?kit/i.test(readFileSync('package-lock.json', 'utf8')), 'package-lock.json has no ML Kit package');
+  ok(!existsSync('react-native.config.js'), 'there is no react-native.config.js autolinking override to keep or hide anything');
+  ok(!existsSync('node_modules/@react-native-ml-kit/text-recognition'), 'the ML Kit package is not installed');
+  const appJson = readFileSync('app.json', 'utf8');
+  ok(!/ml-?kit|text-recognition/i.test(appJson), 'app.json has no ML Kit config plugin');
+  const walk = (dir: string): string[] => readdirSync(dir).flatMap((n) => {
+    const p = dir + '/' + n;
+    return statSync(p).isDirectory() ? walk(p) : /\.(ts|tsx|js|jsx)$/.test(n) ? [p] : [];
+  });
+  for (const file of walk('src')) {
+    const src = readFileSync(file, 'utf8');
+    ok(!/(require|import)\s*\(?[^\n;]*(ml-?kit|text-recognition)/i.test(src), `${file} does not import or require ML Kit`);
+    ok(!/NativeModules\??\.TextRecognition/.test(src), `${file} does not probe for the ML Kit native module`);
+  }
+
+  // Speech recognition stays on-device only.
   const sr = readFileSync('src/services/speechRecognition.ts', 'utf8');
   ok(sr.includes('requiresOnDeviceRecognition: true'), 'speech recognition always requires on-device processing');
-  ok(!/requiresOnDeviceRecognition:\s*!/.test(sr), 'on-device processing is never made conditional');
+  ok(!/requiresOnDeviceRecognition:s*!/.test(sr), 'on-device processing is never made conditional');
   ok(sr.includes('onDeviceGuaranteed(n, lang)') && sr.includes('Platform.Version >= 33'), 'recognition refuses to start unless on-device is guaranteed');
+}
+
+// ---- the in-app privacy wording stays TRUE and matches the published policy ---------------------------------------
+// The Settings text once said "works fully offline ... no internet features ... never sends any data off this
+// device", and "may process the audio online" stopped being true when speech-to-text became on-device only.
+{
+  const settings = readFileSync('src/screens/parent/SettingsScreen.tsx', 'utf8');
+  const dashboard = readFileSync('src/screens/parent/DashboardScreen.tsx', 'utf8');
+  const scanScreen = readFileSync('src/screens/child/scan/ScanAssignmentScreen.tsx', 'utf8');
+  const allCopy = [PRIVACY_STORAGE, PRIVACY_MICROPHONE, PRIVACY_SCAN, PRIVACY_VOICES, PRIVACY_POLICY_NOTE, PRIVACY_BADGE, SCAN_PRIVACY_NOTE].join(' ');
+  for (const text of [settings, dashboard, scanScreen, allCopy]) {
+    for (const banned of ['works fully offline', 'no internet features', 'never sends any data off this device', 'may process the audio online', 'Private · stays on this device']) {
+      ok(!text.includes(banned), `no screen or privacy string says "${banned}"`);
+    }
+  }
+  for (const text of [settings, scanScreen, allCopy]) {
+    ok(!/ML Kit/i.test(text.replace(/ML Kit is removed/gi, '')), 'no screen or privacy string claims Google ML Kit is present');
+  }
+  ok(settings.includes('PRIVACY_STORAGE') && settings.includes('PRIVACY_MICROPHONE') && settings.includes('PRIVACY_SCAN') && settings.includes('PRIVACY_VOICES') && settings.includes('PRIVACY_POLICY_NOTE'), 'Settings -> Privacy renders the shared privacy copy');
+  ok(dashboard.includes('PRIVACY_BADGE') && scanScreen.includes('SCAN_PRIVACY_NOTE'), 'the Parent Mode badge and the Scan note use the shared copy');
+  ok(/not available/i.test(PRIVACY_SCAN) && /not available/i.test(SCAN_PRIVACY_NOTE), 'the copy says Scan Assignment is unavailable in this release');
+  ok(/on-device/.test(PRIVACY_MICROPHONE) && /switched off/.test(PRIVACY_MICROPHONE), 'the microphone note says recognition is on-device only and switched off otherwise');
+  ok(!/\b(all|every|any)\b[^.]*\b(offline|voices? work)/i.test(PRIVACY_VOICES) && /some voices/i.test(PRIVACY_VOICES), 'the voice note does not promise that every system voice is offline');
+  ok(!/(GDPR|COPPA|compliant|certified)/i.test(allCopy), 'the in-app privacy copy makes no legal-compliance claim');
+  ok(!/(collects? no data|no data (is )?collected|zero data)/i.test(allCopy), 'the in-app privacy copy makes no blanket zero-data-collection claim');
+  ok(PRIVACY_POLICY_NOTE.includes('ibgolden.com/talkeasy-privacy-policy'), 'the policy address matches the published page');
 }
 
 console.log(`states checked, failures ${FAILURES.length}, languages ${SCAN_LANGUAGES.length}, problems ${problems}`);

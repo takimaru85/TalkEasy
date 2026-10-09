@@ -1,11 +1,13 @@
-import { Platform } from 'react-native';
-
 /**
- * Whether Scan Assignment is offered in this build.
+ * Whether Scan Assignment (photograph a worksheet and read its words) is offered in this release.
  *
- * It is OFF on iOS: the text-recognition engine (Google ML Kit) is not linked into the iOS app,
- * because ML Kit sends diagnostic usage data to Google by default and the iOS release is a Kids
- * Category app (react-native.config.js). Android still has it. Every entry point asks this, so no
- * button on iOS leads to a screen that cannot work.
+ * OFF ON EVERY PLATFORM. The only engine the feature ever had was Google ML Kit, which sends diagnostic
+ * usage data to Google by default; it was removed from both the iOS and the Android build for the Kids
+ * Category, and no replacement engine is bundled. This is the ONE flag: the School Mode entry point, the
+ * OCR service and the screens all read it, so no button leads to a screen that cannot work.
+ *
+ * It is a plain constant with no React Native import so `npm run check:scan` can read it. Do NOT flip it
+ * to true unless a recognition engine that sends nothing off the device is added AND the privacy policy,
+ * the in-app privacy copy and the store declarations are updated first.
  */
-export const SCAN_ASSIGNMENT_AVAILABLE = Platform.OS !== 'ios';
+export const SCAN_ASSIGNMENT_AVAILABLE = false;

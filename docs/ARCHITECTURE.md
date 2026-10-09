@@ -5,7 +5,8 @@ It combines AAC communication, school organisation, assignments, Grade 2 learnin
 a visual daily routine, therapy/activity tracking and caregiver notes — in one Expo (SDK 57)
 + React Native + TypeScript codebase for Android and iPhone.
 
-No server, no account, no analytics, no ads, no network code. Everything lives in one SQLite
+No server, no account, no analytics, no ads, and no network requests from TalkEasy's own code (the
+phone's own voice and speech services are outside the app). Everything lives in one SQLite
 file in the app's private storage.
 
 ---
